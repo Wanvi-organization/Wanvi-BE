@@ -1,0 +1,15 @@
+﻿using Wanvi.Core.Bases;
+
+namespace Wanvi.Contract.Repositories.Entities
+{
+    public class NewsDetail : BaseEntity
+    {
+        public string NewsId { get; set; }
+        public string? MediaId { get; set; }
+        public string? Content { get; set; }
+        public int SortOrder { get; set; }
+
+        public News News { get; set; }
+        public Media Media { get; set; }
+    }
+}
