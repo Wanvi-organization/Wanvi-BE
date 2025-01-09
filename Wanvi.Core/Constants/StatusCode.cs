@@ -2,7 +2,7 @@
 
 namespace Wanvi.Core.Constants
 {
-    public enum StatusCodeHelper
+    public enum StatusCode
     {
         [CustomName("Success")]
         OK = 200,
@@ -12,6 +12,9 @@ namespace Wanvi.Core.Constants
 
         [CustomName("Unauthorized")]
         Unauthorized = 401,
+
+        [CustomName("Not Found")]
+        NotFound = 404,
 
         [CustomName("Internal Server Error")]
         ServerError = 500
