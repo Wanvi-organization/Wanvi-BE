@@ -69,8 +69,11 @@ namespace Wanvi.Services.Services
                     ApplicationUser? user = await _userManager.FindByEmailAsync(email)
                         ?? throw new BaseException.ErrorException(StatusCode.NotFound, ErrorCode.NotFound, "Không tìm thấy user");
 
-                    string? token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                    await _userManager.ConfirmEmailAsync(user, token);
+                    if (!isResetPassword)
+                    {
+                        string? token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                        await _userManager.ConfirmEmailAsync(user, token);
+                    }
 
                     _memoryCache.Remove(otpCacheKey);
                 }
