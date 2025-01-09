@@ -15,6 +15,13 @@ namespace WanviBE.API.Controllers
             _authService = authService;
         }
 
+        [HttpPatch("Confirm_OTP_Email_Verification")]
+        public async Task<IActionResult> ConfirmOTPEmailVerification(ConfirmOTPModel model)
+        {
+            await _authService.VerifyOtp(model, false);
+            return Ok(BaseResponse<string>.OkResponse("Xác nhận email thành công!"));
+        }
+
         [HttpPost("Forgot_Password")]
         public async Task<IActionResult> ForgotPassword(EmailModelView model)
         {
@@ -22,7 +29,7 @@ namespace WanviBE.API.Controllers
             return Ok(BaseResponse<string>.OkResponse("Đã gửi email xác nhận yêu cầu thay đổi mật khẩu."));
         }
 
-        [HttpPatch("Confirm_OTP_ResetPassword")]
+        [HttpPatch("Confirm_OTP_Reset_Password")]
         public async Task<IActionResult> ConfirmOTPResetPassword(ConfirmOTPModel model)
         {
             await _authService.VerifyOtp(model, true);
