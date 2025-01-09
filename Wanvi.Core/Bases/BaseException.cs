@@ -6,7 +6,7 @@ namespace Wanvi.Core.Bases
     {
         public class CoreException : Exception
         {
-            public CoreException(string code, string message, int statusCode = (int)StatusCodeHelper.ServerError)
+            public CoreException(string code, string message, int statusCode = (int)Constants.StatusCode.ServerError)
                 : base(message)
             {
                 Code = code;
@@ -21,29 +21,29 @@ namespace Wanvi.Core.Bases
             public Dictionary<string, object>? AdditionalData { get; set; }
         }
 
-        public class BadRequestException : ErrorException
-        {
-            public BadRequestException(string errorCode, string message)
-                : base(400, errorCode, message)
-            {
-            }
-            public BadRequestException(ICollection<KeyValuePair<string, ICollection<string>>> errors)
-                : base(400, new ErrorDetail
-                {
-                    ErrorCode = "bad_request",
-                    ErrorMessage = errors
-                })
-            {
-            }
-        }
+        //public class BadRequestException : ErrorException
+        //{
+        //    public BadRequestException(string errorCode, string message)
+        //        : base(400, errorCode, message)
+        //    {
+        //    }
+        //    public BadRequestException(ICollection<KeyValuePair<string, ICollection<string>>> errors)
+        //        : base(400, new ErrorDetail
+        //        {
+        //            ErrorCode = "bad_request",
+        //            ErrorMessage = errors
+        //        })
+        //    {
+        //    }
+        //}
 
         public class ErrorException : Exception
         {
-            public int StatusCode { get; }
+            public StatusCode StatusCode { get; }
 
             public ErrorDetail ErrorDetail { get; }
 
-            public ErrorException(int statusCode, string errorCode, string message)
+            public ErrorException(StatusCode statusCode, string errorCode, string message)
             {
                 StatusCode = statusCode;
                 ErrorDetail = new ErrorDetail
@@ -53,12 +53,13 @@ namespace Wanvi.Core.Bases
                 };
             }
 
-            public ErrorException(int statusCode, ErrorDetail errorDetail)
+            public ErrorException(StatusCode statusCode, ErrorDetail errorDetail)
             {
                 StatusCode = statusCode;
                 ErrorDetail = errorDetail;
             }
         }
+
         public class ErrorDetail
         {
             public string? ErrorCode { get; set; }

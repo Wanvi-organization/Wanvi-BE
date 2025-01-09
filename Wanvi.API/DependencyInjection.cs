@@ -13,10 +13,12 @@ namespace WanviBE.API
         public static void AddConfig(this IServiceCollection services, IConfiguration configuration)
         {
             services.ConfigRoute();
+            services.AddMemoryCache();
             services.AddDatabase(configuration);
             services.AddIdentity();
             services.AddInfrastructure(configuration);
             services.AddServices();
+            services.AddEmailConfig(configuration);
         }
         public static void ConfigRoute(this IServiceCollection services)
         {
@@ -25,11 +27,12 @@ namespace WanviBE.API
                 options.LowercaseUrls = true;
             });
         }
+
         public static void AddDatabase(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<DatabaseContext>(options =>
             {
-                options.UseLazyLoadingProxies().UseSqlServer(configuration.GetConnectionString("MyCnn"));
+                options.UseLazyLoadingProxies().UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
             });
         }
 
@@ -43,9 +46,14 @@ namespace WanviBE.API
         }
         public static void AddServices(this IServiceCollection services)
         {
-            services
-                //.AddScoped<IUserService, UserService>()
-                .AddScoped<IUserService, UserService>();
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IUserService, UserService>();
+        }
+
+        public static void AddEmailConfig(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
         }
     }
 }

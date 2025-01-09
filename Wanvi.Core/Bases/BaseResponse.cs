@@ -7,9 +7,9 @@ namespace Wanvi.Core.Bases
     {
         public T? Data { get; set; }
         public string? Message { get; set; }
-        public StatusCodeHelper StatusCode { get; set; }
+        public StatusCode StatusCode { get; set; }
         public string? Code { get; set; }
-        public BaseResponse(StatusCodeHelper statusCode, string code, T? data, string? message)
+        public BaseResponse(StatusCode statusCode, string code, T? data, string? message)
         {
             Data = data;
             Message = message;
@@ -17,14 +17,14 @@ namespace Wanvi.Core.Bases
             Code = code;
         }
 
-        public BaseResponse(StatusCodeHelper statusCode, string code, T? data)
+        public BaseResponse(StatusCode statusCode, string code, T? data)
         {
             Data = data;
             StatusCode = statusCode;
             Code = code;
         }
 
-        public BaseResponse(StatusCodeHelper statusCode, string code, string? message)
+        public BaseResponse(StatusCode statusCode, string code, string? message)
         {
             Message = message;
             StatusCode = statusCode;
@@ -33,11 +33,11 @@ namespace Wanvi.Core.Bases
 
         public static BaseResponse<T> OkResponse(T? data)
         {
-            return new BaseResponse<T>(StatusCodeHelper.OK, StatusCodeHelper.OK.Name(), data);
+            return new BaseResponse<T>(StatusCode.OK, StatusCode.OK.Name(), data);
         }
         public static BaseResponse<T> OkResponse(string? mess)
         {
-            return new BaseResponse<T>(StatusCodeHelper.OK, StatusCodeHelper.OK.Name(), mess);
+            return new BaseResponse<T>(StatusCode.OK, StatusCode.OK.Name(), mess);
         }
     }
 }
