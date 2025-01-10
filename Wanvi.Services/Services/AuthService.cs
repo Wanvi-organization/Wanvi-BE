@@ -1,7 +1,9 @@
 ﻿using MailKit;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Wanvi.Contract.Repositories.Entities;
+using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
@@ -14,13 +16,17 @@ namespace Wanvi.Services.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IMemoryCache _memoryCache;
         private readonly IEmailService _emailService;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public AuthService(UserManager<ApplicationUser> userManager, IMemoryCache memoryCache, IEmailService emailService)
+        public AuthService(UserManager<ApplicationUser> userManager, IMemoryCache memoryCache, IEmailService emailService, IUnitOfWork unitOfWork)
         {
             _userManager = userManager;
             _memoryCache = memoryCache;
             _emailService = emailService;
+            _unitOfWork = unitOfWork;
         }
+
+
 
         #region Private Service
         private string GenerateOtp()
@@ -87,6 +93,20 @@ namespace Wanvi.Services.Services
                 throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "OTP không hợp lệ hoặc đã hết hạn");
             }
         }
+        //public async Task SendOtpConfirmEmail(SendOTPModel model)
+        //{
+        //    //Kiem tra email đã tồn tại chưa
+        //    ApplicationUser applicationUser = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x=>x.Email.ToLower().Equals(model.Email.ToLower()) && !x.DeletedTime.HasValue) ?? throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Email đã được sử dụng, vui lòng nhập email khác!");
+
+        //    string OTP = GenerateOtp();
+        //    string otpCacheKey = $"OTPConfirmEmail_{model.Email}";
+        //    _memoryCache.Set(otpCacheKey, OTP, TimeSpan.FromMinutes(1));
+
+        //    string emailCacheKey = "EmailConfirm";
+        //    _memoryCache.Set(emailCacheKey, model.Email, TimeSpan.FromMinutes(10));
+
+        //    await _emailService.SendEmailAsync(model.Email, "OTP kích hoạt tài khoản", $"Vui lòng xác nhận tài khoản của bạn, OTP của bạn là: <div class='otp'>{OTP}</div>");
+        //}
 
         public async Task ResetPassword(ResetPasswordModel resetPasswordModel)
         {
