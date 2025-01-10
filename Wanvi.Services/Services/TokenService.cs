@@ -17,10 +17,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Wanvi.Core.Constants;
+using Wanvi.Contract.Services.Interfaces;
 
 namespace Wanvi.Services.Services
 {
-    public class TokenService
+    public class TokenService: ITokenService
     {
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
