@@ -1,20 +1,26 @@
 ﻿using AutoMapper;
 using Google.Apis.Auth;
 using MailKit;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Wanvi.Contract.Repositories.Base;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
+using Wanvi.Core.Utils;
 using Wanvi.ModelViews.AuthModelViews;
+using Wanvi.Services.Services.Infrastructure;
+using static Wanvi.Core.Bases.BaseException;
 
 namespace Wanvi.Services.Services
 {
@@ -24,13 +30,17 @@ namespace Wanvi.Services.Services
         private readonly IEmailService _emailService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
+        private readonly ITokenService _tokenService;
+        private readonly JwtSettings _jwtSettings;
 
-        public AuthService(UserManager<ApplicationUser> userManager, IEmailService emailService, IConfiguration configuration, IUnitOfWork unitOfWork)
+        public AuthService(UserManager<ApplicationUser> userManager, IEmailService emailService, IConfiguration configuration, IUnitOfWork unitOfWork,ITokenService tokenService, JwtSettings jwtSettings)
         {
             _userManager = userManager;
             _emailService = emailService;
             _unitOfWork = unitOfWork;
             _configuration = configuration;
+            _tokenService = tokenService;
+            _jwtSettings = jwtSettings;
         }
 
 
@@ -234,7 +244,7 @@ namespace Wanvi.Services.Services
                 UserId = newUser.Id,
                 RoleId = applicationRole.Id,
             };
-           await _unitOfWork.GetRepository<ApplicationUserRole>().InsertAsync(applicationUserRole);
+            await _unitOfWork.GetRepository<ApplicationUserRole>().InsertAsync(applicationUserRole);
 
             await _unitOfWork.SaveAsync();
         }
@@ -251,6 +261,40 @@ namespace Wanvi.Services.Services
             role.Name = model.RoleName;
             await _unitOfWork.GetRepository<ApplicationRole>().InsertAsync(role);
             await _unitOfWork.SaveAsync();
+        }
+        public async Task<LoginResponse> LoginAsync(LoginRequestModel request)
+        {
+            var user = _unitOfWork.GetRepository<ApplicationUser>().Entities
+                .Where(u => !u.DeletedTime.HasValue && u.UserName == request.Username)
+                .FirstOrDefault()
+                ?? throw new ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
+            // create hash
+            var passwordHasher = new FixedSaltPasswordHasher<ApplicationUser>(Options.Create(new PasswordHasherOptions()));
+
+            var hashedInputPassword = passwordHasher.HashPassword(null, request.Password);
+
+            if (hashedInputPassword != user.PasswordHash)
+            {
+                throw new ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
+            }
+
+            //// Get the user's role
+            //var roles = await _userManager.GetRolesAsync(user);
+            //var role = roles.FirstOrDefault(); // Assuming a single role for simplicity
+            ApplicationUserRole roleUser = _unitOfWork.GetRepository<ApplicationUserRole>().Entities.Where(x => x.UserId == user.Id).FirstOrDefault()
+                                ?? throw new ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
+            string roleName = _unitOfWork.GetRepository<ApplicationRole>().Entities.Where(x => x.Id == roleUser.RoleId).Select(x => x.Name).FirstOrDefault()
+             ?? "unknow";
+            var tokenResponse = _tokenService.GenerateTokens(user, roleName);
+            var token = Authentication.CreateToken(user.Id.ToString(), _jwtSettings);
+            var loginResponse = new LoginResponse
+            {
+                TokenResponse = tokenResponse,
+                Role = roleName,
+                token = token,
+            };
+            return loginResponse;
+
         }
 
         //public async Task<AuthResponseModelView> LoginGoogle(TokenGoogleModelView model)

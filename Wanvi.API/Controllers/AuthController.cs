@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Wanvi.Contract.Repositories.Base;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
+using Wanvi.Core.Constants;
 using Wanvi.ModelViews.AuthModelViews;
 
 namespace WanviBE.API.Controllers
@@ -35,7 +37,16 @@ namespace WanviBE.API.Controllers
             await _authService.Register(model);
             return Ok(BaseResponse<string>.OkResponse("Đăng kí thành công!"));
         }
-
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(LoginRequestModel request)
+        {
+            LoginResponse res = await _authService.LoginAsync(request);
+            return Ok(new BaseResponseModel<LoginResponse>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
         //[HttpPatch("Send_OTP_Email_Verification")]
         //public async Task<IActionResult> SendOTPEmailVerification(SendOTPModel model)
         //{
