@@ -4,8 +4,11 @@ namespace Wanvi.Contract.Services.Interfaces
 {
     public interface IAuthService
     {
-        Task VerifyOtp(ConfirmOTPModel model, bool isResetPassword);
-        Task ForgotPassword(EmailModelView emailModelView);
-        Task ResetPassword(ResetPasswordModel resetPassword);
+        Task VerifyOtp(ConfirmOTPModelView model, bool isResetPassword);
+        Task ForgotPassword(EmailModelView model);
+        Task ResetPassword(ResetPasswordModelView model);
+        //Task<AuthResponseModelView> LoginGoogle(TokenGoogleModelView model);
+        Task CreateRole(RoleModel model);
+        Task Register(RegisterModel model);
     }
 }
