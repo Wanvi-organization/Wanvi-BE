@@ -10,13 +10,14 @@ namespace WanviBE.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+
         public AuthController(IAuthService authService)
         {
             _authService = authService;
         }
 
         [HttpPatch("Confirm_OTP_Email_Verification")]
-        public async Task<IActionResult> ConfirmOTPEmailVerification(ConfirmOTPModel model)
+        public async Task<IActionResult> ConfirmOTPEmailVerification(ConfirmOTPModelView model)
         {
             await _authService.VerifyOtp(model, false);
             return Ok(BaseResponse<string>.OkResponse("Xác nhận email thành công!"));
@@ -30,19 +31,24 @@ namespace WanviBE.API.Controllers
         }
 
         [HttpPatch("Confirm_OTP_Reset_Password")]
-        public async Task<IActionResult> ConfirmOTPResetPassword(ConfirmOTPModel model)
+        public async Task<IActionResult> ConfirmOTPResetPassword(ConfirmOTPModelView model)
         {
             await _authService.VerifyOtp(model, true);
             return Ok(BaseResponse<string>.OkResponse("Xác nhận thay đổi mật khẩu thành công!"));
         }
 
         [HttpPatch("Reset_Password")]
-        public async Task<IActionResult> ResetPassword(ResetPasswordModel model)
+        public async Task<IActionResult> ResetPassword(ResetPasswordModelView model)
         {
             await _authService.ResetPassword(model);
             return Ok(BaseResponse<string>.OkResponse("Đã đặt lại mật khẩu thành công!"));
         }
 
-
+        //[HttpPost("login-google")]
+        //public async Task<IActionResult> LoginGoogle(TokenGoogleModelView model)
+        //{
+        //    AuthResponseModelView? result = await _authService.LoginGoogle(model);
+        //    return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
+        //}
     }
 }

@@ -1,6 +1,13 @@
-﻿using MailKit;
+﻿using AutoMapper;
+using Google.Apis.Auth;
+using MailKit;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
@@ -12,17 +19,63 @@ namespace Wanvi.Services.Services
     public class AuthService : IAuthService
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IMemoryCache _memoryCache;
         private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
-        public AuthService(UserManager<ApplicationUser> userManager, IMemoryCache memoryCache, IEmailService emailService)
+        public AuthService(UserManager<ApplicationUser> userManager, IEmailService emailService, IConfiguration configuration)
         {
             _userManager = userManager;
-            _memoryCache = memoryCache;
             _emailService = emailService;
+            _configuration = configuration;
         }
 
         #region Private Service
+        private (string token, IEnumerable<string> roles) GenerateJwtToken(ApplicationUser user)
+        {
+            byte[] key = Encoding.ASCII.GetBytes(_configuration["JwtSettings:Key"] ?? throw new Exception("JWT_KEY is not set"));
+            List<Claim> claims = new List<Claim> {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email)
+        };
+            IEnumerable<string> roles = _userManager.GetRolesAsync(user).Result;
+            foreach (string role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            string issuer = _configuration["JwtSettings:Issuer"] ?? throw new Exception("JWT_ISSUER is not set");
+            string audience = _configuration["JwtSettings:Audience"] ?? throw new Exception("JWT_AUDIENCE is not set");
+
+            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddHours(1),
+                Issuer = issuer,
+                Audience = audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+            SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
+            return (tokenHandler.WriteToken(token), roles);
+        }
+
+        private async Task<string> GenerateRefreshToken(ApplicationUser user)
+        {
+            string? refreshToken = Guid.NewGuid().ToString();
+
+            string? initToken = await _userManager.GetAuthenticationTokenAsync(user, "Default", "RefreshToken");
+            if (initToken != null)
+            {
+
+                await _userManager.RemoveAuthenticationTokenAsync(user, "Default", "RefreshToken");
+
+            }
+
+            await _userManager.SetAuthenticationTokenAsync(user, "Default", "RefreshToken", refreshToken);
+            return refreshToken;
+        }
+
         private string GenerateOtp()
         {
             Random random = new Random();
@@ -32,9 +85,9 @@ namespace Wanvi.Services.Services
         #endregion
 
         #region Implementation Interface
-        public async Task ForgotPassword(EmailModelView emailModelView)
+        public async Task ForgotPassword(EmailModelView model)
         {
-            ApplicationUser? user = await _userManager.FindByEmailAsync(emailModelView.Email)
+            ApplicationUser? user = await _userManager.FindByEmailAsync(model.Email)
                 ?? throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Vui lòng kiểm tra email của bạn");
 
             if (!await _userManager.IsEmailConfirmedAsync(user))
@@ -43,61 +96,51 @@ namespace Wanvi.Services.Services
             }
 
             string OTP = GenerateOtp();
-            string otpCacheKey = $"OTPResetPassword_{emailModelView.Email}";
-            _memoryCache.Set(otpCacheKey, OTP, TimeSpan.FromMinutes(1));
+            user.EmailCode = int.Parse(OTP);
+            user.CodeGeneratedTime = DateTime.UtcNow;
 
-            string emailCacheKey = "EmailForResetPassword";
-            _memoryCache.Set(emailCacheKey, emailModelView.Email, TimeSpan.FromMinutes(10));
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không thể lưu OTP, vui lòng thử lại sau.");
+            }
 
-            await _emailService.SendEmailAsync(emailModelView.Email, "Đặt lại mật khẩu", $"Vui lòng xác nhận tài khoản của bạn, OTP của bạn là: <div class='otp'>{OTP}</div>");
+            await _emailService.SendEmailAsync(model.Email, "Đặt lại mật khẩu", $"Vui lòng xác nhận tài khoản của bạn, OTP của bạn là: <div class='otp'>{OTP}</div>");
         }
 
-        public async Task VerifyOtp(ConfirmOTPModel model, bool isResetPassword)
+        public async Task VerifyOtp(ConfirmOTPModelView model, bool isResetPassword)
         {
-            string emailCacheKey = "EmailForResetPassword";
-            if (!_memoryCache.TryGetValue(emailCacheKey, out string email))
+            ApplicationUser? user = await _userManager.FindByEmailAsync(model.Email)
+                ?? throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Vui lòng kiểm tra email của bạn");
+
+            if (user.EmailCode == null || user.EmailCode.ToString() != model.OTP)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Email không hợp lệ hoặc đã hết hạn");
+                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "OTP không hợp lệ");
             }
 
-            string otpCacheKey = isResetPassword ? $"OTPResetPassword_{email}" : $"OTP_{email}";
-
-            if (_memoryCache.TryGetValue(otpCacheKey, out string storedOtp))
+            if (!user.CodeGeneratedTime.HasValue || DateTime.UtcNow > user.CodeGeneratedTime.Value.AddMinutes(5))
             {
-                if (storedOtp == model.OTP)
-                {
-                    ApplicationUser? user = await _userManager.FindByEmailAsync(email)
-                        ?? throw new BaseException.ErrorException(StatusCode.NotFound, ErrorCode.NotFound, "Không tìm thấy user");
-
-                    if (!isResetPassword)
-                    {
-                        string? token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                        await _userManager.ConfirmEmailAsync(user, token);
-                    }
-
-                    _memoryCache.Remove(otpCacheKey);
-                }
-                else
-                {
-                    throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "OTP không hợp lệ");
-                }
+                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "OTP đã hết hạn");
             }
-            else
+
+            if (!isResetPassword)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "OTP không hợp lệ hoặc đã hết hạn");
+                string? token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                await _userManager.ConfirmEmailAsync(user, token);
+            }
+
+            user.EmailCode = null;
+            user.CodeGeneratedTime = null;
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không thể cập nhật thông tin người dùng");
             }
         }
 
-        public async Task ResetPassword(ResetPasswordModel resetPasswordModel)
+        public async Task ResetPassword(ResetPasswordModelView model)
         {
-            string emailCacheKey = "EmailForResetPassword";
-
-            if (!_memoryCache.TryGetValue(emailCacheKey, out string email))
-            {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Email không hợp lệ hoặc đã hết hạn");
-            }
-
-            ApplicationUser? user = await _userManager.FindByEmailAsync(email)
+            ApplicationUser? user = await _userManager.FindByEmailAsync(model.Email)
                 ?? throw new BaseException.ErrorException(StatusCode.NotFound, ErrorCode.NotFound, "Không tìm thấy user");
 
             if (!await _userManager.IsEmailConfirmedAsync(user))
@@ -106,16 +149,48 @@ namespace Wanvi.Services.Services
             }
 
             string? token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            IdentityResult? result = await _userManager.ResetPasswordAsync(user, token, resetPasswordModel.Password);
+            IdentityResult? result = await _userManager.ResetPasswordAsync(user, token, model.Password);
 
             if (!result.Succeeded)
             {
                 throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, result.Errors.FirstOrDefault()?.Description);
             }
-
-            _memoryCache.Remove(emailCacheKey);
         }
 
+        //public async Task<AuthResponseModelView> LoginGoogle(TokenGoogleModelView model)
+        //{
+        //    GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(model.Token);
+        //    string email = payload.Email;
+        //    string providerKey = payload.Subject;
+        //    ApplicationUser? user = await _userManager.FindByEmailAsync(email);
+
+        //    if (user == null)
+        //    {
+        //        throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản chưa được tạo. Vui lòng tạo tài khoản trước khi đăng nhập.");
+        //    }
+
+        //    if (user.DeletedTime.HasValue)
+        //    {
+        //        throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
+        //    }
+
+        //    (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
+        //    string refreshToken = await GenerateRefreshToken(user);
+
+        //    return new AuthResponseModelView
+        //    {
+        //        AccessToken = token,
+        //        RefreshToken = refreshToken,
+        //        TokenType = "JWT",
+        //        AuthType = "Bearer",
+        //        ExpiresIn = DateTime.UtcNow.AddHours(1),
+        //        User = new UserInfo
+        //        {
+        //            Email = user.Email,
+        //            Roles = roles.ToList()
+        //        }
+        //    };
+        //}
         #endregion
     }
 }
