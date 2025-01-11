@@ -234,6 +234,8 @@ namespace Wanvi.Services.Services
                 Address = model.PlaceOfBirth,
                 DateOfBirth = model.DateOfBirth,
                 Gender = model.Gender,
+                NormalizedEmail = model.Email.ToUpper(),
+                NormalizedUserName = model.Email.ToUpper(),
                 PasswordHash = passwordHasher.HashPassword(null, model.Password), // Băm mật khẩu tại đây
             };
 
