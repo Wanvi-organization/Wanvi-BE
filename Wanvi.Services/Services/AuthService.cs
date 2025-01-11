@@ -236,6 +236,7 @@ namespace Wanvi.Services.Services
                 Gender = model.Gender,
                 NormalizedEmail = model.Email.ToUpper(),
                 NormalizedUserName = model.Email.ToUpper(),
+                SecurityStamp = Guid.NewGuid().ToString(),
                 PasswordHash = passwordHasher.HashPassword(null, model.Password), // Băm mật khẩu tại đây
             };
 
