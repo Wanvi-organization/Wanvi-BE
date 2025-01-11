@@ -229,6 +229,7 @@ namespace Wanvi.Services.Services
             {
                 FullName = model.Name,
                 Email = model.Email,
+                UserName = model.Email,
                 PhoneNumber = model.Phone,
                 Address = model.PlaceOfBirth,
                 DateOfBirth = model.DateOfBirth,
@@ -244,9 +245,15 @@ namespace Wanvi.Services.Services
                 UserId = newUser.Id,
                 RoleId = applicationRole.Id,
             };
+            string OTP = GenerateOtp();
+            newUser.EmailCode = int.Parse(OTP);
+            newUser.CodeGeneratedTime = DateTime.UtcNow;
+
+            await _emailService.SendEmailAsync(model.Email, "Đặt lại mật khẩu", $"Vui lòng xác nhận tài khoản của bạn, OTP của bạn là: <div class='otp'>{OTP}</div>");
             await _unitOfWork.GetRepository<ApplicationUserRole>().InsertAsync(applicationUserRole);
 
             await _unitOfWork.SaveAsync();
+
         }
 
 
@@ -262,12 +269,17 @@ namespace Wanvi.Services.Services
             await _unitOfWork.GetRepository<ApplicationRole>().InsertAsync(role);
             await _unitOfWork.SaveAsync();
         }
+
         public async Task<LoginResponse> LoginAsync(LoginRequestModel request)
         {
             var user = _unitOfWork.GetRepository<ApplicationUser>().Entities
                 .Where(u => !u.DeletedTime.HasValue && u.UserName == request.Username)
                 .FirstOrDefault()
                 ?? throw new ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
+            if(user.EmailConfirmed == false)
+            {
+                throw new ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản chưa được xác thực!");
+            }
             // create hash
             var passwordHasher = new FixedSaltPasswordHasher<ApplicationUser>(Options.Create(new PasswordHasherOptions()));
 
