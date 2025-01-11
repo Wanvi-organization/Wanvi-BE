@@ -11,5 +11,6 @@ namespace Wanvi.Contract.Services.Interfaces
         Task CreateRole(RoleModel model);
         Task Register(RegisterModel model);
         Task<LoginResponse> LoginAsync(LoginRequestModel request);
+        Task<AuthResponseModelView> RefreshToken(RefreshTokenModel refreshTokenModel);
     }
 }

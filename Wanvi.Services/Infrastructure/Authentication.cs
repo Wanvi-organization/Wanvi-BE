@@ -7,8 +7,9 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using Wanvi.Contract.Repositories.Base;
+using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
-using static Wanvi.Core.Bases.BaseException;
+using static Wanvi.Core.Bases.CoreException;
 
 namespace Wanvi.Services.Services.Infrastructure
 {
@@ -221,7 +222,7 @@ namespace Wanvi.Services.Services.Infrastructure
         public static async Task HandleForbiddenRequest(HttpContext context)
         {
             int code = (int)HttpStatusCode.Forbidden;
-            var error = new ErrorException(StatusCode.Unauthorized, ErrorCode.Forbidden, "You don't have permission to access this feature");
+            var error = new ErrorException(StatusCodes.Status401Unauthorized, ErrorCode.Forbidden, "You don't have permission to access this feature");
             string result = JsonSerializer.Serialize(error);
 
             context.Response.ContentType = "application/json";

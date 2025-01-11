@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Wanvi.API.Middleware;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Repositories.Context;
 using WanviBE.API;
+using WanviBE.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +36,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
+
+//setting Middleware
+app.UseMiddleware<ExceptionMiddleware>();
+app.UseMiddleware<PermissionMiddleware>();
+app.UseMiddleware<LoggingMiddleware>();
 
 app.MapControllers();
 

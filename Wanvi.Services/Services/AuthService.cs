@@ -20,7 +20,7 @@ using Wanvi.Core.Constants;
 using Wanvi.Core.Utils;
 using Wanvi.ModelViews.AuthModelViews;
 using Wanvi.Services.Services.Infrastructure;
-using static Wanvi.Core.Bases.BaseException;
+using static Wanvi.Core.Bases.CoreException;
 
 namespace Wanvi.Services.Services
 {
@@ -42,8 +42,6 @@ namespace Wanvi.Services.Services
             _tokenService = tokenService;
             _jwtSettings = jwtSettings;
         }
-
-
 
         #region Private Service
         private (string token, IEnumerable<string> roles) GenerateJwtToken(ApplicationUser user)
@@ -104,11 +102,11 @@ namespace Wanvi.Services.Services
         public async Task ForgotPassword(EmailModelView model)
         {
             ApplicationUser? user = await _userManager.FindByEmailAsync(model.Email)
-                ?? throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Vui lòng kiểm tra email của bạn");
+                ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng kiểm tra email của bạn");
 
             if (!await _userManager.IsEmailConfirmedAsync(user))
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Vui lòng kiểm tra email của bạn");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng kiểm tra email của bạn");
             }
 
             string OTP = GenerateOtp();
@@ -118,7 +116,7 @@ namespace Wanvi.Services.Services
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không thể lưu OTP, vui lòng thử lại sau.");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không thể lưu OTP, vui lòng thử lại sau.");
             }
 
             await _emailService.SendEmailAsync(model.Email, "Đặt lại mật khẩu", $"Vui lòng xác nhận tài khoản của bạn, OTP của bạn là: <div class='otp'>{OTP}</div>");
@@ -127,16 +125,16 @@ namespace Wanvi.Services.Services
         public async Task VerifyOtp(ConfirmOTPModelView model, bool isResetPassword)
         {
             ApplicationUser? user = await _userManager.FindByEmailAsync(model.Email)
-                ?? throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Vui lòng kiểm tra email của bạn");
+                ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng kiểm tra email của bạn");
 
             if (user.EmailCode == null || user.EmailCode.ToString() != model.OTP)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "OTP không hợp lệ");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "OTP không hợp lệ");
             }
 
             if (!user.CodeGeneratedTime.HasValue || DateTime.UtcNow > user.CodeGeneratedTime.Value.AddMinutes(5))
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "OTP đã hết hạn");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "OTP đã hết hạn");
             }
 
             if (!isResetPassword)
@@ -150,13 +148,13 @@ namespace Wanvi.Services.Services
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không thể cập nhật thông tin người dùng");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không thể cập nhật thông tin người dùng");
             }
         }
         //public async Task SendOtpConfirmEmail(SendOTPModel model)
         //{
         //    //Kiem tra email đã tồn tại chưa
-        //    ApplicationUser applicationUser = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x=>x.Email.ToLower().Equals(model.Email.ToLower()) && !x.DeletedTime.HasValue) ?? throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Email đã được sử dụng, vui lòng nhập email khác!");
+        //    ApplicationUser applicationUser = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x=>x.Email.ToLower().Equals(model.Email.ToLower()) && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Email đã được sử dụng, vui lòng nhập email khác!");
 
         //    string OTP = GenerateOtp();
         //    string otpCacheKey = $"OTPConfirmEmail_{model.Email}";
@@ -171,11 +169,11 @@ namespace Wanvi.Services.Services
         public async Task ResetPassword(ResetPasswordModelView model)
         {
             ApplicationUser? user = await _userManager.FindByEmailAsync(model.Email)
-                ?? throw new BaseException.ErrorException(StatusCode.NotFound, ErrorCode.NotFound, "Không tìm thấy user");
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy user");
 
             if (!await _userManager.IsEmailConfirmedAsync(user))
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Vui lòng kiểm tra email của bạn");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng kiểm tra email của bạn");
             }
 
             string? token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -183,7 +181,7 @@ namespace Wanvi.Services.Services
 
             if (!result.Succeeded)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, result.Errors.FirstOrDefault()?.Description);
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, result.Errors.FirstOrDefault()?.Description);
             }
         }
 
@@ -195,7 +193,7 @@ namespace Wanvi.Services.Services
 
             if (applicationUser != null)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Email đã được sử dụng, vui lòng nhập email khác!");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Email đã được sử dụng, vui lòng nhập email khác!");
             }
 
             // Kiểm tra số điện thoại đã tồn tại
@@ -204,13 +202,13 @@ namespace Wanvi.Services.Services
 
             if (userWithPhone != null)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Số điện thoại đã được sử dụng!");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số điện thoại đã được sử dụng!");
             }
 
             // Kiểm tra xác nhận mật khẩu
             if (model.Password != model.ConfirmPassword)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Xác nhận mật khẩu không đúng!");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Xác nhận mật khẩu không đúng!");
             }
 
             // Xác định vai trò
@@ -220,11 +218,11 @@ namespace Wanvi.Services.Services
 
             if (applicationRole == null)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Vai trò không tồn tại!");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vai trò không tồn tại!");
             }
 
             // Sử dụng PasswordHasher để băm mật khẩu
-            var passwordHasher = new PasswordHasher<ApplicationUser>();
+            var passwordHasher = new FixedSaltPasswordHasher<ApplicationUser>(Options.Create(new PasswordHasherOptions()));
             var newUser = new ApplicationUser
             {
                 FullName = model.Name,
@@ -259,13 +257,12 @@ namespace Wanvi.Services.Services
 
         }
 
-
         public async Task CreateRole(RoleModel model)
         {
             ApplicationRole applicationRole = await _unitOfWork.GetRepository<ApplicationRole>().Entities.FirstOrDefaultAsync(x => x.Name == model.RoleName);
             if (applicationRole != null)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Vai trò đã tồn tại!");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vai trò đã tồn tại!");
             }
             ApplicationRole role = new ApplicationRole();
             role.Name = model.RoleName;
@@ -278,10 +275,10 @@ namespace Wanvi.Services.Services
             var user = _unitOfWork.GetRepository<ApplicationUser>().Entities
                 .Where(u => !u.DeletedTime.HasValue && u.UserName == request.Username)
                 .FirstOrDefault()
-                ?? throw new ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
+                ?? throw new ErrorException(StatusCodes.Status401Unauthorized, ResponseCodeConstants.BADREQUEST, "Không tìm thấy tài khoản");
             if(user.EmailConfirmed == false)
             {
-                throw new ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản chưa được xác thực!");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Tài khoản chưa được xác thực!");
             }
             // create hash
             var passwordHasher = new FixedSaltPasswordHasher<ApplicationUser>(Options.Create(new PasswordHasherOptions()));
@@ -290,14 +287,14 @@ namespace Wanvi.Services.Services
 
             if (hashedInputPassword != user.PasswordHash)
             {
-                throw new ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
             }
 
             //// Get the user's role
             //var roles = await _userManager.GetRolesAsync(user);
             //var role = roles.FirstOrDefault(); // Assuming a single role for simplicity
             ApplicationUserRole roleUser = _unitOfWork.GetRepository<ApplicationUserRole>().Entities.Where(x => x.UserId == user.Id).FirstOrDefault()
-                                ?? throw new ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
+                                ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
             string roleName = _unitOfWork.GetRepository<ApplicationRole>().Entities.Where(x => x.Id == roleUser.RoleId).Select(x => x.Name).FirstOrDefault()
              ?? "unknow";
             var tokenResponse = _tokenService.GenerateTokens(user, roleName);
@@ -312,6 +309,42 @@ namespace Wanvi.Services.Services
 
         }
 
+        public async Task<AuthResponseModelView> RefreshToken(RefreshTokenModel refreshTokenModel)
+        {
+            ApplicationUser? user = await CheckRefreshToken(refreshTokenModel.refreshToken);
+            (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
+            string refreshToken = await GenerateRefreshToken(user);
+            return new AuthResponseModelView
+            {
+                AccessToken = token,
+                RefreshToken = refreshToken,
+                TokenType = "JWT",
+                AuthType = "Bearer",
+                ExpiresIn = DateTime.UtcNow.AddHours(1),
+                User = new UserInfo
+                {
+                    Email = user.Email,
+                    Roles = roles.ToList()
+                }
+            };
+        }
+
+        private async Task<ApplicationUser> CheckRefreshToken(string refreshToken)
+        {
+
+            List<ApplicationUser>? users = await _userManager.Users.ToListAsync();
+            foreach (ApplicationUser user in users)
+            {
+                string? storedToken = await _userManager.GetAuthenticationTokenAsync(user, "Default", "RefreshToken");
+
+                if (storedToken == refreshToken)
+                {
+                    return user;
+                }
+            }
+            throw new ErrorException(StatusCodes.Status401Unauthorized, ErrorCode.Unauthorized, "Token không hợp lệ");
+        }
+
         //public async Task<AuthResponseModelView> LoginGoogle(TokenGoogleModelView model)
         //{
         //    GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(model.Token);
@@ -321,12 +354,12 @@ namespace Wanvi.Services.Services
 
         //    if (user == null)
         //    {
-        //        throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản chưa được tạo. Vui lòng tạo tài khoản trước khi đăng nhập.");
+        //        throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản chưa được tạo. Vui lòng tạo tài khoản trước khi đăng nhập.");
         //    }
 
         //    if (user.DeletedTime.HasValue)
         //    {
-        //        throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
+        //        throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
         //    }
 
         //    (string token, IEnumerable<string> roles) = GenerateJwtToken(user);

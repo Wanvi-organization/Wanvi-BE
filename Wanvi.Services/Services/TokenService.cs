@@ -8,7 +8,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using static Wanvi.Core.Bases.BaseException;
+using static Wanvi.Core.Bases.CoreException;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.ModelViews.UserModelViews;
@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.IO;
 using Wanvi.Core.Constants;
 using Wanvi.Contract.Services.Interfaces;
+using Wanvi.Core.Bases;
 
 namespace Wanvi.Services.Services
 {
@@ -80,7 +81,7 @@ namespace Wanvi.Services.Services
             );
             var refreshTokenString = new JwtSecurityTokenHandler().WriteToken(refreshToken);
             ApplicationUserRole roleUser = _unitOfWork.GetRepository<ApplicationUserRole>().Entities.Where(x => x.UserId == user.Id).FirstOrDefault()
-                                    ?? throw new ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Lỗi Authorize");
+                                    ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Lỗi Authorize");
             string roleName = _unitOfWork.GetRepository<ApplicationRole>().GetById(roleUser.RoleId).Name ?? "Unknow";
             // Return the tokens and user information
             return new TokenResponse

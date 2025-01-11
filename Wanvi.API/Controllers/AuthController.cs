@@ -47,6 +47,17 @@ namespace WanviBE.API.Controllers
                  data: res
              ));
         }
+        [HttpPost("RefreshToken")]
+        public async Task<IActionResult> RefreshToken(RefreshTokenModel model)
+        {
+            AuthResponseModelView? res = await _authService.RefreshToken(model);
+            return Ok(new BaseResponseModel<AuthResponseModelView>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+
         //[HttpPatch("Send_OTP_Email_Verification")]
         //public async Task<IActionResult> SendOTPEmailVerification(SendOTPModel model)
         //{
