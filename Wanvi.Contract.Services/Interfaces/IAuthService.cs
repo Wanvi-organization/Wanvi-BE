@@ -7,7 +7,7 @@ namespace Wanvi.Contract.Services.Interfaces
         Task VerifyOtp(ConfirmOTPModelView model, bool isResetPassword);
         Task ForgotPassword(EmailModelView model);
         Task ResetPassword(ResetPasswordModelView model);
-        //Task<AuthResponseModelView> LoginGoogle(TokenGoogleModelView model);
+        Task<AuthResponseModelView> LoginGoogle(TokenGoogleModelView model);
         Task CreateRole(RoleModel model);
         Task Register(RegisterModel model);
         Task<LoginResponse> LoginAsync(LoginRequestModel request);

@@ -153,20 +153,6 @@ namespace Wanvi.Services.Services
                 throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Không thể cập nhật thông tin người dùng");
             }
         }
-        //public async Task SendOtpConfirmEmail(SendOTPModel model)
-        //{
-        //    //Kiem tra email đã tồn tại chưa
-        //    ApplicationUser applicationUser = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x=>x.Email.ToLower().Equals(model.Email.ToLower()) && !x.DeletedTime.HasValue) ?? throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Email đã được sử dụng, vui lòng nhập email khác!");
-
-        //    string OTP = GenerateOtp();
-        //    string otpCacheKey = $"OTPConfirmEmail_{model.Email}";
-        //    _memoryCache.Set(otpCacheKey, OTP, TimeSpan.FromMinutes(1));
-
-        //    string emailCacheKey = "EmailConfirm";
-        //    _memoryCache.Set(emailCacheKey, model.Email, TimeSpan.FromMinutes(10));
-
-        //    await _emailService.SendEmailAsync(model.Email, "OTP kích hoạt tài khoản", $"Vui lòng xác nhận tài khoản của bạn, OTP của bạn là: <div class='otp'>{OTP}</div>");
-        //}
 
         public async Task ResetPassword(ResetPasswordModelView model)
         {
@@ -224,7 +210,7 @@ namespace Wanvi.Services.Services
             }
 
             // Sử dụng PasswordHasher để băm mật khẩu
-            var passwordHasher = new PasswordHasher<ApplicationUser>();
+            var passwordHasher = new FixedSaltPasswordHasher<ApplicationUser>(Options.Create(new PasswordHasherOptions())); ;
             var newUser = new ApplicationUser
             {
                 FullName = model.Name,
@@ -312,40 +298,40 @@ namespace Wanvi.Services.Services
 
         }
 
-        //public async Task<AuthResponseModelView> LoginGoogle(TokenGoogleModelView model)
-        //{
-        //    GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(model.Token);
-        //    string email = payload.Email;
-        //    string providerKey = payload.Subject;
-        //    ApplicationUser? user = await _userManager.FindByEmailAsync(email);
+        public async Task<AuthResponseModelView> LoginGoogle(TokenGoogleModelView model)
+        {
+            GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(model.Token);
+            string email = payload.Email;
+            string providerKey = payload.Subject;
+            ApplicationUser? user = await _userManager.FindByEmailAsync(email);
 
-        //    if (user == null)
-        //    {
-        //        throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản chưa được tạo. Vui lòng tạo tài khoản trước khi đăng nhập.");
-        //    }
+            if (user == null)
+            {
+                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản chưa được tạo. Vui lòng tạo tài khoản trước khi đăng nhập.");
+            }
 
-        //    if (user.DeletedTime.HasValue)
-        //    {
-        //        throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
-        //    }
+            if (user.DeletedTime.HasValue)
+            {
+                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
+            }
 
-        //    (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
-        //    string refreshToken = await GenerateRefreshToken(user);
+            (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
+            string refreshToken = await GenerateRefreshToken(user);
 
-        //    return new AuthResponseModelView
-        //    {
-        //        AccessToken = token,
-        //        RefreshToken = refreshToken,
-        //        TokenType = "JWT",
-        //        AuthType = "Bearer",
-        //        ExpiresIn = DateTime.UtcNow.AddHours(1),
-        //        User = new UserInfo
-        //        {
-        //            Email = user.Email,
-        //            Roles = roles.ToList()
-        //        }
-        //    };
-        //}
+            return new AuthResponseModelView
+            {
+                AccessToken = token,
+                RefreshToken = refreshToken,
+                TokenType = "JWT",
+                AuthType = "Bearer",
+                ExpiresIn = DateTime.UtcNow.AddHours(1),
+                User = new UserInfo
+                {
+                    Email = user.Email,
+                    Roles = roles.ToList()
+                }
+            };
+        }
         #endregion
     }
 }
