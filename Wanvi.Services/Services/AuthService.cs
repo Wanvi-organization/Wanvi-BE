@@ -340,12 +340,12 @@ namespace Wanvi.Services.Services
 
             if (user == null)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản chưa được tạo. Vui lòng tạo tài khoản trước khi đăng nhập.");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản chưa được tạo. Vui lòng tạo tài khoản trước khi đăng nhập.");
             }
 
             if (user.DeletedTime.HasValue)
             {
-                throw new BaseException.ErrorException(StatusCode.BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
             }
 
             (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
