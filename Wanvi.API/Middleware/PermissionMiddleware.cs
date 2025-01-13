@@ -21,7 +21,10 @@ namespace Wanvi.API.Middleware
             _logger = logger;
             _excludedUris =
             [
-                "/api/auth/login"
+                "/api/auth/login",
+                "/api/auth/register_user",
+                "/api/auth/confirm_otp_email_verification",
+                "/api/auth/login-google"
             ];
             _rolePermissions = new Dictionary<string, List<string>>()
             {

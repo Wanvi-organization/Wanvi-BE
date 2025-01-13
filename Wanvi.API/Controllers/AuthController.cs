@@ -58,13 +58,6 @@ namespace WanviBE.API.Controllers
              ));
         }
 
-        //[HttpPatch("Send_OTP_Email_Verification")]
-        //public async Task<IActionResult> SendOTPEmailVerification(SendOTPModel model)
-        //{
-        //    await _authService.VerifyOtp(model, false);
-        //    return Ok(BaseResponse<string>.OkResponse("Xác nhận email thành công!"));
-        //}
-
         [HttpPost("Forgot_Password")]
         public async Task<IActionResult> ForgotPassword(EmailModelView model)
         {

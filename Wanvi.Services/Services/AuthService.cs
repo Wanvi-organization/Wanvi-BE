@@ -46,7 +46,7 @@ namespace Wanvi.Services.Services
         #region Private Service
         private (string token, IEnumerable<string> roles) GenerateJwtToken(ApplicationUser user)
         {
-            byte[] key = Encoding.ASCII.GetBytes(_configuration["JwtSettings:Key"] ?? throw new Exception("JWT_KEY is not set"));
+            byte[] key = Encoding.ASCII.GetBytes(_configuration["JwtSettings:SecretKey"] ?? throw new Exception("JWT_KEY is not set"));
             List<Claim> claims = new List<Claim> {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email)
@@ -236,7 +236,7 @@ namespace Wanvi.Services.Services
             newUser.EmailCode = int.Parse(OTP);
             newUser.CodeGeneratedTime = DateTime.UtcNow;
 
-            await _emailService.SendEmailAsync(model.Email, "Đặt lại mật khẩu", $"Vui lòng xác nhận tài khoản của bạn, OTP của bạn là: <div class='otp'>{OTP}</div>");
+            await _emailService.SendEmailAsync(model.Email, "Xác nhận tài khoản", $"Vui lòng xác nhận tài khoản của bạn, OTP của bạn là: <div class='otp'>{OTP}</div>");
             await _unitOfWork.GetRepository<ApplicationUserRole>().InsertAsync(applicationUserRole);
 
             await _unitOfWork.SaveAsync();
