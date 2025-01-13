@@ -24,7 +24,8 @@ namespace Wanvi.API.Middleware
                 "/api/auth/login",
                 "/api/auth/register_user",
                 "/api/auth/confirm_otp_email_verification",
-                "/api/auth/login-google"
+                "/api/auth/login-google",
+                "/api/auth/login-facebook"
             ];
             _rolePermissions = new Dictionary<string, List<string>>()
             {

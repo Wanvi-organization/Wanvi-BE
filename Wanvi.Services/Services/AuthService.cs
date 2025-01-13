@@ -8,6 +8,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -331,7 +332,7 @@ namespace Wanvi.Services.Services
             throw new ErrorException(StatusCodes.Status401Unauthorized, ErrorCode.Unauthorized, "Token không hợp lệ");
         }
 
-        public async Task<AuthResponseModelView> LoginGoogle(TokenGoogleModelView model)
+        public async Task<AuthResponseModelView> LoginGoogle(TokenModelView model)
         {
             GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(model.Token);
             string email = payload.Email;
@@ -365,6 +366,58 @@ namespace Wanvi.Services.Services
                 }
             };
         }
+
+        public async Task<AuthResponseModelView> LoginFacebook(TokenModelView model)
+        {
+            var httpClient = new HttpClient();
+            var response = await httpClient.GetAsync($"https://graph.facebook.com/me?fields=id,email&access_token={model.Token}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Token không hợp lệ hoặc đã hết hạn.");
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var facebookData = JsonConvert.DeserializeObject<FacebookPayloadModelView>(content);
+
+            if (facebookData == null || string.IsNullOrEmpty(facebookData.Email))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không thể lấy thông tin người dùng từ Facebook.");
+            }
+
+            string email = facebookData.Email;
+            string providerKey = facebookData.Id;
+
+            ApplicationUser? user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản chưa được tạo. Vui lòng tạo tài khoản trước khi đăng nhập.");
+            }
+
+            if (user.DeletedTime.HasValue)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
+            }
+
+            (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
+            string refreshToken = await GenerateRefreshToken(user);
+
+            return new AuthResponseModelView
+            {
+                AccessToken = token,
+                RefreshToken = refreshToken,
+                TokenType = "JWT",
+                AuthType = "Bearer",
+                ExpiresIn = DateTime.UtcNow.AddHours(1),
+                User = new UserInfo
+                {
+                    Email = user.Email,
+                    Roles = roles.ToList()
+                }
+            };
+        }
+
         #endregion
     }
 }

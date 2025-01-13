@@ -79,10 +79,17 @@ namespace WanviBE.API.Controllers
             return Ok(BaseResponse<string>.OkResponse("Đã đặt lại mật khẩu thành công!"));
         }
 
-        [HttpPost("login-google")]
-        public async Task<IActionResult> LoginGoogle(TokenGoogleModelView model)
+        [HttpPost("Login-Google")]
+        public async Task<IActionResult> LoginGoogle(TokenModelView model)
         {
             AuthResponseModelView? result = await _authService.LoginGoogle(model);
+            return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
+        }
+
+        [HttpPost("Login-Facebook")]
+        public async Task<IActionResult> LoginFacebook(TokenModelView model)
+        {
+            AuthResponseModelView? result = await _authService.LoginFacebook(model);
             return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
         }
     }
