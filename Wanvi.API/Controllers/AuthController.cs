@@ -58,13 +58,6 @@ namespace WanviBE.API.Controllers
              ));
         }
 
-        //[HttpPatch("Send_OTP_Email_Verification")]
-        //public async Task<IActionResult> SendOTPEmailVerification(SendOTPModel model)
-        //{
-        //    await _authService.VerifyOtp(model, false);
-        //    return Ok(BaseResponse<string>.OkResponse("Xác nhận email thành công!"));
-        //}
-
         [HttpPost("Forgot_Password")]
         public async Task<IActionResult> ForgotPassword(EmailModelView model)
         {
@@ -86,10 +79,17 @@ namespace WanviBE.API.Controllers
             return Ok(BaseResponse<string>.OkResponse("Đã đặt lại mật khẩu thành công!"));
         }
 
-        [HttpPost("login-google")]
-        public async Task<IActionResult> LoginGoogle(TokenGoogleModelView model)
+        [HttpPost("Login-Google")]
+        public async Task<IActionResult> LoginGoogle(TokenModelView model)
         {
             AuthResponseModelView? result = await _authService.LoginGoogle(model);
+            return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
+        }
+
+        [HttpPost("Login-Facebook")]
+        public async Task<IActionResult> LoginFacebook(TokenModelView model)
+        {
+            AuthResponseModelView? result = await _authService.LoginFacebook(model);
             return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
         }
     }

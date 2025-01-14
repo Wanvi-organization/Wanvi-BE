@@ -10,6 +10,9 @@ using Wanvi.Contract.Repositories.Base;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.Facebook;
 
 namespace WanviBE.API
 {
@@ -25,6 +28,8 @@ namespace WanviBE.API
 
             services.ConfigSwagger();
             services.AddAuthenJwt(configuration);
+            services.AddGoogleAuthentication(configuration);
+            services.AddFacebookAuthentication(configuration);
             services.AddDatabase(configuration);
             services.AddServices();
             services.ConfigCors();
@@ -127,6 +132,42 @@ namespace WanviBE.API
                 e.Events = new JwtBearerEvents();
             });
         }
+
+        public static void AddGoogleAuthentication(this IServiceCollection services, IConfiguration configuration)
+        {
+            var googleSettings = configuration.GetSection("GoogleOAuth");
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+            })
+            .AddCookie()
+            .AddGoogle(options =>
+            {
+                options.ClientId = googleSettings["ClientId"];
+                options.ClientSecret = googleSettings["ClientSecret"];
+                options.CallbackPath = googleSettings["CallbackPath"];
+            });
+        }
+
+        public static void AddFacebookAuthentication(this IServiceCollection services, IConfiguration configuration)
+        {
+            var facebookSettings = configuration.GetSection("FacebookOAuth");
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = FacebookDefaults.AuthenticationScheme;
+            })
+            .AddFacebook(options =>
+            {
+                options.AppId = facebookSettings["AppId"];
+                options.AppSecret = facebookSettings["AppSecret"];
+                options.CallbackPath = facebookSettings["CallbackPath"];
+            });
+        }
+
         public static void ConfigSwagger(this IServiceCollection services)
         {
             // config swagger
