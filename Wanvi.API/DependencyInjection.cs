@@ -185,9 +185,15 @@ namespace WanviBE.API
         {
             services.AddDbContext<DatabaseContext>(options =>
             {
-                options.UseLazyLoadingProxies().UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+                options.UseLazyLoadingProxies()
+                       .UseMySql(configuration.GetConnectionString("DefaultConnection"),
+                                 new MySqlServerVersion(new Version(8, 0, 32)));  // Thay đổi phiên bản phù hợp
             });
         }
+
+
+
+
 
         public static void AddIdentity(this IServiceCollection services)
         {

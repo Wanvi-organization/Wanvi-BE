@@ -6,6 +6,6 @@ namespace Wanvi.Contract.Repositories.Entities
     {
         public string Name { get; set; }
 
-        public ICollection<District> Districts { get; set; }
+        public virtual ICollection<District> Districts { get; set; }
     }
 }

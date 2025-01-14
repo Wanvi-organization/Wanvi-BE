@@ -3,9 +3,9 @@
     public class BookingPayment
     {
         public string BookingId { get; set; }
-        public Booking Booking { get; set; }
+        public virtual Booking Booking { get; set; }
 
         public string PaymentId { get; set; }
-        public Payment Payment { get; set; }
+        public virtual Payment Payment { get; set; }
     }
 }

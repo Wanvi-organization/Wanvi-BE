@@ -9,7 +9,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public double Longitude { get; set; }
 
         public string DistrictId { get; set; }
-        public District District { get; set; }
+        public virtual District District { get; set; }
         public virtual ICollection<Tour> PickupTours { get; set; }
         public virtual  ICollection<Tour> DropoffTours { get; set; }
         public virtual ICollection<TourAddress> TourPoints { get; set; }

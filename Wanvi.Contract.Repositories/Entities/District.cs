@@ -7,7 +7,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public string Name { get; set; }
 
         public string CityId { get; set; }
-        public City City { get; set; }
+        public virtual City City { get; set; }
         public virtual ICollection<Address> Addresses { get; set; }
     }
 }

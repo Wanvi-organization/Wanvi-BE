@@ -9,7 +9,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public string? Content { get; set; }
         public int SortOrder { get; set; }
 
-        public News News { get; set; }
-        public Media Media { get; set; }
+        public virtual News News { get; set; }
+        public virtual Media Media { get; set; }
     }
 }
