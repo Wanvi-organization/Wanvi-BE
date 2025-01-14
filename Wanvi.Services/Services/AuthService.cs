@@ -1,10 +1,7 @@
-﻿using AutoMapper;
-using Google.Apis.Auth;
-using MailKit;
+﻿using Google.Apis.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -21,7 +18,6 @@ using Wanvi.Core.Constants;
 using Wanvi.Core.Utils;
 using Wanvi.ModelViews.AuthModelViews;
 using Wanvi.Services.Services.Infrastructure;
-using static Wanvi.Core.Bases.CoreException;
 
 namespace Wanvi.Services.Services
 {
@@ -417,7 +413,6 @@ namespace Wanvi.Services.Services
                 }
             };
         }
-
         #endregion
     }
 }
