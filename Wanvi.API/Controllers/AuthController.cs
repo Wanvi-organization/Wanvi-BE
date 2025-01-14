@@ -18,26 +18,28 @@ namespace WanviBE.API.Controllers
             _authService = authService;
         }
 
-        [HttpPatch("Confirm_OTP_Email_Verification")]
-        public async Task<IActionResult> ConfirmOTPEmailVerification(ConfirmOTPModelView model)
-        {
-            await _authService.VerifyOtp(model, false);
-            return Ok(BaseResponse<string>.OkResponse("Xác nhận email thành công!"));
-        }
-
         [HttpPost("Create_Role")]
         public async Task<IActionResult> CreateRole(RoleModel model)
         {
             await _authService.CreateRole(model);
             return Ok(BaseResponse<string>.OkResponse("Tạo vai trò thành công!"));
         }
+
         [HttpPost("Register_User")]
         public async Task<IActionResult> Register(RegisterModel model)
         {
             await _authService.Register(model);
             return Ok(BaseResponse<string>.OkResponse("Đăng kí thành công!"));
         }
-        [HttpPost("login")]
+
+        [HttpPatch("Confirm_OTP_Email_Verification")]
+        public async Task<IActionResult> ConfirmOTPEmailVerification(ConfirmOTPModelView model)
+        {
+            await _authService.VerifyOtp(model, false);
+            return Ok(BaseResponse<string>.OkResponse("Xác nhận email thành công!"));
+        }
+        
+        [HttpPost("Login")]
         public async Task<IActionResult> Login(LoginRequestModel request)
         {
             LoginResponse res = await _authService.LoginAsync(request);
@@ -47,6 +49,21 @@ namespace WanviBE.API.Controllers
                  data: res
              ));
         }
+
+        [HttpPost("Login-Google")]
+        public async Task<IActionResult> LoginGoogle(TokenModelView model)
+        {
+            AuthResponseModelView? result = await _authService.LoginGoogle(model);
+            return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
+        }
+
+        [HttpPost("Login-Facebook")]
+        public async Task<IActionResult> LoginFacebook(TokenModelView model)
+        {
+            AuthResponseModelView? result = await _authService.LoginFacebook(model);
+            return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
+        }
+
         [HttpPost("RefreshToken")]
         public async Task<IActionResult> RefreshToken(RefreshTokenModel model)
         {
@@ -77,20 +94,6 @@ namespace WanviBE.API.Controllers
         {
             await _authService.ResetPassword(model);
             return Ok(BaseResponse<string>.OkResponse("Đã đặt lại mật khẩu thành công!"));
-        }
-
-        [HttpPost("Login-Google")]
-        public async Task<IActionResult> LoginGoogle(TokenModelView model)
-        {
-            AuthResponseModelView? result = await _authService.LoginGoogle(model);
-            return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
-        }
-
-        [HttpPost("Login-Facebook")]
-        public async Task<IActionResult> LoginFacebook(TokenModelView model)
-        {
-            AuthResponseModelView? result = await _authService.LoginFacebook(model);
-            return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
         }
     }
 }

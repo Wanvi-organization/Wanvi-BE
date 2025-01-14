@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Wanvi.ModelViews.UserModelViews;
+﻿using Wanvi.ModelViews.UserModelViews;
 
 namespace Wanvi.ModelViews.AuthModelViews
 {
