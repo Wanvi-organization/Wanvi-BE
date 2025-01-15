@@ -1,0 +1,16 @@
+
+name: Deloy on self-hosted runner
+
+on:
+  push:
+      branches:
+          - main
+  jobs:
+    docker-compose:
+      runs-on: self-hosted
+      environment: docker
+      steps:
+      - name: Checkout code
+        uses: actions/checkout@x2
+      - name: Run 'docker compose'
+        run: docker compose up --build -d
