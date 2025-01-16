@@ -4,6 +4,5 @@
     {
         public TokenResponse TokenResponse { get; set; }
         public string Role { get; set; }
-        public string token { get; set; }
     }
 }
