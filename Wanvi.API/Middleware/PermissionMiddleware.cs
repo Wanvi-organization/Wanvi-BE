@@ -21,11 +21,16 @@ namespace Wanvi.API.Middleware
             _logger = logger;
             _excludedUris =
             [
+                "/api/auth/create_role",
                 "/api/auth/login",
                 "/api/auth/register_user",
                 "/api/auth/confirm_otp_email_verification",
                 "/api/auth/login-google",
-                "/api/auth/login-facebook"
+                "/api/auth/login-facebook",
+                "/api/auth/refreshtoken",
+                "/api/auth/forgotpassword",
+                "/api/auth/confirm_otp_reset_password",
+                "/api/auth/reset_password"
             ];
             _rolePermissions = new Dictionary<string, List<string>>()
             {

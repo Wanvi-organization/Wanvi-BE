@@ -286,7 +286,6 @@ namespace Wanvi.Services.Services
             {
                 TokenResponse = tokenResponse,
                 Role = roleName,
-                token = token,
             };
             return loginResponse;
 
