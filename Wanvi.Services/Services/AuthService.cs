@@ -179,15 +179,6 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Email đã được sử dụng, vui lòng nhập email khác!");
             }
 
-            // Kiểm tra số điện thoại đã tồn tại
-            var userWithPhone = await _unitOfWork.GetRepository<ApplicationUser>().Entities
-                .FirstOrDefaultAsync(x => x.PhoneNumber == model.Phone && !x.DeletedTime.HasValue);
-
-            if (userWithPhone != null)
-            {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số điện thoại đã được sử dụng!");
-            }
-
             // Kiểm tra xác nhận mật khẩu
             if (model.Password != model.ConfirmPassword)
             {
@@ -211,7 +202,6 @@ namespace Wanvi.Services.Services
                 FullName = model.Name,
                 Email = model.Email,
                 UserName = model.Email,
-                PhoneNumber = model.Phone,
                 Address = model.PlaceOfBirth,
                 DateOfBirth = model.DateOfBirth,
                 Gender = model.Gender,

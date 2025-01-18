@@ -14,7 +14,6 @@ namespace Wanvi.ModelViews.AuthModelViews
         public DateTime DateOfBirth { get; set; }
         public string PlaceOfBirth { get; set; }
         public bool Gender { get; set; }
-        public string Phone { get; set; }
         [Required(ErrorMessage = "Xác nhận mật khẩu là bắt buộc")]
         [Compare("Password", ErrorMessage = "Mật khẩu xác nhận không khớp")]
         public string ConfirmPassword  { get; set; }
