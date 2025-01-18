@@ -1,10 +1,9 @@
 # Use .NET SDK for building the application
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 
-# Set working directory
 WORKDIR /source
 
-# Copy solution file and all project files
+# Copy solution file and project files
 COPY WanviBE.sln .
 COPY ./Wanvi.Contract.Repositories ./Wanvi.Contract.Repositories
 COPY ./Wanvi.Core ./Wanvi.Core
@@ -12,7 +11,6 @@ COPY ./Wanvi.ModelViews ./Wanvi.ModelViews
 COPY ./Wanvi.Repositories ./Wanvi.Repositories
 COPY ./Wanvi.Contract.Services ./Wanvi.Contract.Services
 COPY ./Wanvi.Services ./Wanvi.Services
-COPY ./Wanvi.Mapper ./Wanvi.Mapper # Thêm dòng này để sao chép Wanvi.Mapper
 COPY ./Wanvi.API ./Wanvi.API
 
 # Restore dependencies
@@ -37,5 +35,4 @@ COPY --from=build /app .
 # Switch to non-root user
 USER app
 
-# Set the entry point for the container
 ENTRYPOINT ["dotnet", "Wanvi.API.dll"]

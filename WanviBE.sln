@@ -25,8 +25,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wanvi.Services", "Wanvi.Ser
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wanvi.API", "Wanvi.API\Wanvi.API.csproj", "{3A2F0008-7A92-4289-9722-3FABA780C801}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wanvi.Mapper", "Wanvi.Mapper\Wanvi.Mapper.csproj", "{B3D08A18-E675-4C27-8F0A-382A6C7B8303}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,10 +59,6 @@ Global
 		{3A2F0008-7A92-4289-9722-3FABA780C801}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A2F0008-7A92-4289-9722-3FABA780C801}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A2F0008-7A92-4289-9722-3FABA780C801}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B3D08A18-E675-4C27-8F0A-382A6C7B8303}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B3D08A18-E675-4C27-8F0A-382A6C7B8303}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B3D08A18-E675-4C27-8F0A-382A6C7B8303}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B3D08A18-E675-4C27-8F0A-382A6C7B8303}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -77,7 +71,6 @@ Global
 		{A837586F-2293-480F-8A79-C4203FD13C34} = {EB0E752C-10F7-41F7-AED7-ACA05AC3C9A2}
 		{92217034-341D-457C-BBF4-B26FC05659B8} = {EB0E752C-10F7-41F7-AED7-ACA05AC3C9A2}
 		{3A2F0008-7A92-4289-9722-3FABA780C801} = {74A63F2F-FF06-4546-9F9A-DB1CD827CFC9}
-		{B3D08A18-E675-4C27-8F0A-382A6C7B8303} = {BFB97DBF-FB9F-4052-99F0-EDAEB0BF603D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A6B4203C-B0FB-42D6-AFB8-D827FA6A106D}
