@@ -25,12 +25,12 @@ namespace WanviBE.API
             services.AddIdentity();
             services.AddInfrastructure(configuration);
             services.AddEmailConfig(configuration);
-
+            services.AddAutoMapper();
             services.ConfigSwagger();
             services.AddAuthenJwt(configuration);
             services.AddGoogleAuthentication(configuration);
             services.AddFacebookAuthentication(configuration);
-            services.AddDatabase(configuration);
+            //services.AddDatabase(configuration);
             services.AddServices();
             services.ConfigCors();
             //services.ConfigCorsSignalR();
@@ -222,19 +222,20 @@ namespace WanviBE.API
 
         }
 
-        public static void AddDatabase(this IServiceCollection services, IConfiguration configuration)
+        //public static void AddDatabase(this IServiceCollection services, IConfiguration configuration)
+        //{
+        //    services.AddDbContext<DatabaseContext>(options =>
+        //    {
+        //        options.UseLazyLoadingProxies()
+        //               .UseMySql(configuration.GetConnectionString("DefaultConnection"),
+        //                         new MySqlServerVersion(new Version(8, 0, 32)));  // Thay đổi phiên bản phù hợp
+        //    });
+        //}
+
+        public static void AddAutoMapper(this IServiceCollection services)
         {
-            services.AddDbContext<DatabaseContext>(options =>
-            {
-                options.UseLazyLoadingProxies()
-                       .UseMySql(configuration.GetConnectionString("DefaultConnection"),
-                                 new MySqlServerVersion(new Version(8, 0, 32)));  // Thay đổi phiên bản phù hợp
-            });
+            services.AddAutoMapper(Assembly.GetExecutingAssembly());
         }
-
-
-
-
 
         public static void AddIdentity(this IServiceCollection services)
         {
