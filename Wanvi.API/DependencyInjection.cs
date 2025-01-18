@@ -25,7 +25,7 @@ namespace WanviBE.API
             services.AddIdentity();
             services.AddInfrastructure(configuration);
             services.AddEmailConfig(configuration);
-
+            services.AddAutoMapper();
             services.ConfigSwagger();
             services.AddAuthenJwt(configuration);
             services.AddGoogleAuthentication(configuration);
@@ -232,9 +232,10 @@ namespace WanviBE.API
             });
         }
 
-
-
-
+        public static void AddAutoMapper(this IServiceCollection services)
+        {
+            services.AddAutoMapper(Assembly.GetExecutingAssembly());
+        }
 
         public static void AddIdentity(this IServiceCollection services)
         {

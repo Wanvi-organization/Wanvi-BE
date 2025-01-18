@@ -4,6 +4,6 @@ namespace Wanvi.Contract.Services.Interfaces
 {
     public interface IUserService
     {
-        Task<IList<UserResponseModel>> GetAll();
+        Task<IEnumerable<NearbyResponseModelView>> GetNearbyLocalGuides(NearbyRequestModelView model);
     }
 }

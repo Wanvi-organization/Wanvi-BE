@@ -15,6 +15,8 @@ namespace Wanvi.Contract.Repositories.Entities
         public int Balance { get; set; } = 0;
         public int Point { get; set; } = 0;
         public string? Address { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
         public string? IdentificationNumber { get; set; }
         public int? EmailCode { get; set; }
         public DateTime? CodeGeneratedTime { get; set; }
