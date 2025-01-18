@@ -168,7 +168,7 @@ namespace Wanvi.Services.Services
             }
         }
 
-        public async Task Register(RegisterModel model)
+        public async Task Register(string id, RegisterModel model)
         {
             // Kiểm tra email đã tồn tại
             var applicationUser = await _unitOfWork.GetRepository<ApplicationUser>().Entities

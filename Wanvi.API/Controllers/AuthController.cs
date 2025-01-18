@@ -26,9 +26,9 @@ namespace WanviBE.API.Controllers
         }
 
         [HttpPost("Register_User")]
-        public async Task<IActionResult> Register(RegisterModel model)
+        public async Task<IActionResult> Register(string id,RegisterModel model)
         {
-            await _authService.Register(model);
+            await _authService.Register(id,model);
             return Ok(BaseResponse<string>.OkResponse("Đăng kí thành công!"));
         }
 

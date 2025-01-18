@@ -10,7 +10,7 @@ namespace Wanvi.Contract.Services.Interfaces
         Task<AuthResponseModelView> LoginGoogle(TokenModelView model);
         Task<AuthResponseModelView> LoginFacebook(TokenModelView model);
         Task CreateRole(RoleModel model);
-        Task Register(RegisterModel model);
+        Task Register(string id, RegisterModel model);
         Task<LoginResponse> LoginAsync(LoginRequestModel request);
         Task<AuthResponseModelView> RefreshToken(RefreshTokenModel refreshTokenModel);
     }
