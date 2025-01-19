@@ -4,6 +4,7 @@ using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
 using Wanvi.ModelViews.AuthModelViews;
+using Wanvi.ModelViews.UserModelViews;
 
 namespace WanviBE.API.Controllers
 {
@@ -26,7 +27,7 @@ namespace WanviBE.API.Controllers
         }
 
         [HttpPost("Register_User")]
-        public async Task<IActionResult> Register(string id,RegisterModel model)
+        public async Task<IActionResult> Register(Guid id,RegisterModel model)
         {
             await _authService.Register(id,model);
             return Ok(BaseResponse<string>.OkResponse("Đăng kí thành công!"));
@@ -44,6 +45,26 @@ namespace WanviBE.API.Controllers
         {
             LoginResponse res = await _authService.LoginAsync(request);
             return Ok(new BaseResponseModel<LoginResponse>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        [HttpPost("Create-User-By-Phone")]
+        public async Task<IActionResult> CreateUsrByPhone(string phone)
+        {
+             var res = await _authService.CreateUserByPhone(phone);
+            return Ok(new BaseResponseModel<ResponsePhoneModel>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        [HttpPost("Check-Phone")]
+        public async Task<IActionResult> CheckPhone(string phone, string otp)
+        {
+            var res = await _authService.CheckPhone(phone, otp);
+            return Ok(new BaseResponseModel<Guid>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,
                  data: res
