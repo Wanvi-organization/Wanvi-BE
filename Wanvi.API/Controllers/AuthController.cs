@@ -27,9 +27,9 @@ namespace WanviBE.API.Controllers
         }
 
         [HttpPost("Register_User")]
-        public async Task<IActionResult> Register(Guid id,RegisterModel model)
+        public async Task<IActionResult> Register(RegisterModel model)
         {
-            await _authService.Register(id,model);
+            await _authService.Register(model);
             return Ok(BaseResponse<string>.OkResponse("Đăng kí thành công!"));
         }
 
@@ -51,9 +51,9 @@ namespace WanviBE.API.Controllers
              ));
         }
         [HttpPost("Create-User-By-Phone")]
-        public async Task<IActionResult> CreateUsrByPhone(string phone)
+        public async Task<IActionResult> CreateUsrByPhone(CreateUseByPhoneModel model)
         {
-             var res = await _authService.CreateUserByPhone(phone);
+             var res = await _authService.CreateUserByPhone(model);
             return Ok(new BaseResponseModel<ResponsePhoneModel>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,
@@ -61,9 +61,9 @@ namespace WanviBE.API.Controllers
              ));
         }
         [HttpPost("Check-Phone")]
-        public async Task<IActionResult> CheckPhone(string phone, string otp)
+        public async Task<IActionResult> CheckPhone(CheckPhoneModel model)
         {
-            var res = await _authService.CheckPhone(phone, otp);
+            var res = await _authService.CheckPhone(model);
             return Ok(new BaseResponseModel<Guid>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,

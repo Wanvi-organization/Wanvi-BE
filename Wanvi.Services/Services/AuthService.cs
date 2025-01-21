@@ -170,11 +170,11 @@ namespace Wanvi.Services.Services
             }
         }
 
-        public async Task Register(Guid id, RegisterModel model)
+        public async Task Register(RegisterModel model)
         {
             // Kiểm tra user co tồn tại
             var applicationUser = await _unitOfWork.GetRepository<ApplicationUser>().Entities
-                .FirstOrDefaultAsync(x => x.Id == id && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản không tồn tại!");
+                .FirstOrDefaultAsync(x => x.Id == model.Id && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản không tồn tại!");
 
             // Kiểm tra xác nhận mật khẩu
             if (model.Password != model.ConfirmPassword)
@@ -225,14 +225,14 @@ namespace Wanvi.Services.Services
 
         }
 
-        public async Task<ResponsePhoneModel> CreateUserByPhone(string phone)
+        public async Task<ResponsePhoneModel> CreateUserByPhone(CreateUseByPhoneModel model)
         {
-            if (string.IsNullOrWhiteSpace(phone))
+            if (string.IsNullOrWhiteSpace(model.PhoneNumber))
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số điên thoại không được để trống!");
             }
 
-            if (!Regex.IsMatch(phone, @"^\d{10,11}$"))
+            if (!Regex.IsMatch(model.PhoneNumber, @"^\d{10,11}$"))
             {
 
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Định dạng số điện thoại không hợp lệ. Số điện thoại phải có 10-11 chữ số.");
@@ -240,7 +240,7 @@ namespace Wanvi.Services.Services
             }
 
             // Kiểm tra số điện thoại đã tồn tại
-            var userExists = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.PhoneNumber == phone && !x.DeletedTime.HasValue);
+            var userExists = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.PhoneNumber == model.PhoneNumber && !x.DeletedTime.HasValue);
             if (userExists != null)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số điện thoại đã được đăng kí.");
@@ -249,7 +249,7 @@ namespace Wanvi.Services.Services
             // Thực hiện logic tạo user
             var user = new ApplicationUser
             {
-                PhoneNumber = phone,
+                PhoneNumber = model.PhoneNumber,
                 CreatedTime = DateTime.UtcNow,
                 EmailConfirmed = true,
                 PhoneNumberConfirmed = false,
@@ -260,23 +260,23 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
             return new ResponsePhoneModel
             {
-                Phone = phone,
+                Phone = model.PhoneNumber,
                 Otp = user.EmailCode.ToString()
             };
         }
 
-        public async Task<Guid> CheckPhone(string phone, string Otp)
+        public async Task<Guid> CheckPhone(CheckPhoneModel model)
         {
-            if (string.IsNullOrWhiteSpace(phone))
+            if (string.IsNullOrWhiteSpace(model.PhoneNumber))
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số điên thoại không được để trống!");
             }
-            if (string.IsNullOrWhiteSpace(Otp))
+            if (string.IsNullOrWhiteSpace(model.Otp))
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Otp không được để trống!");
             }
-            ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.PhoneNumber == phone && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số điên thoại không tồn tại!");
-            if (user.EmailCode.ToString() != Otp)
+            ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.PhoneNumber == model.PhoneNumber && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số điên thoại không tồn tại!");
+            if (user.EmailCode.ToString() != model.Otp)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Otp sai, vui lòng nhập lại!");
             }

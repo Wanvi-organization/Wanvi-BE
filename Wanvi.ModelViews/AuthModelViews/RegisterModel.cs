@@ -4,6 +4,7 @@ namespace Wanvi.ModelViews.AuthModelViews
 {
     public class RegisterModel
     {
+        public Guid Id { get; set; }
         public string Name { get; set; }
         [Required(ErrorMessage = "Mật khẩu là bắt buộc")]
         [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,16}$", ErrorMessage = "Mật khẩu phải có ít nhất 8 ký tự, 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt")]
