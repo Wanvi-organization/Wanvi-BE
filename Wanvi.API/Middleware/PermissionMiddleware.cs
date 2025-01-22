@@ -33,7 +33,8 @@ namespace Wanvi.API.Middleware
                 "/api/auth/reset_password",
                 "/api/user/get_nearby_local_guides",
                 "/api/auth/create-user-by-phone",
-                "/api/auth/check-phone"
+                "/api/auth/check-phone",
+                "/api/auth/forgot_password"
             ];
             _rolePermissions = new Dictionary<string, List<string>>()
             {
