@@ -50,7 +50,7 @@ namespace WanviBE.API.Controllers
                  data: res
              ));
         }
-        [HttpPost("Create-User-By-Phone")]
+        [HttpPost("Create_User_By_Phone")]
         public async Task<IActionResult> CreateUsrByPhone(CreateUseByPhoneModel model)
         {
              var res = await _authService.CreateUserByPhone(model);
@@ -60,7 +60,7 @@ namespace WanviBE.API.Controllers
                  data: res
              ));
         }
-        [HttpPost("Check-Phone")]
+        [HttpPost("Check_Phone")]
         public async Task<IActionResult> CheckPhone(CheckPhoneModel model)
         {
             var res = await _authService.CheckPhone(model);
@@ -71,14 +71,14 @@ namespace WanviBE.API.Controllers
              ));
         }
 
-        [HttpPost("Login-Google")]
+        [HttpPost("Login_Google")]
         public async Task<IActionResult> LoginGoogle(TokenModelView model)
         {
             AuthResponseModelView? result = await _authService.LoginGoogle(model);
             return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
         }
 
-        [HttpPost("Login-Facebook")]
+        [HttpPost("Login_Facebook")]
         public async Task<IActionResult> LoginFacebook(TokenModelView model)
         {
             AuthResponseModelView? result = await _authService.LoginFacebook(model);
