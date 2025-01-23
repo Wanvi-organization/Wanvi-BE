@@ -41,6 +41,7 @@ namespace WanviBE.API.Controllers
             await _authService.VerifyOtp(model, false);
             return Ok(BaseResponse<string>.OkResponse("Xác nhận email thành công!"));
         }
+
         
         [HttpPost("Login")]
         public async Task<IActionResult> Login(LoginRequestModel request)
