@@ -184,6 +184,25 @@ namespace Wanvi.Services.Services
             };
             return inforModel;
         }
+
+        public async Task<UserInforModel> GetTravelerBaseId(Guid Id)
+        {
+            // Lấy thông tin người dùng
+            ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>()
+                .Entities.FirstOrDefaultAsync(x => x.Id == Id && !x.DeletedTime.HasValue);
+            UserInforModel inforModel = new UserInforModel
+            {
+                Id = user.Id,
+                Address = user.Address,
+                Balance = user.Balance,
+                DateOfBirth = user.DateOfBirth,
+                Email = user.Email,
+                FullName = user.FullName,
+                Gender = user.Gender,
+                PhoneNumber = user.PhoneNumber,
+            };
+            return inforModel;
+        }
         #endregion
     }
 }

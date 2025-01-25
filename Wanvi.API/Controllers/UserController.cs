@@ -36,5 +36,15 @@ namespace WanviBE.API.Controllers
                  data: res
              ));
         }
+        [HttpGet("Get_Traveler_Base_Id")]
+        public async Task<IActionResult> GetInforTravelerBaseId(Guid Id)
+        {
+            UserInforModel res = await _userService.GetTravelerBaseId(Id);
+            return Ok(new BaseResponseModel<UserInforModel>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
     }
 }
