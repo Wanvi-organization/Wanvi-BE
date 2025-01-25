@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
@@ -8,6 +9,7 @@ using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Utils;
 using Wanvi.ModelViews.BookingModelViews;
 using Wanvi.ModelViews.UserModelViews;
+using Wanvi.Services.Services.Infrastructure;
 
 namespace Wanvi.Services.Services
 {
@@ -16,12 +18,14 @@ namespace Wanvi.Services.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _contextAccessor;
 
-        public UserService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration)
+        public UserService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration, IHttpContextAccessor contextAccessor)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _configuration = configuration;
+            _contextAccessor = contextAccessor;
         }
 
         #region Private Service
@@ -95,6 +99,31 @@ namespace Wanvi.Services.Services
             }
 
             return _mapper.Map<IEnumerable<NearbyResponseModelView>>(nearbyLocalGuides);
+        }
+
+        public async Task<UserInforModel> GetInfor()
+        {
+            // Lấy userId từ HttpContext
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+
+            Guid.TryParse(userId, out Guid cb);
+
+
+            // Lấy thông tin người dùng
+            ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>()
+                .Entities.FirstOrDefaultAsync(x => x.Id == cb);
+            UserInforModel inforModel = new UserInforModel
+            {
+                Id = user.Id,
+                Address = user.Address,
+                Balance = user.Balance,
+                DateOfBirth = user.DateOfBirth,
+                Email = user.Email,
+                FullName = user.FullName,
+                Gender = user.Gender,
+                PhoneNumber = user.PhoneNumber,  
+            };
+            return inforModel;
         }
         #endregion
     }
