@@ -1,11 +1,15 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
+using Wanvi.Core.Bases;
+using Wanvi.Core.Constants;
 using Wanvi.Core.Utils;
 using Wanvi.ModelViews.UserModelViews;
 using Wanvi.Services.Services.Infrastructure;
@@ -67,7 +71,7 @@ namespace Wanvi.Services.Services
         #endregion
 
         #region Implementation Interface
-        public async Task<IEnumerable<ResponseLocalGuideModel>> GetLocalGuidesAsync(double latitude, double longitude, string? name = null, string ? city = null, string? district = null, double? minPrice = null, double? maxPrice = null, double? minRating = null, double? maxRating = null, bool? isVerified = null, bool? sortByPriceAsc = null, bool? sortByPriceDesc = null, bool? sortByNearest = null)
+        public async Task<IEnumerable<ResponseLocalGuideModel>> GetLocalGuidesAsync(double latitude, double longitude, string? name = null, string? city = null, string? district = null, double? minPrice = null, double? maxPrice = null, double? minRating = null, double? maxRating = null, bool? isVerified = null, bool? sortByPriceAsc = null, bool? sortByPriceDesc = null, bool? sortByNearest = null)
         {
             const double radiusInKm = 10.0;
 
@@ -180,7 +184,7 @@ namespace Wanvi.Services.Services
                 Email = user.Email,
                 FullName = user.FullName,
                 Gender = user.Gender,
-                PhoneNumber = user.PhoneNumber,  
+                PhoneNumber = user.PhoneNumber,
             };
             return inforModel;
         }
@@ -202,6 +206,30 @@ namespace Wanvi.Services.Services
                 PhoneNumber = user.PhoneNumber,
             };
             return inforModel;
+        }
+
+        public async Task ChangePassword(ChangePasswordModel model)
+        {
+            // Lấy userId từ HttpContext
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+
+            Guid.TryParse(userId, out Guid cb);
+
+            // Kiểm tra xác nhận mật khẩu
+            if (model.NewPassword != model.ConfirmPassword)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Xác nhận mật khẩu không đúng!");
+            }
+
+            ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>()
+         .Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản không tồn tại!");
+
+            // Sử dụng PasswordHasher để băm mật khẩu
+            var passwordHasher = new FixedSaltPasswordHasher<ApplicationUser>(Options.Create(new PasswordHasherOptions()));
+            user.PasswordHash = passwordHasher.HashPassword(null, model.NewPassword);
+
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
         }
         #endregion
     }

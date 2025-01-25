@@ -46,5 +46,16 @@ namespace WanviBE.API.Controllers
                  data: res
              ));
         }
+
+        [HttpPost("Change_Password")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
+        {
+            await _userService.ChangePassword(model);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: "Đổi mật khẩu thành công"
+             ));
+        }
     }
 }
