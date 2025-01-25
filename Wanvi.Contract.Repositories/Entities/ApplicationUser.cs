@@ -17,6 +17,10 @@ namespace Wanvi.Contract.Repositories.Entities
         public string? Address { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
+        public double AvgRating { get; set; } = 0.0;
+        public double MinHourlyRate { get; set; } = 0.0;
+        public bool IsPremium { get; set; } = false;
+        public bool IsVerified { get; set; } = false;
         public string? IdentificationNumber { get; set; }
         public int? EmailCode { get; set; }
         public DateTime? CodeGeneratedTime { get; set; }
@@ -32,6 +36,8 @@ namespace Wanvi.Contract.Repositories.Entities
         public virtual ICollection<Post> Posts { get; set; }
         public virtual ICollection<Comment> Comments { get; set; }
         public virtual ICollection<Review> Reviews { get; set; }
+        public virtual ICollection<Subscription> Subscriptions { get; set; }
+        public virtual ICollection<Tour> Tours { get; set; }
         public ApplicationUser()
         {
             CreatedTime = CoreHelper.SystemTimeNow;

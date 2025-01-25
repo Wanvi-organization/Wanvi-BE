@@ -31,10 +31,10 @@ namespace Wanvi.API.Middleware
                 "/api/auth/forgotpassword",
                 "/api/auth/confirm_otp_reset_password",
                 "/api/auth/reset_password",
-                "/api/user/get_nearby_local_guides",
                 "/api/auth/create_user_by_phone",
                 "/api/auth/check_phone",
-                "/api/auth/forgot_password"
+                "/api/auth/forgot_password",
+                "/api/user/get_local_guides"
             ];
             _rolePermissions = new Dictionary<string, List<string>>()
             {
