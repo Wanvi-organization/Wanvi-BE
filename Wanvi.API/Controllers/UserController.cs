@@ -19,11 +19,11 @@ namespace WanviBE.API.Controllers
             _userService = userService;
         }
 
-        [HttpPost("Get_Nearby_Local_Guides")]
-        public async Task<IActionResult> GetNearbyLocalGuides(NearbyRequestModelView model)
+        [HttpGet("Get_Local_Guides")]
+        public async Task<IActionResult> GetLocalGuides(double latitude, double longitude, string? name = null, string? city = null, string? district = null, double? minPrice = null, double? maxPrice = null, double? minRating = null, double? maxRating = null, bool? isVerified = null, bool? sortByPriceAsc = null, bool? sortByPriceDesc = null, bool? sortByNearest = null)
         {
-            var result = await _userService.GetNearbyLocalGuides(model);
-            return Ok(BaseResponse<IEnumerable<NearbyResponseModelView>>.OkResponse(result));
+            var result = await _userService.GetLocalGuidesAsync(latitude, longitude, name, city, district, minPrice, maxPrice, minRating, maxRating, isVerified, sortByPriceAsc, sortByPriceDesc, sortByNearest);
+            return Ok(BaseResponse<IEnumerable<ResponseLocalGuideModel>>.OkResponse(result));
         }
 
         [HttpGet("Get_Infor")]
