@@ -1,4 +1,5 @@
 ﻿using Wanvi.ModelViews.AuthModelViews;
+using Wanvi.ModelViews.UserModelViews;
 
 namespace Wanvi.Contract.Services.Interfaces
 {
@@ -13,5 +14,7 @@ namespace Wanvi.Contract.Services.Interfaces
         Task Register(RegisterModel model);
         Task<LoginResponse> LoginAsync(LoginRequestModel request);
         Task<AuthResponseModelView> RefreshToken(RefreshTokenModel refreshTokenModel);
+        Task<ResponsePhoneModel> CreateUserByPhone(CreateUseByPhoneModel model);
+        Task<Guid> CheckPhone(CheckPhoneModel model);
     }
 }

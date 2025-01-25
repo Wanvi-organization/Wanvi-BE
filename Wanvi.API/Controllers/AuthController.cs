@@ -4,6 +4,7 @@ using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
 using Wanvi.ModelViews.AuthModelViews;
+using Wanvi.ModelViews.UserModelViews;
 
 namespace WanviBE.API.Controllers
 {
@@ -18,12 +19,14 @@ namespace WanviBE.API.Controllers
             _authService = authService;
         }
 
+
         [HttpPost("Create_Role")]
         public async Task<IActionResult> CreateRole(RoleModel model)
         {
             await _authService.CreateRole(model);
             return Ok(BaseResponse<string>.OkResponse("Tạo vai trò thành công!"));
         }
+
 
         [HttpPost("Register_User")]
         public async Task<IActionResult> Register(RegisterModel model)
@@ -38,6 +41,7 @@ namespace WanviBE.API.Controllers
             await _authService.VerifyOtp(model, false);
             return Ok(BaseResponse<string>.OkResponse("Xác nhận email thành công!"));
         }
+
         
         [HttpPost("Login")]
         public async Task<IActionResult> Login(LoginRequestModel request)
@@ -49,15 +53,35 @@ namespace WanviBE.API.Controllers
                  data: res
              ));
         }
+        [HttpPost("Create_User_By_Phone")]
+        public async Task<IActionResult> CreateUsrByPhone(CreateUseByPhoneModel model)
+        {
+             var res = await _authService.CreateUserByPhone(model);
+            return Ok(new BaseResponseModel<ResponsePhoneModel>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        [HttpPost("Check_Phone")]
+        public async Task<IActionResult> CheckPhone(CheckPhoneModel model)
+        {
+            var res = await _authService.CheckPhone(model);
+            return Ok(new BaseResponseModel<Guid>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
 
-        [HttpPost("Login-Google")]
+        [HttpPost("Login_Google")]
         public async Task<IActionResult> LoginGoogle(TokenModelView model)
         {
             AuthResponseModelView? result = await _authService.LoginGoogle(model);
             return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
         }
 
-        [HttpPost("Login-Facebook")]
+        [HttpPost("Login_Facebook")]
         public async Task<IActionResult> LoginFacebook(TokenModelView model)
         {
             AuthResponseModelView? result = await _authService.LoginFacebook(model);

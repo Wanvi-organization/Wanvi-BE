@@ -25,12 +25,15 @@ namespace Wanvi.API.Middleware
                 "/api/auth/login",
                 "/api/auth/register_user",
                 "/api/auth/confirm_otp_email_verification",
-                "/api/auth/login-google",
-                "/api/auth/login-facebook",
+                "/api/auth/login_google",
+                "/api/auth/login_facebook",
                 "/api/auth/refreshtoken",
                 "/api/auth/forgotpassword",
                 "/api/auth/confirm_otp_reset_password",
                 "/api/auth/reset_password",
+                "/api/auth/create_user_by_phone",
+                "/api/auth/check_phone",
+                "/api/auth/forgot_password",
                 "/api/user/get_local_guides"
             ];
             _rolePermissions = new Dictionary<string, List<string>>()
