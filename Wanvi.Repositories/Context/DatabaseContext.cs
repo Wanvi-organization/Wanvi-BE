@@ -33,8 +33,10 @@ namespace Wanvi.Repositories.Context
         public virtual DbSet<NewsDetail> NewsDetails => Set<NewsDetail>();
         public virtual DbSet<Payment> Payments => Set<Payment>();
         public virtual DbSet<Post> Posts => Set<Post>();
+        public virtual DbSet<PremiumPackage> PremiumPackages => Set<PremiumPackage>();
         public virtual DbSet<Review> Reviews => Set<Review>();
         public virtual DbSet<Schedule> Schedules => Set<Schedule>();
+        public virtual DbSet<Subscription> Subscriptions => Set<Subscription>();
         public virtual DbSet<Tour> Tours => Set<Tour>();
         public virtual DbSet<TourAddress> TourAddresses => Set<TourAddress>();
         public virtual DbSet<TourCategory> TourCategories => Set<TourCategory>();
@@ -300,6 +302,24 @@ namespace Wanvi.Repositories.Context
                 .WithOne(bp => bp.Booking)
                 .HasForeignKey(bp => bp.BookingId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Subscription>()
+                .HasOne(up => up.ApplicationUser)
+                .WithMany(u => u.Subscriptions)
+                .HasForeignKey(up => up.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Subscription>()
+                .HasOne(up => up.PremiumPackage)
+                .WithMany()
+                .HasForeignKey(up => up.PremiumPackageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Tour>()
+                .HasOne(t => t.ApplicationUser)
+                .WithMany(u => u.Tours)
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

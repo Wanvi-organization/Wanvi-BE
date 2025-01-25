@@ -6,7 +6,6 @@ using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Utils;
-using Wanvi.ModelViews.BookingModelViews;
 using Wanvi.ModelViews.UserModelViews;
 
 namespace Wanvi.Services.Services
@@ -61,40 +60,100 @@ namespace Wanvi.Services.Services
 
             return (double.Parse(location.Lat), double.Parse(location.Lon));
         }
-
-
         #endregion
 
         #region Implementation Interface
-        public async Task<IEnumerable<NearbyResponseModelView>> GetNearbyLocalGuides(NearbyRequestModelView model)
+        public async Task<IEnumerable<ResponseLocalGuideModel>> GetLocalGuidesAsync(double latitude, double longitude, string? name = null, string ? city = null, string? district = null, double? minPrice = null, double? maxPrice = null, double? minRating = null, double? maxRating = null, bool? isVerified = null, bool? sortByPriceAsc = null, bool? sortByPriceDesc = null, bool? sortByNearest = null)
         {
-            const double radiusInKm = 5.0;
+            const double radiusInKm = 10.0;
+
             var localGuides = await _unitOfWork.GetRepository<ApplicationUser>()
                 .Entities
-                .Where(u => u.UserRoles.Any(ur => ur.Role.Name == "LocalGuide"))
+                .Where(u => u.UserRoles.Any(ur => ur.Role.Name == "LocalGuide") && !u.DeletedTime.HasValue)
                 .ToListAsync();
 
-            var nearbyLocalGuides = new List<NearbyResponseModelView>();
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                localGuides = localGuides.Where(lg => lg.FullName.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            if (!string.IsNullOrWhiteSpace(city))
+            {
+                localGuides = localGuides.Where(lg => lg.Address.Contains(city)).ToList();
+            }
+
+            if (!string.IsNullOrWhiteSpace(district))
+            {
+                localGuides = localGuides.Where(lg => lg.Address.Contains(district)).ToList();
+            }
+
+            if (minPrice.HasValue && maxPrice.HasValue)
+            {
+                localGuides = localGuides.Where(lg => lg.MinHourlyRate >= minPrice && lg.MinHourlyRate <= maxPrice).ToList();
+            }
+
+            if (minRating.HasValue && maxRating.HasValue)
+            {
+                localGuides = localGuides.Where(lg => lg.AvgRating >= minRating && lg.AvgRating <= maxRating).ToList();
+            }
+
+            if (isVerified.HasValue)
+            {
+                localGuides = localGuides.Where(lg => lg.IsVerified == isVerified).ToList();
+            }
+
+            var nearbyLocalGuides = new List<ResponseLocalGuideModel>();
 
             foreach (var localGuide in localGuides)
             {
-                var (latitude, longitude) = await GeocodeAddressAsync(localGuide.Address);
-
-                var distance = GeoHelper.GetDistance(model.Latitude, model.Longitude, latitude, longitude);
+                var (lat, lon) = await GeocodeAddressAsync(localGuide.Address);
+                var distance = GeoHelper.GetDistance(latitude, longitude, lat, lon);
 
                 if (distance <= radiusInKm)
                 {
-                    nearbyLocalGuides.Add(new NearbyResponseModelView
+                    nearbyLocalGuides.Add(new ResponseLocalGuideModel
                     {
                         Id = localGuide.Id,
-                        Name = localGuide.FullName,
+                        FullName = localGuide.FullName,
                         Address = localGuide.Address,
-                        Distance = distance
+                        AvgRating = localGuide.AvgRating,
+                        ReviewCount = localGuide.Reviews != null ? localGuide.Reviews.Count : 0,
+                        MinHourlyRate = localGuide.MinHourlyRate,
+                        Distance = distance,
+                        IsPremium = localGuide.IsPremium,
+                        IsVerified = localGuide.IsVerified
                     });
                 }
             }
 
-            return _mapper.Map<IEnumerable<NearbyResponseModelView>>(nearbyLocalGuides);
+            if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(city) && string.IsNullOrWhiteSpace(district) &&
+        !minPrice.HasValue && !maxPrice.HasValue && !minRating.HasValue && !maxRating.HasValue && !isVerified.HasValue)
+            {
+                nearbyLocalGuides = nearbyLocalGuides
+                    .OrderByDescending(lg => lg.IsVerified && lg.IsPremium)
+                    .ThenByDescending(lg => lg.IsPremium)
+                    .ThenByDescending(lg => lg.IsVerified)
+                    .ThenBy(lg => lg.Distance)
+                    .ToList();
+            }
+            else
+            {
+                if (sortByPriceAsc.HasValue && sortByPriceAsc.Value)
+                {
+                    nearbyLocalGuides = nearbyLocalGuides.OrderBy(lg => lg.MinHourlyRate).ToList();
+                }
+                else if (sortByPriceDesc.HasValue && sortByPriceDesc.Value)
+                {
+                    nearbyLocalGuides = nearbyLocalGuides.OrderByDescending(lg => lg.MinHourlyRate).ToList();
+                }
+
+                if (sortByNearest.HasValue && sortByNearest.Value)
+                {
+                    nearbyLocalGuides = nearbyLocalGuides.OrderBy(lg => lg.Distance).ToList();
+                }
+            }
+
+            return nearbyLocalGuides;
         }
         #endregion
     }
