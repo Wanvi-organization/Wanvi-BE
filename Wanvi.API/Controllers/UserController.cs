@@ -54,7 +54,17 @@ namespace WanviBE.API.Controllers
             return Ok(new BaseResponseModel<string>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,
-                 data: "Đổi mật khẩu thành công"
+                 data: "Đổi mật khẩu thành công!"
+             ));
+        }
+        [HttpPut("Update_Profile")]
+        public async Task<IActionResult> UpdateProfile(UpdateProfileModel model)
+        {
+            await _userService.UpdateProfiel(model);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: "Cập nhật tài khoản thành công!"
              ));
         }
     }

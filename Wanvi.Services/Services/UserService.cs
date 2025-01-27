@@ -231,6 +231,25 @@ namespace Wanvi.Services.Services
             await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
             await _unitOfWork.SaveAsync();
         }
+
+        public async Task UpdateProfiel(UpdateProfileModel model)
+        {
+            // Lấy userId từ HttpContext
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+
+            Guid.TryParse(userId, out Guid cb);
+
+
+            ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>()
+         .Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản không tồn tại!");
+
+            user.FullName = model.FuName;
+            user.Email = model.Email;
+            user.PhoneNumber = model.Phone;
+
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
+        }
         #endregion
     }
 }

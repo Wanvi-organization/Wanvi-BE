@@ -8,5 +8,6 @@ namespace Wanvi.Contract.Services.Interfaces
         Task<UserInforModel> GetInfor();
         Task<UserInforModel> GetTravelerBaseId(Guid Id);
         Task ChangePassword(ChangePasswordModel model);
+        Task UpdateProfiel(UpdateProfileModel model);
     }
 }
