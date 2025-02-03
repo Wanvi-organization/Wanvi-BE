@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Wanvi.Contract.Repositories.Base;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
+using Wanvi.Core.Constants;
 using Wanvi.ModelViews.UserModelViews;
+using Wanvi.Services.Services;
 
 namespace WanviBE.API.Controllers
 {
@@ -36,6 +39,48 @@ namespace WanviBE.API.Controllers
         {
             var result = await _userService.GetLocalGuidesAsync(latitude, longitude, name, city, district, minPrice, maxPrice, minRating, maxRating, isVerified, sortByPrice, sortByNearest);
             return Ok(BaseResponse<IEnumerable<ResponseLocalGuideModel>>.OkResponse(result));
+        }
+
+        [HttpGet("Get_Infor")]
+        public async Task<IActionResult> GetInfor()
+        {
+            UserInforModel res = await _userService.GetInfor();
+            return Ok(new BaseResponseModel<UserInforModel>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        [HttpGet("Get_Traveler_Base_Id")]
+        public async Task<IActionResult> GetInforTravelerBaseId(Guid Id)
+        {
+            UserInforModel res = await _userService.GetTravelerBaseId(Id);
+            return Ok(new BaseResponseModel<UserInforModel>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+
+        [HttpPost("Change_Password")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
+        {
+            await _userService.ChangePassword(model);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: "Đổi mật khẩu thành công!"
+             ));
+        }
+        [HttpPut("Update_Profile")]
+        public async Task<IActionResult> UpdateProfile(UpdateProfileModel model)
+        {
+            await _userService.UpdateProfiel(model);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: "Cập nhật tài khoản thành công!"
+             ));
         }
     }
 }

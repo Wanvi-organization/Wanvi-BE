@@ -19,6 +19,7 @@ using System.IO;
 using Wanvi.Core.Constants;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
+using Wanvi.Services.Services.Infrastructure;
 
 namespace Wanvi.Services.Services
 {
@@ -101,5 +102,6 @@ namespace Wanvi.Services.Services
                 }
             };
         }
+
     }
 }

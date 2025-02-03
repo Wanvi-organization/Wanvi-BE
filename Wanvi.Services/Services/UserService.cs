@@ -1,12 +1,18 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
+using Wanvi.Core.Bases;
+using Wanvi.Core.Constants;
 using Wanvi.Core.Utils;
 using Wanvi.ModelViews.UserModelViews;
+using Wanvi.Services.Services.Infrastructure;
 
 namespace Wanvi.Services.Services
 {
@@ -15,12 +21,14 @@ namespace Wanvi.Services.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _contextAccessor;
 
-        public UserService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration)
+        public UserService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration, IHttpContextAccessor contextAccessor)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _configuration = configuration;
+            _contextAccessor = contextAccessor;
         }
 
         #region Private Service
@@ -152,6 +160,93 @@ namespace Wanvi.Services.Services
             }
 
             return nearbyLocalGuides;
+        }
+
+        public async Task<UserInforModel> GetInfor()
+        {
+            // Lấy userId từ HttpContext
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+
+            Guid.TryParse(userId, out Guid cb);
+
+
+            // Lấy thông tin người dùng
+            ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>()
+                .Entities.FirstOrDefaultAsync(x => x.Id == cb);
+            UserInforModel inforModel = new UserInforModel
+            {
+                Id = user.Id,
+                Address = user.Address,
+                Balance = user.Balance,
+                DateOfBirth = user.DateOfBirth,
+                Email = user.Email,
+                FullName = user.FullName,
+                Gender = user.Gender,
+                PhoneNumber = user.PhoneNumber,
+            };
+            return inforModel;
+        }
+
+        public async Task<UserInforModel> GetTravelerBaseId(Guid Id)
+        {
+            // Lấy thông tin người dùng
+            ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>()
+                .Entities.FirstOrDefaultAsync(x => x.Id == Id && !x.DeletedTime.HasValue);
+            UserInforModel inforModel = new UserInforModel
+            {
+                Id = user.Id,
+                Address = user.Address,
+                Balance = user.Balance,
+                DateOfBirth = user.DateOfBirth,
+                Email = user.Email,
+                FullName = user.FullName,
+                Gender = user.Gender,
+                PhoneNumber = user.PhoneNumber,
+            };
+            return inforModel;
+        }
+
+        public async Task ChangePassword(ChangePasswordModel model)
+        {
+            // Lấy userId từ HttpContext
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+
+            Guid.TryParse(userId, out Guid cb);
+
+            // Kiểm tra xác nhận mật khẩu
+            if (model.NewPassword != model.ConfirmPassword)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Xác nhận mật khẩu không đúng!");
+            }
+
+            ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>()
+         .Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản không tồn tại!");
+
+            // Sử dụng PasswordHasher để băm mật khẩu
+            var passwordHasher = new FixedSaltPasswordHasher<ApplicationUser>(Options.Create(new PasswordHasherOptions()));
+            user.PasswordHash = passwordHasher.HashPassword(null, model.NewPassword);
+
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
+        }
+
+        public async Task UpdateProfiel(UpdateProfileModel model)
+        {
+            // Lấy userId từ HttpContext
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+
+            Guid.TryParse(userId, out Guid cb);
+
+
+            ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>()
+         .Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản không tồn tại!");
+
+            user.FullName = model.FuName;
+            user.Email = model.Email;
+            user.PhoneNumber = model.Phone;
+
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
         }
         #endregion
     }

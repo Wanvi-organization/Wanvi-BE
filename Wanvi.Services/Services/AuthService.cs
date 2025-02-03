@@ -1,4 +1,5 @@
-﻿using Google.Apis.Auth;
+﻿using AutoMapper;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -31,8 +32,10 @@ namespace Wanvi.Services.Services
         private readonly IConfiguration _configuration;
         private readonly ITokenService _tokenService;
         private readonly JwtSettings _jwtSettings;
+        private readonly IHttpContextAccessor _contextAccessor;
+        private readonly IMapper _mapper;
 
-        public AuthService(UserManager<ApplicationUser> userManager, IEmailService emailService, IConfiguration configuration, IUnitOfWork unitOfWork, ITokenService tokenService, JwtSettings jwtSettings)
+        public AuthService(UserManager<ApplicationUser> userManager, IEmailService emailService, IConfiguration configuration, IUnitOfWork unitOfWork, ITokenService tokenService, JwtSettings jwtSettings, IHttpContextAccessor contextAccessor, IMapper mapper)
         {
             _userManager = userManager;
             _emailService = emailService;
@@ -40,6 +43,8 @@ namespace Wanvi.Services.Services
             _configuration = configuration;
             _tokenService = tokenService;
             _jwtSettings = jwtSettings;
+            _contextAccessor = contextAccessor;
+            _mapper = mapper;
         }
 
         #region Private Service
@@ -99,6 +104,10 @@ namespace Wanvi.Services.Services
 
 
         #region Implementation Interface
+
+
+
+
         public async Task ForgotPassword(EmailModelView model)
         {
             ApplicationUser? user = await _userManager.FindByEmailAsync(model.Email)
