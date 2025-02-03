@@ -39,7 +39,7 @@ app.UseAuthorization();
 
 //setting Middleware
 app.UseMiddleware<ExceptionMiddleware>();
-app.UseMiddleware<PermissionMiddleware>();
+//app.UseMiddleware<PermissionMiddleware>();
 app.UseMiddleware<LoggingMiddleware>();
 
 app.MapControllers();

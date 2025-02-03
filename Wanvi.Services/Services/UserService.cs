@@ -63,7 +63,7 @@ namespace Wanvi.Services.Services
         #endregion
 
         #region Implementation Interface
-        public async Task<IEnumerable<ResponseLocalGuideModel>> GetLocalGuidesAsync(double latitude, double longitude, string? name = null, string ? city = null, string? district = null, double? minPrice = null, double? maxPrice = null, double? minRating = null, double? maxRating = null, bool? isVerified = null, bool? sortByPriceAsc = null, bool? sortByPriceDesc = null, bool? sortByNearest = null)
+        public async Task<IEnumerable<ResponseLocalGuideModel>> GetLocalGuidesAsync(double latitude, double longitude, string? name = null, string ? city = null, string? district = null, double? minPrice = null, double? maxPrice = null, double? minRating = null, double? maxRating = null, bool? isVerified = null, bool? sortByPrice = null, bool? sortByNearest = null)
         {
             const double radiusInKm = 10.0;
 
@@ -138,13 +138,11 @@ namespace Wanvi.Services.Services
             }
             else
             {
-                if (sortByPriceAsc.HasValue && sortByPriceAsc.Value)
+                if (sortByPrice.HasValue)
                 {
-                    nearbyLocalGuides = nearbyLocalGuides.OrderBy(lg => lg.MinHourlyRate).ToList();
-                }
-                else if (sortByPriceDesc.HasValue && sortByPriceDesc.Value)
-                {
-                    nearbyLocalGuides = nearbyLocalGuides.OrderByDescending(lg => lg.MinHourlyRate).ToList();
+                    nearbyLocalGuides = sortByPrice.Value
+                        ? nearbyLocalGuides.OrderBy(lg => lg.MinHourlyRate).ToList()
+                        : nearbyLocalGuides.OrderByDescending(lg => lg.MinHourlyRate).ToList();
                 }
 
                 if (sortByNearest.HasValue && sortByNearest.Value)
