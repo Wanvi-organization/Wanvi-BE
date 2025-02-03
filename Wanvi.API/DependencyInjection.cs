@@ -13,6 +13,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Facebook;
+using Wanvi.Repositories.SeedData;
 
 namespace WanviBE.API
 {
@@ -36,6 +37,7 @@ namespace WanviBE.API
             //services.ConfigCorsSignalR();
             //services.RabbitMQConfig(configuration);
             services.JwtSettingsConfig(configuration);
+            services.IntSeedData();
         }
         public static void JwtSettingsConfig(this IServiceCollection services, IConfiguration configuration)
         {
@@ -251,11 +253,21 @@ namespace WanviBE.API
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<ICityService, CityService>();
+            services.AddScoped<IDistrictService, DistrictService>();
         }
 
         public static void AddEmailConfig(this IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+        }
+
+        public static void IntSeedData(this IServiceCollection services)
+        {
+            using var scope = services.BuildServiceProvider().CreateScope();
+            using var context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+            var initialiser = new ApplicationDbContextInitialiser(context);
+            initialiser.Initialise();
         }
     }
 }
