@@ -45,6 +45,7 @@ namespace Wanvi.Services.Services
             _jwtSettings = jwtSettings;
             _contextAccessor = contextAccessor;
             _mapper = mapper;
+
         }
 
         #region Private Service
