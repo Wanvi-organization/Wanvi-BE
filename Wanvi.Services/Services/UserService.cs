@@ -183,6 +183,7 @@ namespace Wanvi.Services.Services
                 FullName = user.FullName,
                 Gender = user.Gender,
                 PhoneNumber = user.PhoneNumber,
+                ProfileImageUrl = user.ProfileImageUrl
             };
             return inforModel;
         }
@@ -202,6 +203,7 @@ namespace Wanvi.Services.Services
                 FullName = user.FullName,
                 Gender = user.Gender,
                 PhoneNumber = user.PhoneNumber,
+                ProfileImageUrl = user.ProfileImageUrl
             };
             return inforModel;
         }
@@ -241,9 +243,9 @@ namespace Wanvi.Services.Services
             ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>()
          .Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản không tồn tại!");
 
-            user.FullName = model.FuName;
+            user.FullName = model.FullName;
             user.Email = model.Email;
-            user.PhoneNumber = model.Phone;
+            user.PhoneNumber = model.PhoneNumber;
 
             await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
             await _unitOfWork.SaveAsync();

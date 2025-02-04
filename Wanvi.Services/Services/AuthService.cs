@@ -271,7 +271,7 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
             return new ResponsePhoneModel
             {
-                Phone = model.PhoneNumber,
+                PhoneNumber = model.PhoneNumber,
                 Otp = user.EmailCode.ToString()
             };
         }
