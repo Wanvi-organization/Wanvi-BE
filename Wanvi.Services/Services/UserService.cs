@@ -216,6 +216,12 @@ namespace Wanvi.Services.Services
             Guid.TryParse(userId, out Guid cb);
 
             // Kiểm tra xác nhận mật khẩu
+            if (model.OldPassword == model.NewPassword)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Mật khẩu mới trùng mật khẩu cũ!");
+            }
+
+            // Kiểm tra xác nhận mật khẩu
             if (model.NewPassword != model.ConfirmPassword)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Xác nhận mật khẩu không đúng!");
