@@ -11,7 +11,7 @@ namespace Wanvi.Contract.Services.Interfaces
 {
     public interface ITokenService
     {
-        TokenResponse GenerateTokens(ApplicationUser user, string role);
+        Task<TokenResponse> GenerateTokens(ApplicationUser user, string role);
 
     }
 }
