@@ -34,6 +34,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+
 //setting Middleware
 app.UseMiddleware<ExceptionMiddleware>();
 //app.UseMiddleware<PermissionMiddleware>();
