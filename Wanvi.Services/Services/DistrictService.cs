@@ -22,7 +22,7 @@ namespace Wanvi.Services.Services
 
         public IEnumerable<ResponseDistrictModel> GetByCityId(string id)
         {
-            var districts = _unitOfWork.GetRepository<District>().Entities.Where(d => d.CityId == id);
+            var districts = _unitOfWork.GetRepository<District>().Entities.Where(d => d.CityId == id).OrderBy(c => c.Name);
 
             if (!districts.Any())
             {

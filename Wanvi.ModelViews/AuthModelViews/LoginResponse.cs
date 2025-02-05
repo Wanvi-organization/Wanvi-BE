@@ -2,7 +2,7 @@
 {
     public class LoginResponse
     {
-        public TokenResponse TokenResponse { get; set; }
+        public Task<TokenResponse> TokenResponse { get; set; }
         public string Role { get; set; }
     }
 }
