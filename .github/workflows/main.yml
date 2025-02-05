@@ -12,5 +12,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Run 'docker compose'
-        run: docker compose up --build -d
+      - name: Stop and remove old container
+        run: |
+          docker stop wanvi-be-server-1 || true
+          docker rm wanvi-be-server-1 || true
+
+      - name: Remove old image
+        run: |
+          docker rmi $(docker images -q "wanvi-be-server") || true
+          docker rmi $(docker images -f "dangling=true" -q) || true
+
+      - name: Build and start new container
+        run: |
+          docker compose up --build -d
