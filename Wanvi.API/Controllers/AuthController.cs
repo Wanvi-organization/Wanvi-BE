@@ -120,5 +120,12 @@ namespace WanviBE.API.Controllers
             await _authService.ResetPassword(model);
             return Ok(BaseResponse<string>.OkResponse("Đã đặt lại mật khẩu thành công!"));
         }
+
+        [HttpPost("Logout")]
+        public async Task<IActionResult> Logout(RefreshTokenModel model)
+        {
+            await _authService.LogoutAsync(model);
+            return Ok(BaseResponse<string>.OkResponse("Đăng xuất thành công!"));
+        }
     }
 }
