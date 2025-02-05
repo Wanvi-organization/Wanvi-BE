@@ -16,5 +16,6 @@ namespace Wanvi.Contract.Services.Interfaces
         Task<AuthResponseModelView> RefreshToken(RefreshTokenModel refreshTokenModel);
         Task<ResponsePhoneModel> CreateUserByPhone(CreateUseByPhoneModel model);
         Task<Guid> CheckPhone(CheckPhoneModel model);
+        Task LogoutAsync(RefreshTokenModel model);
     }
 }

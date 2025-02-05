@@ -105,10 +105,6 @@ namespace Wanvi.Services.Services
 
 
         #region Implementation Interface
-
-
-
-
         public async Task ForgotPassword(EmailModelView model)
         {
             ApplicationUser? user = await _userManager.FindByEmailAsync(model.Email)
@@ -350,7 +346,7 @@ namespace Wanvi.Services.Services
 
         public async Task<AuthResponseModelView> RefreshToken(RefreshTokenModel refreshTokenModel)
         {
-            ApplicationUser? user = await CheckRefreshToken(refreshTokenModel.refreshToken);
+            ApplicationUser? user = await CheckRefreshToken(refreshTokenModel.RefreshToken);
             (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
             string refreshToken = await GenerateRefreshToken(user);
             return new AuthResponseModelView
@@ -469,6 +465,35 @@ namespace Wanvi.Services.Services
                 }
             };
         }
+
+        public async Task LogoutAsync(RefreshTokenModel model)
+        {
+            var users = await _userManager.Users.ToListAsync();
+
+            ApplicationUser user = null;
+            foreach (var u in users)
+            {
+                var token = await _userManager.GetAuthenticationTokenAsync(u, "Default", "RefreshToken");
+                if (token == model.RefreshToken)
+                {
+                    user = u;
+                    break;
+                }
+            }
+
+            if (user == null)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Refresh token không hợp lệ");
+            }
+
+            var result = await _userManager.RemoveAuthenticationTokenAsync(user, "Default", "RefreshToken");
+
+            if (!result.Succeeded)
+            {
+                throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, "Không thể logout, vui lòng thử lại.");
+            }
+        }
+
         #endregion
     }
 }
