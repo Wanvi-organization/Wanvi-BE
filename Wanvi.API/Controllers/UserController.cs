@@ -62,7 +62,7 @@ namespace WanviBE.API.Controllers
              ));
         }
 
-        [HttpPost("Change_Password")]
+        [HttpPatch("Change_Password")]
         public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
         {
             await _userService.ChangePassword(model);
@@ -72,7 +72,7 @@ namespace WanviBE.API.Controllers
                  data: "Đổi mật khẩu thành công!"
              ));
         }
-        [HttpPut("Update_Profile")]
+        [HttpPatch("Update_Profile")]
         public async Task<IActionResult> UpdateProfile(UpdateProfileModel model)
         {
             await _userService.UpdateProfiel(model);

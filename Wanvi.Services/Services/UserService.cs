@@ -64,14 +64,14 @@ namespace Wanvi.Services.Services
             var location = data?.FirstOrDefault();
 
             if (location == null)
-                throw new Exception("Unable to geocode address.");
+                throw new Exception($"Unable to geocode address {address}.");
 
             return (double.Parse(location.Lat), double.Parse(location.Lon));
         }
         #endregion
 
         #region Implementation Interface
-        public async Task<IEnumerable<ResponseLocalGuideModel>> GetLocalGuidesAsync(double latitude, double longitude, string? name = null, string ? city = null, string? district = null, double? minPrice = null, double? maxPrice = null, double? minRating = null, double? maxRating = null, bool? isVerified = null, bool? sortByPrice = null, bool? sortByNearest = null)
+        public async Task<IEnumerable<ResponseLocalGuideModel>> GetLocalGuidesAsync(double latitude, double longitude, string? name = null, string? city = null, string? district = null, double? minPrice = null, double? maxPrice = null, double? minRating = null, double? maxRating = null, bool? isVerified = null, bool? sortByPrice = null, bool? sortByNearest = null)
         {
             const double radiusInKm = 10.0;
 
@@ -117,21 +117,23 @@ namespace Wanvi.Services.Services
                 var (lat, lon) = await GeocodeAddressAsync(localGuide.Address);
                 var distance = GeoHelper.GetDistance(latitude, longitude, lat, lon);
 
-                if (distance <= radiusInKm)
+                if (string.IsNullOrWhiteSpace(city) && string.IsNullOrWhiteSpace(district))
                 {
-                    nearbyLocalGuides.Add(new ResponseLocalGuideModel
-                    {
-                        Id = localGuide.Id,
-                        FullName = localGuide.FullName,
-                        Address = localGuide.Address,
-                        AvgRating = localGuide.AvgRating,
-                        ReviewCount = localGuide.Reviews != null ? localGuide.Reviews.Count : 0,
-                        MinHourlyRate = localGuide.MinHourlyRate,
-                        Distance = distance,
-                        IsPremium = localGuide.IsPremium,
-                        IsVerified = localGuide.IsVerified
-                    });
+                    if (distance > radiusInKm) continue;
                 }
+
+                nearbyLocalGuides.Add(new ResponseLocalGuideModel
+                {
+                    Id = localGuide.Id,
+                    FullName = localGuide.FullName,
+                    Address = localGuide.Address,
+                    AvgRating = localGuide.AvgRating,
+                    ReviewCount = localGuide.Reviews != null ? localGuide.Reviews.Count : 0,
+                    MinHourlyRate = localGuide.MinHourlyRate,
+                    Distance = distance,
+                    IsPremium = localGuide.IsPremium,
+                    IsVerified = localGuide.IsVerified
+                });
             }
 
             if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(city) && string.IsNullOrWhiteSpace(district) &&
@@ -183,6 +185,7 @@ namespace Wanvi.Services.Services
                 FullName = user.FullName,
                 Gender = user.Gender,
                 PhoneNumber = user.PhoneNumber,
+                ProfileImageUrl = user.ProfileImageUrl
             };
             return inforModel;
         }
@@ -202,6 +205,7 @@ namespace Wanvi.Services.Services
                 FullName = user.FullName,
                 Gender = user.Gender,
                 PhoneNumber = user.PhoneNumber,
+                ProfileImageUrl = user.ProfileImageUrl
             };
             return inforModel;
         }
@@ -212,6 +216,12 @@ namespace Wanvi.Services.Services
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
 
             Guid.TryParse(userId, out Guid cb);
+
+            // Kiểm tra xác nhận mật khẩu
+            if (model.OldPassword == model.NewPassword)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Mật khẩu mới trùng mật khẩu cũ!");
+            }
 
             // Kiểm tra xác nhận mật khẩu
             if (model.NewPassword != model.ConfirmPassword)
@@ -241,9 +251,9 @@ namespace Wanvi.Services.Services
             ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>()
          .Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản không tồn tại!");
 
-            user.FullName = model.FuName;
+            user.FullName = model.FullName;
             user.Email = model.Email;
-            user.PhoneNumber = model.Phone;
+            user.PhoneNumber = model.PhoneNumber;
 
             await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
             await _unitOfWork.SaveAsync();

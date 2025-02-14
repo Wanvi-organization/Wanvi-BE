@@ -54,8 +54,6 @@ namespace WanviBE.API.Controllers
              ));
         }
 
-
-
         [HttpPost("Create_User_By_Phone")]
         public async Task<IActionResult> CreateUsrByPhone(CreateUseByPhoneModel model)
         {
@@ -81,6 +79,13 @@ namespace WanviBE.API.Controllers
         public async Task<IActionResult> LoginGoogle(TokenModelView model)
         {
             AuthResponseModelView? result = await _authService.LoginGoogle(model);
+            return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
+        }
+
+        [HttpPost("Check_Google")]
+        public async Task<IActionResult> CheckGoogle(CheckGoogleModel model)
+        {
+            AuthResponseModelView? result = await _authService.CheckGoogle(model);
             return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
         }
 
@@ -121,6 +126,13 @@ namespace WanviBE.API.Controllers
         {
             await _authService.ResetPassword(model);
             return Ok(BaseResponse<string>.OkResponse("Đã đặt lại mật khẩu thành công!"));
+        }
+
+        [HttpDelete("Logout")]
+        public async Task<IActionResult> Logout(RefreshTokenModel model)
+        {
+            await _authService.LogoutAsync(model);
+            return Ok(BaseResponse<string>.OkResponse("Đăng xuất thành công!"));
         }
     }
 }
