@@ -19,7 +19,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public TimeSpan StartTime { get; set; }
         public TimeSpan EndTime { get; set; }
         public int MaxTraveler { get; set; }
-        public int BookedTraveler { get; set; }
+        public int BookedTraveler { get; set; } = 0;
 
         public string TourId { get; set; }
         public virtual Tour Tour { get; set; }

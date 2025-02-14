@@ -260,6 +260,9 @@ namespace WanviBE.API
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ICityService, CityService>();
             services.AddScoped<IDistrictService, DistrictService>();
+            services.AddScoped<IActivityService, ActivityService>();
+            services.AddScoped<IAddressService, AddressService>();
+            services.AddScoped<ITourService, TourService>();
         }
 
         public static void AddEmailConfig(this IServiceCollection services, IConfiguration configuration)
