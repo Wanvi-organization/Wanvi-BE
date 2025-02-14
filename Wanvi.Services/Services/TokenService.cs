@@ -20,6 +20,7 @@ using Wanvi.Core.Constants;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Services.Services.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 
 namespace Wanvi.Services.Services
 {
@@ -28,8 +29,9 @@ namespace Wanvi.Services.Services
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly UserManager<ApplicationUser> _userManager ;
 
-        public TokenService(IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
+        public TokenService(IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager)
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
@@ -37,9 +39,10 @@ namespace Wanvi.Services.Services
             _configuration = builder.Build();
             _httpContextAccessor = httpContextAccessor;
             _unitOfWork = unitOfWork;
+            _userManager = userManager;
         }
 
-        public TokenResponse GenerateTokens(ApplicationUser user, string role)
+        public async Task<TokenResponse> GenerateTokens(ApplicationUser user, string role)
         {
             DateTime now = DateTime.Now;
 
@@ -67,7 +70,7 @@ namespace Wanvi.Services.Services
                 claims: claims,
                 issuer: _configuration.GetSection("JwtSettings:Issuer").Value,
                 audience: _configuration.GetSection("JwtSettings:Audience").Value,
-                expires: now.AddMinutes(30),
+                expires: now.AddMinutes(1),
                 signingCredentials: creds
             );
             var accessTokenString = new JwtSecurityTokenHandler().WriteToken(accessToken);
@@ -84,6 +87,15 @@ namespace Wanvi.Services.Services
             ApplicationUserRole roleUser = _unitOfWork.GetRepository<ApplicationUserRole>().Entities.Where(x => x.UserId == user.Id).FirstOrDefault()
                                     ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Lỗi Authorize");
             string roleName = _unitOfWork.GetRepository<ApplicationRole>().GetById(roleUser.RoleId).Name ?? "Unknow";
+
+            string? initToken = await _userManager.GetAuthenticationTokenAsync(user, "Default", "RefreshToken");
+            if (initToken != null)
+            {
+
+                await _userManager.RemoveAuthenticationTokenAsync(user, "Default", "RefreshToken");
+            }
+
+            await _userManager.SetAuthenticationTokenAsync(user, "Default", "RefreshToken", refreshTokenString);
             // Return the tokens and user information
             return new TokenResponse
             {
@@ -98,7 +110,9 @@ namespace Wanvi.Services.Services
                     FullName = user.FullName,
                     PhoneNumber = user.PhoneNumber,
                     CreatedTime = user.CreatedTime,
-                    Role = roleName
+                    Role = roleName,
+                    ProfileImageUrl = user.ProfileImageUrl
+                    
                 }
             };
         }

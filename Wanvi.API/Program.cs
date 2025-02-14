@@ -16,9 +16,6 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
-//Add services to the container.
-//builder.Services.AddDbContext<DatabaseContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -42,6 +39,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
 
 //setting Middleware
 app.UseMiddleware<ExceptionMiddleware>();

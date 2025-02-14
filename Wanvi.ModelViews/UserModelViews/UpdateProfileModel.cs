@@ -11,7 +11,7 @@ namespace Wanvi.ModelViews.UserModelViews
     {
         [Required(ErrorMessage = "Họ và tên là bắt buộc")]
         [StringLength(100, ErrorMessage = "Họ và tên không được vượt quá 100 ký tự")]
-        public string FuName { get; set; }
+        public string FullName { get; set; }
 
         [Required(ErrorMessage = "Email là bắt buộc")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ")]
@@ -20,6 +20,6 @@ namespace Wanvi.ModelViews.UserModelViews
         [Required(ErrorMessage = "Số điện thoại là bắt buộc")]
         [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
         [StringLength(15, MinimumLength = 10, ErrorMessage = "Số điện thoại phải có độ dài từ 10 đến 15 ký tự")]
-        public string Phone { get; set; }
+        public string PhoneNumber { get; set; }
     }
 }

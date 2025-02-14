@@ -12,5 +12,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Run 'docker compose'
-        run: docker compose up --build -d
+      - name: Stop and remove old container
+        run: |
+          CONTAINER_NAME="wanvi-be-server-1"
+          if docker ps -a --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
+            echo "Stopping and removing container: $CONTAINER_NAME"
+            docker stop $CONTAINER_NAME
+            docker rm $CONTAINER_NAME
+          else
+            echo "Container $CONTAINER_NAME does not exist, skipping..."
+          fi
+
+      - name: Remove old image
+        run: |
+          IMAGE_NAME="wanvi-be-server"
+          IMAGE_ID=$(docker images -q "$IMAGE_NAME")
+
+          if [ -n "$IMAGE_ID" ]; then
+            echo "Removing old image: $IMAGE_NAME"
+            docker rmi "$IMAGE_ID"
+          else
+            echo "No image found for $IMAGE_NAME, skipping..."
+          fi
+
+          DANGING_IMAGES=$(docker images -f "dangling=true" -q)
+          if [ -n "$DANGING_IMAGES" ]; then
+            echo "Removing dangling images..."
+            docker rmi $DANGING_IMAGES
+          else
+            echo "No dangling images found, skipping..."
+          fi
+
+      - name: Build and start new container
+        run: |
+          echo "Building and starting new container..."
+          docker compose up --build -d
+
+      - name: Verify running container
+        run: |
+          sleep 5  # Chờ container khởi động
+          docker ps
+
