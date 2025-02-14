@@ -18,6 +18,5 @@ namespace Wanvi.Contract.Repositories.Entities
         public virtual ICollection<Media> Medias { get; set; }
         public virtual ICollection<TourActivity> TourActivities { get; set; }
         public virtual ICollection<Review> Reviews { get; set; }
-        public virtual ICollection<Booking> Bookings { get; set; }
     }
 }

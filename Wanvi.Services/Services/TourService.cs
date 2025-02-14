@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
@@ -25,7 +26,13 @@ namespace Wanvi.Services.Services
             _addressService = addressService;
         }
 
-        public async Task<Tour> CreateTourAsync(CreateTourModel model)
+        public async Task<IEnumerable<ResponseTourModel>> GetAllAsync()
+        {
+            var tours = await _unitOfWork.GetRepository<Tour>().GetAllAsync();
+            return _mapper.Map<IEnumerable<ResponseTourModel>>(tours);
+        }
+
+        public async Task<ResponseTourModel> CreateTourAsync(CreateTourModel model)
         {
             string strUserId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
             Guid.TryParse(strUserId, out Guid userId);
@@ -103,7 +110,13 @@ namespace Wanvi.Services.Services
             await _unitOfWork.GetRepository<Tour>().InsertAsync(newTour);
             await _unitOfWork.SaveAsync();
 
-            return _mapper.Map<Tour>(newTour);
+            var createdTour = await _unitOfWork.GetRepository<Tour>().Entities
+            .Where(t => t.Id == newTour.Id)
+            .Include(t => t.TourActivities)
+            .ThenInclude(t => t.Activity)
+            .FirstOrDefaultAsync();
+
+            return _mapper.Map<ResponseTourModel>(createdTour);
         }
     }
 }

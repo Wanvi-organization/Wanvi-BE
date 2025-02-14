@@ -1,4 +1,5 @@
-﻿using Wanvi.Core.Bases;
+﻿using System.Text.Json.Serialization;
+using Wanvi.Core.Bases;
 
 namespace Wanvi.Contract.Repositories.Entities
 {
