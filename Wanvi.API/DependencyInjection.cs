@@ -37,7 +37,7 @@ namespace WanviBE.API
             //services.ConfigCorsSignalR();
             //services.RabbitMQConfig(configuration);
             services.JwtSettingsConfig(configuration);
-            services.IntSeedData();
+            //services.IntSeedData();
         }
         public static void JwtSettingsConfig(this IServiceCollection services, IConfiguration configuration)
         {
@@ -255,6 +255,9 @@ namespace WanviBE.API
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ICityService, CityService>();
             services.AddScoped<IDistrictService, DistrictService>();
+            services.AddScoped<IActivityService, ActivityService>();
+            services.AddScoped<IAddressService, AddressService>();
+            services.AddScoped<ITourService, TourService>();
         }
 
         public static void AddEmailConfig(this IServiceCollection services, IConfiguration configuration)

@@ -1,4 +1,5 @@
-﻿using Wanvi.Core.Bases;
+﻿using System.Linq.Expressions;
+using Wanvi.Core.Bases;
 
 namespace Wanvi.Contract.Repositories.IUOW
 {
@@ -24,5 +25,8 @@ namespace Wanvi.Contract.Repositories.IUOW
         Task UpdateAsync(T obj);
         Task DeleteAsync(object id);
         Task SaveAsync();
+        Task<T> FindAsync(Expression<Func<T, bool>> predicate);
+        Task<IQueryable<T>> FindAllAsync(Expression<Func<T, bool>> predicate);
+        Task<IQueryable<T>> GetAllQueryableAsync();
     }
 }
