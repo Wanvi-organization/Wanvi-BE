@@ -580,6 +580,38 @@ namespace Wanvi.Services.Services
             throw new ErrorException(StatusCodes.Status401Unauthorized, ErrorCode.Unauthorized, "Token không hợp lệ");
         }
 
+        public async Task<AuthResponseModelView> CheckGoogle(CheckGoogleModel model)
+        {
+            ApplicationUser? user = await _userManager.FindByEmailAsync(model.Email);
+
+            if (user == null)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản chưa được tạo. Vui lòng tạo tài khoản trước khi đăng nhập.");
+            }
+
+            if (user.DeletedTime.HasValue)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
+            }
+
+            (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
+            string refreshToken = await GenerateRefreshToken(user);
+
+            return new AuthResponseModelView
+            {
+                AccessToken = token,
+                RefreshToken = refreshToken,
+                TokenType = "JWT",
+                AuthType = "Bearer",
+                ExpiresIn = DateTime.UtcNow.AddHours(1),
+                User = new UserInfo
+                {
+                    Email = user.Email,
+                    Roles = roles.ToList()
+                }
+            };
+        }
+
         public async Task<AuthResponseModelView> LoginGoogle(TokenModelView model)
         {
             GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(model.Token);

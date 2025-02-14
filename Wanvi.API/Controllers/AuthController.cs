@@ -82,6 +82,13 @@ namespace WanviBE.API.Controllers
             return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
         }
 
+        [HttpPost("Check_Google")]
+        public async Task<IActionResult> CheckGoogle(CheckGoogleModel model)
+        {
+            AuthResponseModelView? result = await _authService.CheckGoogle(model);
+            return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
+        }
+
         [HttpPost("Login_Facebook")]
         public async Task<IActionResult> LoginFacebook(TokenModelView model)
         {
@@ -121,7 +128,7 @@ namespace WanviBE.API.Controllers
             return Ok(BaseResponse<string>.OkResponse("Đã đặt lại mật khẩu thành công!"));
         }
 
-        [HttpPost("Logout")]
+        [HttpDelete("Logout")]
         public async Task<IActionResult> Logout(RefreshTokenModel model)
         {
             await _authService.LogoutAsync(model);

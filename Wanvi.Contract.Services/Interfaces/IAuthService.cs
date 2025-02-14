@@ -8,6 +8,7 @@ namespace Wanvi.Contract.Services.Interfaces
         Task VerifyOtp(ConfirmOTPModelView model, bool isResetPassword);
         Task ForgotPassword(EmailModelView model);
         Task ResetPassword(ResetPasswordModelView model);
+        Task<AuthResponseModelView> CheckGoogle(CheckGoogleModel model);
         Task<AuthResponseModelView> LoginGoogle(TokenModelView model);
         Task<AuthResponseModelView> LoginFacebook(TokenModelView model);
         Task CreateRole(RoleModel model);
