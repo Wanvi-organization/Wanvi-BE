@@ -5,6 +5,7 @@ namespace Wanvi.Contract.Services.Interfaces
 {
     public interface ITourService
     {
-        Task<Tour> CreateTourAsync(CreateTourModel model);
+        Task<IEnumerable<ResponseTourModel>> GetAllAsync();
+        Task<ResponseTourModel> CreateTourAsync(CreateTourModel model);
     }
 }
