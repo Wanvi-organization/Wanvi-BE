@@ -14,6 +14,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Wanvi.Repositories.SeedData;
+using Amazon.Runtime;
+using Amazon.S3;
 
 namespace WanviBE.API
 {
@@ -32,6 +34,7 @@ namespace WanviBE.API
             services.AddGoogleAuthentication(configuration);
             services.AddFacebookAuthentication(configuration);
             services.AddDatabase(configuration);
+            services.AddS3Service(configuration);
             services.AddServices();
             services.ConfigCors();
             //services.ConfigCorsSignalR();
@@ -55,6 +58,7 @@ namespace WanviBE.API
                 return jwtSettings;
             });
         }
+
         public static void RabbitMQConfig(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddSingleton(option =>
@@ -260,6 +264,8 @@ namespace WanviBE.API
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ICityService, CityService>();
             services.AddScoped<IDistrictService, DistrictService>();
+            services.AddScoped<IS3Service, S3Service>();
+            services.AddScoped<IPaymentService, PaymentService>();
         }
 
         public static void AddEmailConfig(this IServiceCollection services, IConfiguration configuration)
@@ -273,6 +279,42 @@ namespace WanviBE.API
             using var context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
             var initialiser = new ApplicationDbContextInitialiser(context);
             initialiser.Initialise();
+        }
+    }
+
+    public static class S3ServiceExtensions
+    {
+        public static void AddS3Service(this IServiceCollection services, IConfiguration configuration)
+        {
+            // 1. Đăng ký IAmazonS3 trước
+            services.AddTransient<IAmazonS3>(sp =>
+            {
+                var awsConfig = configuration.GetSection("AWS");
+                if (!awsConfig.Exists())
+                {
+                    throw new InvalidOperationException("Missing AWS configuration section in appsettings.json.");
+                }
+
+                string accessKeyId = awsConfig["AccessKeyId"];
+                string secretAccessKey = awsConfig["SecretAccessKey"];
+                string region = awsConfig["Region"]; // Đã lấy region từ config
+                                                     //string bucketName = awsConfig["BucketName"]; // Lấy bucketName từ config
+
+                if (string.IsNullOrEmpty(accessKeyId) || string.IsNullOrEmpty(secretAccessKey) ||
+                    string.IsNullOrEmpty(region)) // bucketName có thể null, tùy theo logic của S3Service
+                {
+                    throw new InvalidOperationException("Missing required AWS configuration values.");
+                }
+
+                var credentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
+                var config = new AmazonS3Config { RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region) };
+                return new AmazonS3Client(credentials, config);
+            });
+
+            // 2. Sau đó đăng ký S3Service
+            services.AddTransient<IS3Service, S3Service>(); // Chú ý: Đăng ký interface IS3Service
+                                                            // Hoặc, nếu bạn muốn S3Service tự lấy bucketName từ Configuration:
+                                                            // services.AddTransient<IS3Service, S3Service>(sp => new S3Service(sp.GetRequiredService<IAmazonS3>(), configuration));
         }
     }
 }
