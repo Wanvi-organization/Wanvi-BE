@@ -17,11 +17,18 @@ namespace Wanvi.API.Controllers
             _tourService = tourService;
         }
 
+        [HttpGet("Get_All_Tours")]
+        public async Task<IActionResult> GetAllTours()
+        {
+            var result = await _tourService.GetAllAsync();
+            return Ok(BaseResponse<IEnumerable<ResponseTourModel>>.OkResponse(result));
+        }
+
         [HttpPost("Create_Tour")]
         public async Task<IActionResult> CreateTour(CreateTourModel model)
         {
             var result = await _tourService.CreateTourAsync(model);
-            return Ok(BaseResponse<Tour>.OkResponse(result));
+            return Ok(BaseResponse<ResponseTourModel>.OkResponse(result));
         }
     }
 }

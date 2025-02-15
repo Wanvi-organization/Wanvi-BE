@@ -16,12 +16,17 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
+//builder.Services.AddDbContext<DatabaseContext>(options =>
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;
     });
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -29,9 +34,14 @@ builder.Services.AddConfig(builder.Configuration);
 builder.Services.AddHttpClient();
 var app = builder.Build();
 
+//setting Middleware
+app.UseMiddleware<ExceptionMiddleware>();
+//app.UseMiddleware<PermissionMiddleware>();
+app.UseMiddleware<LoggingMiddleware>();
+
 // Configure the HTTP request pipeline.
 
-    app.UseSwagger();
+app.UseSwagger();
     app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
@@ -40,10 +50,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 
-//setting Middleware
-app.UseMiddleware<ExceptionMiddleware>();
-//app.UseMiddleware<PermissionMiddleware>();
-app.UseMiddleware<LoggingMiddleware>();
+
 
 app.MapControllers();
 
