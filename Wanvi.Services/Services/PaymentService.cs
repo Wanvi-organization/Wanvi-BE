@@ -21,9 +21,10 @@ namespace Wanvi.Services.Services
     public class PaymentService: IPaymentService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _payOSApiUrl;
-        private readonly string _apiKey;
-        private readonly string _checksumKey;
+        private string _payOSApiUrl;
+        private string _apiKey;
+        private string _checksumKey;
+        private string _clientKey; // Thêm biến lưu ClientKey
         private readonly IUnitOfWork _unitOfWork;
 
         public PaymentService(HttpClient httpClient, IConfiguration configuration, IUnitOfWork unitOfWork)
@@ -32,6 +33,7 @@ namespace Wanvi.Services.Services
             _payOSApiUrl = configuration["PayOS:ApiUrl"];
             _apiKey = configuration["PayOS:ApiKey"];
             _checksumKey = configuration["PayOS:ChecksumKey"];
+            _clientKey = configuration["PayOS:ClientKey"]; // Lấy ClientKey từ appsettings.json
             _unitOfWork = unitOfWork;
         }
 
@@ -43,21 +45,23 @@ namespace Wanvi.Services.Services
             {
                 throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy booking");
             }
+            var buyer = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id.ToString() == booking.CreatedBy && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy người mua!");
 
             // 2. Tạo PayOSPaymentRequest từ thông tin booking
             var payOSRequest = new PayOSPaymentRequest
             {
-                orderCode = booking.Id, // hoặc booking.BookingCode nếu bạn có trường này
+                orderCode = GenerateRandomOrderCode(),
                 amount = (long)booking.TotalPrice, // Chuyển đổi TotalPrice sang long
-                description = $"Thanh toán booking {booking.Id}",
-                buyerName = booking.User.FullName, // Lấy tên người dùng từ booking.User
-                buyerEmail = booking.User.Email,   // Lấy email người dùng từ booking.User
-                buyerPhone = booking.User.PhoneNumber, // Lấy số điện thoại từ booking.User
-                buyerAddress = booking.User.Address,  // Lấy địa chỉ từ booking.User
+                description = $"Thanh toán!!!",
+                buyerName = buyer.FullName, // Lấy tên người dùng từ booking.User
+                buyerEmail = buyer.Email,   // Lấy email người dùng từ booking.User
+                buyerPhone = buyer.PhoneNumber, // Lấy số điện thoại từ booking.User
+                buyerAddress = buyer.Address,  // Lấy địa chỉ từ booking.User
                 items = GetBookingItems(booking.Id), // Hàm này sẽ lấy danh sách sản phẩm từ booking (xem bên dưới)
                 cancelUrl = "YOUR_CANCEL_URL", // Thay thế bằng URL của bạn
-                returnUrl = "YOUR_RETURN_URL"  // Thay thế bằng URL của bạn
-                                               // ... các trường khác 
+                returnUrl = "YOUR_RETURN_URL",  // Thay thế bằng URL của bạn
+                expiredAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 1800,
+                // ... các trường khác 
             };
 
             // 3. Tạo chữ ký
@@ -70,6 +74,11 @@ namespace Wanvi.Services.Services
             return checkoutUrl;
         }
 
+        private long GenerateRandomOrderCode()
+        {
+            Random random = new Random();
+            return (long)(random.NextInt64(11111111, 99999999));
+        }
         // Hàm lấy danh sách sản phẩm từ booking (bạn cần điều chỉnh theo cấu trúc database của bạn)
         private List<PayOSItem> GetBookingItems(string bookingId)
         {
@@ -90,31 +99,46 @@ namespace Wanvi.Services.Services
 
         private string CalculateSignature(PayOSPaymentRequest request)
         {
-            // Sắp xếp các tham số theo thứ tự alphabet
-            string data = $"amount={request.amount}&cancelUrl={request.cancelUrl}&description={request.description}&orderCode={request.orderCode}&returnUrl={request.returnUrl}";
+            // Chắc chắn `amount` là số nguyên
+            int amount = (int)request.amount;
 
-            // Tạo chữ ký HMAC-SHA256
-            using (HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_checksumKey)))
+            // Sắp xếp và format dữ liệu chính xác
+            string data = $"amount={amount}&cancelUrl={request.cancelUrl}&description={request.description}" +
+                          $"&orderCode={request.orderCode}&returnUrl={request.returnUrl}";
+
+            Console.WriteLine($"Data to sign: {data}");
+
+            // Tạo HMAC-SHA256 signature
+            byte[] keyBytes = Encoding.UTF8.GetBytes(_checksumKey);
+            byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+
+            using (HMACSHA256 hmac = new HMACSHA256(keyBytes))
             {
-                byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
-                return Convert.ToBase64String(hash); // Hoặc Convert.ToHexString(hash) nếu PayOS yêu cầu
+                byte[] hash = hmac.ComputeHash(dataBytes);
+                string signature = BitConverter.ToString(hash).Replace("-", "").ToLower();
+
+                Console.WriteLine($"Generated signature: {signature}");
+                return signature;
             }
         }
 
+
         private async Task<string> CallPayOSApi(PayOSPaymentRequest payOSRequest)
         {
-            // Cấu hình header request
+            _httpClient.DefaultRequestHeaders.Clear();
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Add("x-client-idx-api-key", _apiKey);
+            _httpClient.DefaultRequestHeaders.Add("x-api-key", _apiKey); // Đổi từ "Authorization: Bearer" sang "x-api-key"
+            _httpClient.DefaultRequestHeaders.Add("x-client-id", _clientKey);
 
-            // Chuyển đổi request object sang JSON string
             string json = JsonConvert.SerializeObject(payOSRequest);
             StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+            foreach (var header in _httpClient.DefaultRequestHeaders)
+            {
+                Console.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
+            }
 
-            // Gửi request đến PayOS API
             using (HttpResponseMessage response = await _httpClient.PostAsync(_payOSApiUrl, content))
             {
-                // Kiểm tra response thành công
                 if (response.IsSuccessStatusCode)
                 {
                     string responseJson = await response.Content.ReadAsStringAsync();
@@ -126,18 +150,17 @@ namespace Wanvi.Services.Services
                     }
                     else
                     {
-                        // Xử lý lỗi: PayOS response không hợp lệ
                         throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, "Invalid PayOS response: " + responseJson);
                     }
                 }
                 else
                 {
-                    // Xử lý lỗi: Gọi PayOS API thất bại
                     string errorJson = await response.Content.ReadAsStringAsync();
                     throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, $"Error calling PayOS API: {response.StatusCode} - {errorJson}");
                 }
             }
         }
+
     }
 }
 

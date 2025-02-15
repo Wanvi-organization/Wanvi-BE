@@ -13,8 +13,10 @@ namespace Wanvi.ModelViews.BookingModelViews
         public string? Email { get; set; }
         public int Age { get; set; }
         public string Address { get; set; }
-        public DateOnly DateOfArrival { get; set; }
+        public DateTime DateOfArrival { get; set; }
         public int NumberOfParticipants { get; set; }
         public string Note { get; set; }
+        public string ScheduleId { get; set; }
+        public Guid UserId { get; set; }
     }
 }

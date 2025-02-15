@@ -18,15 +18,15 @@ namespace Wanvi.API.Controllers
             _paymentService = paymentService;
         }
 
-        [HttpPost("create-payment-link")]
-        public async Task<IActionResult> CreatePaymentLink(CreatePayOSPaymentRequest request)
-        {
-            string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(request);
-            return Ok(new BaseResponseModel<string>(
-                statusCode: StatusCodes.Status200OK,
-                code: ResponseCodeConstants.SUCCESS, // Thay bằng hằng số của bạn
-                data: checkoutUrl
-            ));
-        }   
+        //[HttpPost("create-payment-link")]
+        //public async Task<IActionResult> CreatePaymentLink(CreatePayOSPaymentRequest request)
+        //{
+        //    string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(request);
+        //    return Ok(new BaseResponseModel<string>(
+        //        statusCode: StatusCodes.Status200OK,
+        //        code: ResponseCodeConstants.SUCCESS, // Thay bằng hằng số của bạn
+        //        data: checkoutUrl
+        //    ));
+        //}   
     }
 }
