@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Wanvi.Contract.Repositories.Base;
+using Wanvi.Contract.Repositories.Entities;
+using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
@@ -13,12 +16,14 @@ namespace Wanvi.API.Controllers
     public class PaymentController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
-        public PaymentController(IPaymentService paymentService)
+        private readonly IUnitOfWork _unitOfWork;
+        public PaymentController(IPaymentService paymentService, IUnitOfWork unitOfWork)
         {
             _paymentService = paymentService;
+            _unitOfWork = unitOfWork;
         }
 
-        //[HttpPost("create-payment-link")]
+        //[HttpPost("create_payment_link")]
         //public async Task<IActionResult> CreatePaymentLink(CreatePayOSPaymentRequest request)
         //{
         //    string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(request);
@@ -28,5 +33,14 @@ namespace Wanvi.API.Controllers
         //        data: checkoutUrl
         //    ));
         //}   
+        // Trong PayOSController.cs
+        [HttpPost("payos_callback")]
+        public async Task<IActionResult> PayOSCallback([FromBody] PayOSWebhookRequest request, [FromHeader(Name = "x-payos-signature")] string signature)
+        {
+            await _paymentService.PayOSCallback(request, signature);
+
+            // 4. Trả về response cho PayOS (thường là 200 OK)
+            return Ok();
+        }
     }
 }

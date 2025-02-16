@@ -4,6 +4,6 @@ namespace Wanvi.Contract.Services.Interfaces
 {
     public interface IBookingService
     {
-        Task<string> CreateBooking(CreateBookingModel model);
+        Task<string> CreateBookingAll(CreateBookingModel model);
     }
 }

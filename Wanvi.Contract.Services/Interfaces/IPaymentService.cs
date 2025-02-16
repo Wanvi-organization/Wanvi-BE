@@ -10,5 +10,7 @@ namespace Wanvi.Contract.Services.Interfaces
     public interface IPaymentService
     {
         Task<string> CreatePayOSPaymentLink(CreatePayOSPaymentRequest request);
+        bool VerifyPayOSSignature(PayOSWebhookRequest request, string signature);
+        Task PayOSCallback(PayOSWebhookRequest request, string signature);
     }
 }

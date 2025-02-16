@@ -19,7 +19,7 @@ using Wanvi.Services.Services.Infrastructure;
 
 namespace Wanvi.Services.Services
 {
-    public class BookingService: IBookingService
+    public class BookingService : IBookingService
     {
         private readonly IMapper _mapper;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -34,7 +34,7 @@ namespace Wanvi.Services.Services
             _contextAccessor = contextAccessor;
             _paymentService = paymentService;
         }
-        public async Task<string> CreateBooking(CreateBookingModel model)
+        public async Task<string> CreateBookingAll(CreateBookingModel model)
         {
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
 
@@ -52,17 +52,33 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng điền số người tham gia!");
             }
             var schedule = await _unitOfWork.GetRepository<Schedule>().Entities.FirstOrDefaultAsync(x => x.Id == model.ScheduleId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy lịch");
+            //Số giờ của dịch vụ
             int countHour = (schedule.EndTime.Hours - schedule.StartTime.Hours);
             if (countHour < 0)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Lỗi tính lịch");
             }
-            if(model.NumberOfParticipants > schedule.MaxTraveler)
+            if (model.NumberOfParticipants > schedule.MaxTraveler)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, $"Số người đăng kí lớn hơn số người mặc định({schedule.MaxTraveler} người)!");
             }
+            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh
+            if (model.DateOfArrival.Date < DateTime.Now.Date)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Ngày đến phải lớn hơn hoặc bằng ngày hiện tại!");
+            }
+
+            // Lấy giờ, phút của StartTime và so sánh với giờ phút hiện tại
+            TimeSpan currentTime = DateTime.Now.TimeOfDay;
+
+            if (schedule.StartTime.Add(TimeSpan.FromHours(1)) < currentTime)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng đặt tour trước 1 tiếng!");
+            }
+
             var booking = new Booking
             {
+                Id = Guid.NewGuid().ToString("N"),
                 ScheduleId = model.ScheduleId,
                 Note = model.Note,
                 CreatedBy = userId,
@@ -72,9 +88,10 @@ namespace Wanvi.Services.Services
                 LastUpdatedBy = userId,
                 TotalPrice = model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour,
                 TotalTravelers = model.NumberOfParticipants,
+
             };
             await _unitOfWork.GetRepository<Booking>().InsertAsync(booking);
-            await _unitOfWork.SaveAsync();
+            //await _unitOfWork.SaveAsync();
 
             // Create PayOS payment request
             var payOSRequest = new CreatePayOSPaymentRequest
@@ -82,6 +99,31 @@ namespace Wanvi.Services.Services
                 Id = booking.Id,
                 //... other necessary information for PayOS...
             };
+
+            // 7. Tạo bản ghi Payment mới
+            var payment = new Payment
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Method = PaymentMethod.Banking, // Hoặc PaymentMethod phù hợp với PayOS
+                Status = PaymentStatus.Unpaid,
+                Amount = booking.TotalPrice,
+                CreatedBy = userId,
+                LastUpdatedBy = userId,
+                CreatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.UtcNow,
+                //... các thông tin khác (nếu cần)...
+            };
+            await _unitOfWork.GetRepository<Payment>().InsertAsync(payment);
+
+            // 8. Tạo bản ghi BookingPayment để liên kết Booking và Payment
+            var bookingPayment = new BookingPayment
+            {
+                BookingId = booking.Id,
+                PaymentId = payment.Id
+            };
+            await _unitOfWork.GetRepository<BookingPayment>().InsertAsync(bookingPayment);
+
+            await _unitOfWork.SaveAsync();
 
             // Call PaymentService to generate payment link
             string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(payOSRequest);

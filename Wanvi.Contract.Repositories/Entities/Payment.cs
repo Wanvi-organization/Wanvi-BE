@@ -5,15 +5,16 @@ namespace Wanvi.Contract.Repositories.Entities
     public enum PaymentMethod
     {
         EWallet,
-        ByCash
+        Banking
     }
 
     public enum PaymentStatus
     {
-        Unpaid,
-        Deposited,
-        Paid,
-        Refunded
+        Unpaid = 0,
+        Deposited = 1,
+        Paid = 2,
+        Refunded = 3,
+        Canceled = 4
     }
 
     public class Payment : BaseEntity

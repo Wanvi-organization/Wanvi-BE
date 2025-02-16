@@ -21,7 +21,7 @@ namespace Wanvi.API.Controllers
         [HttpPost("create_booking")]
         public async Task<IActionResult> Login(CreateBookingModel request)
         {
-            string res = await _bookingService.CreateBooking(request);
+            string res = await _bookingService.CreateBookingAll(request);
             return Ok(new BaseResponseModel<string>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,

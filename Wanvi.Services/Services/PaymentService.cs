@@ -9,6 +9,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Wanvi.Contract.Repositories.Base;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
@@ -18,7 +19,7 @@ using Wanvi.ModelViews.PaymentModelViews;
 
 namespace Wanvi.Services.Services
 {
-    public class PaymentService: IPaymentService
+    public class PaymentService : IPaymentService
     {
         private readonly HttpClient _httpClient;
         private string _payOSApiUrl;
@@ -40,7 +41,7 @@ namespace Wanvi.Services.Services
         public async Task<string> CreatePayOSPaymentLink(CreatePayOSPaymentRequest request)
         {
             // 1. Lấy thông tin booking từ database dựa trên BookingId
-            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x=>x.Id == request.Id && !x.DeletedTime.HasValue); // _context là DbContext của bạn
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == request.Id && !x.DeletedTime.HasValue); // _context là DbContext của bạn
             if (booking == null)
             {
                 throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy booking");
@@ -58,8 +59,8 @@ namespace Wanvi.Services.Services
                 buyerPhone = buyer.PhoneNumber, // Lấy số điện thoại từ booking.User
                 buyerAddress = buyer.Address,  // Lấy địa chỉ từ booking.User
                 items = GetBookingItems(booking.Id), // Hàm này sẽ lấy danh sách sản phẩm từ booking (xem bên dưới)
-                cancelUrl = "YOUR_CANCEL_URL", // Thay thế bằng URL của bạn
-                returnUrl = "YOUR_RETURN_URL",  // Thay thế bằng URL của bạn
+                cancelUrl = "https://wanvi-landing-page.vercel.app/", // Thay thế bằng URL của bạn
+                returnUrl = "https://wanvi-landing-page.vercel.app/",  // Thay thế bằng URL của bạn
                 expiredAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 1800,
                 // ... các trường khác 
             };
@@ -92,8 +93,8 @@ namespace Wanvi.Services.Services
                 Email = bd.Email,
                 IdentityCard = bd.IdentityCard,
                 PassportNumber = bd.PassportNumber,
-                PhoneNumber = bd.PhoneNumber    
-                
+                PhoneNumber = bd.PhoneNumber
+
             }).ToList();
         }
 
@@ -121,7 +122,6 @@ namespace Wanvi.Services.Services
                 return signature;
             }
         }
-
 
         private async Task<string> CallPayOSApi(PayOSPaymentRequest payOSRequest)
         {
@@ -160,6 +160,56 @@ namespace Wanvi.Services.Services
                 }
             }
         }
+        public bool VerifyPayOSSignature(PayOSWebhookRequest request, string signature)
+        {
+            // 1. Lấy dữ liệu từ webhook (cần sắp xếp theo thứ tự alphabet)
+            string data = $"amount={request.amount}&orderCode={request.orderCode}&status={request.status}"; //...
+
+            // 2. Tạo chữ ký bằng HMAC-SHA256
+            using (HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_checksumKey)))
+            {
+                byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
+                string computedSignature = BitConverter.ToString(hash).Replace("-", "").ToLower();
+
+                // 3. So sánh chữ ký
+                return computedSignature == signature;
+            }
+        }
+        public async Task PayOSCallback(PayOSWebhookRequest request, string signature)
+        {
+            // 1. Xác thực signature (xem tài liệu PayOS)
+            if (!VerifyPayOSSignature(request, signature))
+            {
+                throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, "Invalid signature");
+            }
+
+            // 2. Tìm Payment trong database dựa trên thông tin trong request
+            var payment = await _unitOfWork.GetRepository<Payment>().Entities.FirstOrDefaultAsync(x => x.Id == request.paymentId && !x.DeletedTime.HasValue);
+            if (payment == null)
+            {
+                throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, "Payment not found");
+
+            }
+
+            // 3. Cập nhật trạng thái Payment
+            switch (request.status)
+            {
+                case "success":
+                    payment.Status = PaymentStatus.Paid;
+                    break;
+                case "failed":
+                    payment.Status = PaymentStatus.Unpaid; // Hoặc một trạng thái lỗi khác
+                    break;
+                case "canceled":
+                    payment.Status = PaymentStatus.Canceled; // Hoặc một trạng thái hủy khác
+                    break;
+                    // ... các trạng thái khác
+            }
+
+            await _unitOfWork.SaveAsync();
+        }
+
+
 
     }
 }
