@@ -8,10 +8,10 @@ namespace Wanvi.Services.MapperProfile
     {
         public TourProfile()
         {
-            CreateMap<Tour, CreateTourModel>().ReverseMap();
             CreateMap<Tour, ResponseTourModel>()
             .ForMember(dest => dest.PickupAddress, opt => opt.MapFrom(src => src.PickupAddress.Street))
             .ForMember(dest => dest.DropoffAddress, opt => opt.MapFrom(src => src.DropoffAddress.Street))
+            .ForMember(dest => dest.LocalGuideId, opt => opt.MapFrom(src => src.UserId))
             .ForMember(dest => dest.LocalGuideName, opt => opt.MapFrom(src => src.ApplicationUser.FullName))
             .ForMember(dest => dest.TourAddresses, opt => opt.MapFrom(src => src.TourAddresses.Select(ta => ta.Address.Street).ToList()))
             .ForMember(dest => dest.TourActivities, opt => opt.MapFrom(src =>
@@ -23,6 +23,9 @@ namespace Wanvi.Services.MapperProfile
         : new List<string>()))
             .ForMember(dest => dest.Schedules, opt => opt.MapFrom(src => src.Schedules))
             .ForMember(dest => dest.Medias, opt => opt.MapFrom(src => src.Medias)).ReverseMap();
+            CreateMap<Tour, CreateTourModel>().ReverseMap();
+            CreateMap<Tour, UpdateTourModel>().ReverseMap()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
 }

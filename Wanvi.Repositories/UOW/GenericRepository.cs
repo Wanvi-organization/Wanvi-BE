@@ -106,5 +106,10 @@ namespace Wanvi.Repositories.UOW
         {
             return await Task.FromResult(_dbSet.AsQueryable());
         }
+
+        public IQueryable<T> GetQueryable()
+        {
+            return _dbSet.AsQueryable();
+        }
     }
 }

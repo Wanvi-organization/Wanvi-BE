@@ -1,16 +1,8 @@
 ﻿using Wanvi.Core.Bases;
+using static Wanvi.Core.Constants.Enum;
 
 namespace Wanvi.Contract.Repositories.Entities
 {
-    public enum BookingStatus
-    {
-        Pending,
-        Confirmed,
-        Completed,
-        Cancelled,
-        Refunded
-    }
-
     public class Booking : BaseEntity
     {
         public BookingStatus Status { get; set; }
