@@ -9,6 +9,8 @@ namespace Wanvi.Services.MapperProfile
         public ActivityProfile()
         {
             CreateMap<Activity, ResponseActivityModel>().ReverseMap();
+            CreateMap<Activity, CreateActivityModel>().ReverseMap();
+            CreateMap<Activity, UpdateActivityModel>().ReverseMap();
         }
     }
 }

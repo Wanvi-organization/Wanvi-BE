@@ -6,6 +6,7 @@ using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
+using Wanvi.Core.Utils;
 using Wanvi.ModelViews.TourModelViews;
 using Wanvi.Services.Services.Infrastructure;
 
@@ -106,6 +107,9 @@ namespace Wanvi.Services.Services
                     TourId = newTour.Id.ToString()
                 });
             }
+
+            newTour.CreatedBy = userId.ToString();
+            newTour.LastUpdatedBy = userId.ToString();
 
             await _unitOfWork.GetRepository<Tour>().InsertAsync(newTour);
             await _unitOfWork.SaveAsync();
