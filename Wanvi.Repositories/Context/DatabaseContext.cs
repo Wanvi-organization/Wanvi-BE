@@ -25,6 +25,7 @@ namespace Wanvi.Repositories.Context
         public virtual DbSet<City> Cities => Set<City>();
         public virtual DbSet<Comment> Comments => Set<Comment>();
         public virtual DbSet<Conversation> Conversations => Set<Conversation>();
+        public virtual DbSet<Dashboard> Dashboard => Set<Dashboard>();
         public virtual DbSet<District> Districts => Set<District>();
         public virtual DbSet<Hashtag> Hashtags => Set<Hashtag>();
         public virtual DbSet<Media> Medias => Set<Media>();
@@ -48,6 +49,8 @@ namespace Wanvi.Repositories.Context
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Dashboard>().HasNoKey();
+
             modelBuilder.Entity<ApplicationUser>(entity =>
             {
                 entity.ToTable("Users");
