@@ -10,6 +10,7 @@ using Wanvi.Core.Utils;
 using Wanvi.ModelViews.ActivityModelViews;
 using Wanvi.ModelViews.TourModelViews;
 using Wanvi.Services.Services.Infrastructure;
+using static Wanvi.Core.Constants.Enum;
 
 namespace Wanvi.Services.Services
 {
@@ -136,7 +137,7 @@ namespace Wanvi.Services.Services
 
                 newTour.Schedules.Add(new Schedule
                 {
-                    Day = (Schedule.DayOfWeek)schedule.Day,
+                    Day = (Core.Constants.Enum.DayOfWeek)schedule.Day,
                     StartTime = startTime,
                     EndTime = endTime,
                     MaxTraveler = schedule.MaxTraveler,
@@ -150,7 +151,7 @@ namespace Wanvi.Services.Services
                 newTour.Medias.Add(new Media
                 {
                     Url = media.Url,
-                    Type = (Media.MediaType)media.Type,
+                    Type = (MediaType)media.Type,
                     AltText = media.AltText,
                     TourId = newTour.Id.ToString()
                 });
@@ -253,7 +254,7 @@ namespace Wanvi.Services.Services
 
                     tour.Schedules.Add(new Schedule
                     {
-                        Day = (Schedule.DayOfWeek)schedule.Day,
+                        Day = (Core.Constants.Enum.DayOfWeek)schedule.Day,
                         StartTime = startTime,
                         EndTime = endTime,
                         MaxTraveler = schedule.MaxTraveler,
@@ -271,7 +272,7 @@ namespace Wanvi.Services.Services
                     tour.Medias.Add(new Media
                     {
                         Url = media.Url,
-                        Type = (Media.MediaType)media.Type,
+                        Type = (MediaType)media.Type,
                         AltText = media.AltText,
                         TourId = tour.Id.ToString()
                     });
