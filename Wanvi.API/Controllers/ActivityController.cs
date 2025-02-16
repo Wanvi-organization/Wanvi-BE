@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Wanvi.Contract.Repositories.Base;
 using Wanvi.Contract.Services.Interfaces;
-using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
 using Wanvi.ModelViews.ActivityModelViews;
 
@@ -23,8 +22,22 @@ namespace Wanvi.API.Controllers
         [HttpGet("Get_All_Activities")]
         public async Task<IActionResult> GetAllActivities()
         {
-            var result = await _activityService.GetAllAsync();
-            return Ok(BaseResponse<IEnumerable<ResponseActivityModel>>.OkResponse(result));
+            return Ok(new BaseResponseModel<IEnumerable<ResponseActivityModel>>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: await _activityService.GetAllAsync()));
+        }
+        /// <summary>
+        /// Lấy hoạt động bằng id.
+        /// </summary>
+        /// <param name="id">ID của hoạt động cần lấy</param>
+        [HttpGet("Get_Activity_By_Id/{id}")]
+        public async Task<IActionResult> GetActivityById(string id)
+        {
+            return Ok(new BaseResponseModel<ResponseActivityModel>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: await _activityService.GetByIdAsync(id)));
         }
         /// <summary>
         /// Tạo một hoạt động mới.

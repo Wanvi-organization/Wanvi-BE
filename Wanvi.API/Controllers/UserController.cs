@@ -4,7 +4,6 @@ using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
 using Wanvi.ModelViews.UserModelViews;
-using Wanvi.Services.Services;
 
 namespace WanviBE.API.Controllers
 {
@@ -37,6 +36,7 @@ namespace WanviBE.API.Controllers
         [HttpGet("Get_Local_Guides")]
         public async Task<IActionResult> GetLocalGuides(double latitude, double longitude, string? name = null, string? city = null, string? district = null, double? minPrice = null, double? maxPrice = null, double? minRating = null, double? maxRating = null, bool? isVerified = null, bool? sortByPrice = null, bool? sortByNearest = null)
         {
+            sortByNearest ??= true;
             var result = await _userService.GetLocalGuidesAsync(latitude, longitude, name, city, district, minPrice, maxPrice, minRating, maxRating, isVerified, sortByPrice, sortByNearest);
             return Ok(BaseResponse<IEnumerable<ResponseLocalGuideModel>>.OkResponse(result));
         }

@@ -28,5 +28,6 @@ namespace Wanvi.Contract.Repositories.IUOW
         Task<T> FindAsync(Expression<Func<T, bool>> predicate);
         Task<List<T>> FindAllAsync(Expression<Func<T, bool>> predicate);
         Task<IQueryable<T>> GetAllQueryableAsync();
+        IQueryable<T> GetQueryable();
     }
 }
