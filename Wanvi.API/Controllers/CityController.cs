@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Wanvi.Contract.Repositories.Base;
 using Wanvi.Contract.Services.Interfaces;
-using Wanvi.Core.Bases;
+using Wanvi.Core.Constants;
 using Wanvi.ModelViews.CityModelViews;
 
 namespace Wanvi.API.Controllers
@@ -15,12 +16,16 @@ namespace Wanvi.API.Controllers
         {
             _cityService = cityService;
         }
-
+        /// <summary>
+        /// Lấy toàn bộ tỉnh/thành phố.
+        /// </summary>
         [HttpGet("Get_All_Cities")]
-        public IActionResult GetAllCities()
+        public async Task<IActionResult> GetAllCities()
         {
-            var result = _cityService.GetAll();
-            return Ok(BaseResponse<IEnumerable<ResponseCityModel>>.OkResponse(result));
+            return Ok(new BaseResponseModel<IEnumerable<ResponseCityModel>>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: await _cityService.GetAllAsync()));
         }
     }
 }

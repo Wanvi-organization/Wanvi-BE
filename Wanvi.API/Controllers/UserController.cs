@@ -32,7 +32,7 @@ namespace WanviBE.API.Controllers
         /// <param name="maxRating">Điểm đánh giá tối đa (tùy chọn).</param>
         /// <param name="isVerified">Lọc hướng dẫn viên đã được xác minh (true) hoặc chưa xác minh (false) (tùy chọn).</param>
         /// <param name="sortByPrice">Sắp xếp theo giá (true - tăng dần, false - giảm dần, null - không áp dụng).</param>
-        /// <param name="sortByNearest">Sắp xếp theo khoảng cách gần nhất (true - gần nhất, false - không áp dụng).</param>
+        /// <param name="sortByNearest">Sắp xếp theo khoảng cách gần nhất (mặc định: true - gần nhất, false - không áp dụng).</param>
         [HttpGet("Get_Local_Guides")]
         public async Task<IActionResult> GetLocalGuides(double latitude, double longitude, string? name = null, string? city = null, string? district = null, double? minPrice = null, double? maxPrice = null, double? minRating = null, double? maxRating = null, bool? isVerified = null, bool? sortByPrice = null, bool? sortByNearest = null)
         {
