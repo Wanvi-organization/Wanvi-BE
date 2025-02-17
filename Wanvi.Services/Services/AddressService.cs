@@ -21,26 +21,6 @@ namespace Wanvi.Services.Services
             _mapper = mapper;
         }
 
-        //private async Task<string> GetStreetFromCoordinatesAsync(double latitude, double longitude)
-        //{
-        //    string apiKey = "YOUR_GOOGLE_MAPS_API_KEY";
-        //    string requestUrl = $"https://maps.googleapis.com/maps/api/geocode/json?latlng={latitude},{longitude}&key={apiKey}";
-
-        //    using (HttpClient client = new HttpClient())
-        //    {
-        //        HttpResponseMessage response = await client.GetAsync(requestUrl);
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            string jsonResponse = await response.Content.ReadAsStringAsync();
-        //            var jsonObject = JsonConvert.DeserializeObject<NominatimResponseModelView>(jsonResponse);
-
-        //            var street = jsonObject?.Results?.FirstOrDefault()?.FormattedAddress;
-        //            return street ?? "Unknown Street";
-        //        }
-        //    }
-        //    return "Unknown Street";
-        //}
-
         public async Task<string> GetStreetFromCoordinatesAsync(double latitude, double longitude)
         {
             string requestUrl = $"https://nominatim.openstreetmap.org/reverse?format=json&lat={latitude}&lon={longitude}";
@@ -63,8 +43,11 @@ namespace Wanvi.Services.Services
 
         public async Task<Address> GetOrCreateAddressAsync(double latitude, double longitude)
         {
+            double tolerance = 0.0001; // Sai số ~10m (1 độ ~ 111km, nên 0.0001 ~ 11m)
+
             var existingAddress = await _unitOfWork.GetRepository<Address>()
-                .FindAsync(a => a.Latitude == latitude && a.Longitude == longitude);
+                .FindAsync(a => Math.Abs(a.Latitude - latitude) < tolerance
+                             && Math.Abs(a.Longitude - longitude) < tolerance);
 
             if (existingAddress != null)
             {
@@ -104,7 +87,5 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
             return newAddress;
         }
-
-
     }
 }
