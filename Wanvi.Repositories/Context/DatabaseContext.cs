@@ -9,6 +9,7 @@ namespace Wanvi.Repositories.Context
         public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options) { }
 
         #region Entity
+        public virtual DbSet<Activity> Activities => Set<Activity>();
         public virtual DbSet<Address> Addresses => Set<Address>();
         public virtual DbSet<ApplicationUser> ApplicationUsers => Set<ApplicationUser>();
         public virtual DbSet<ApplicationRole> ApplicationRoles => Set<ApplicationRole>();
@@ -24,6 +25,7 @@ namespace Wanvi.Repositories.Context
         public virtual DbSet<City> Cities => Set<City>();
         public virtual DbSet<Comment> Comments => Set<Comment>();
         public virtual DbSet<Conversation> Conversations => Set<Conversation>();
+        public virtual DbSet<Dashboard> Dashboard => Set<Dashboard>();
         public virtual DbSet<District> Districts => Set<District>();
         public virtual DbSet<Hashtag> Hashtags => Set<Hashtag>();
         public virtual DbSet<Media> Medias => Set<Media>();
@@ -33,19 +35,22 @@ namespace Wanvi.Repositories.Context
         public virtual DbSet<NewsDetail> NewsDetails => Set<NewsDetail>();
         public virtual DbSet<Payment> Payments => Set<Payment>();
         public virtual DbSet<Post> Posts => Set<Post>();
+        public virtual DbSet<PostHashtag> PostHashtags => Set<PostHashtag>();
         public virtual DbSet<PremiumPackage> PremiumPackages => Set<PremiumPackage>();
         public virtual DbSet<Review> Reviews => Set<Review>();
         public virtual DbSet<Schedule> Schedules => Set<Schedule>();
         public virtual DbSet<Subscription> Subscriptions => Set<Subscription>();
         public virtual DbSet<Tour> Tours => Set<Tour>();
+        public virtual DbSet<TourActivity> TourActivities => Set<TourActivity>();
         public virtual DbSet<TourAddress> TourAddresses => Set<TourAddress>();
-        public virtual DbSet<TourCategory> TourCategories => Set<TourCategory>();
         public virtual DbSet<Voucher> Vouchers => Set<Voucher>();
 
         #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Dashboard>().HasNoKey();
+
             modelBuilder.Entity<ApplicationUser>(entity =>
             {
                 entity.ToTable("Users");
@@ -166,7 +171,7 @@ namespace Wanvi.Repositories.Context
              
             modelBuilder.Entity<TourAddress>()
                 .HasOne(tp => tp.Tour)
-                .WithMany(t => t.TourPoints)
+                .WithMany(t => t.TourAddresses)
                 .HasForeignKey(tp => tp.TourId);
 
             modelBuilder.Entity<TourAddress>()
@@ -174,18 +179,18 @@ namespace Wanvi.Repositories.Context
                 .WithMany(a => a.TourPoints)
                 .HasForeignKey(tp => tp.AddressId);
 
-            modelBuilder.Entity<TourCategory>()
-            .HasKey(ta => new { ta.TourId, ta.CategoryId });
+            modelBuilder.Entity<TourActivity>()
+            .HasKey(ta => new { ta.TourId, ta.ActivityId });
 
-            modelBuilder.Entity<TourCategory>()
+            modelBuilder.Entity<TourActivity>()
                 .HasOne(ta => ta.Tour)
-                .WithMany(t => t.TourCategories)
+                .WithMany(t => t.TourActivities)
                 .HasForeignKey(ta => ta.TourId);
 
-            modelBuilder.Entity<TourCategory>()
-                .HasOne(ta => ta.Category)
-                .WithMany(a => a.TourCategories)
-                .HasForeignKey(ta => ta.CategoryId);
+            modelBuilder.Entity<TourActivity>()
+                .HasOne(ta => ta.Activity)
+                .WithMany(a => a.TourActivities)
+                .HasForeignKey(ta => ta.ActivityId);
 
             modelBuilder.Entity<Message>()
                 .HasOne(m => m.Conversation)

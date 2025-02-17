@@ -12,6 +12,7 @@ using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
 using Wanvi.Core.Utils;
 using Wanvi.ModelViews.UserModelViews;
+using Wanvi.ModelViews.VietMapModelViews;
 using Wanvi.Services.Services.Infrastructure;
 
 namespace Wanvi.Services.Services
@@ -22,6 +23,7 @@ namespace Wanvi.Services.Services
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _contextAccessor;
+        private readonly string _apiKey;
 
         public UserService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration, IHttpContextAccessor contextAccessor)
         {
@@ -29,136 +31,137 @@ namespace Wanvi.Services.Services
             _mapper = mapper;
             _configuration = configuration;
             _contextAccessor = contextAccessor;
+            _apiKey = configuration["VietMap:ApiKey"] ?? throw new Exception("API key is missing from configuration.");
         }
 
         #region Private Service
         //private async Task<(double Latitude, double Longitude)> GeocodeAddressAsync(string address)
         //{
         //    var httpClient = new HttpClient();
-        //    var apiKey = _configuration["GoogleMaps:ApiKey"] ?? throw new Exception("Google Map API key is not set");
-        //    var requestUrl = $"https://maps.googleapis.com/maps/api/geocode/json?address={Uri.EscapeDataString(address)}&key={apiKey}";
+        //    httpClient.DefaultRequestHeaders.Add("User-Agent", "Wanvi");
+        //    var requestUrl = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(address)}&format=json";
 
         //    var response = await httpClient.GetAsync(requestUrl);
-        //    if (!response.IsSuccessStatusCode) throw new Exception("Failed to fetch geocoding data.");
+        //    if (!response.IsSuccessStatusCode)
+        //        throw new Exception("Failed to fetch geocoding data.");
 
         //    var json = await response.Content.ReadAsStringAsync();
-        //    var data = JsonSerializer.Deserialize<GoogleGeocodingModelView>(json);
+        //    var data = JsonSerializer.Deserialize<List<NominatimResponseModelView>>(json);
+        //    var location = data?.FirstOrDefault();
 
-        //    var location = data?.Results?.FirstOrDefault()?.Geometry?.Location;
-        //    if (location == null) throw new Exception("Unable to geocode address.");
+        //    if (location == null)
+        //        throw new Exception($"Unable to geocode address {address}.");
 
-        //    return (location.Lat, location.Lng);
+        //    return (double.Parse(location.Lat), double.Parse(location.Lon));
         //}
+
         private async Task<(double Latitude, double Longitude)> GeocodeAddressAsync(string address)
         {
-            var httpClient = new HttpClient();
+            using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Wanvi");
-            var requestUrl = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(address)}&format=json";
 
-            var response = await httpClient.GetAsync(requestUrl);
-            if (!response.IsSuccessStatusCode)
-                throw new Exception("Failed to fetch geocoding data.");
+            var geocodeUrl = $"https://maps.vietmap.vn/api/search/v3?apikey={_apiKey}&text={Uri.EscapeDataString(address)}";
+            var geocodeResponse = await httpClient.GetAsync(geocodeUrl);
 
-            var json = await response.Content.ReadAsStringAsync();
-            var data = JsonSerializer.Deserialize<List<NominatimResponseModelView>>(json);
-            var location = data?.FirstOrDefault();
+            if (!geocodeResponse.IsSuccessStatusCode)
+                throw new Exception("Failed to fetch geocoding data from VietMap.");
 
-            if (location == null)
+            var geocodeJson = await geocodeResponse.Content.ReadAsStringAsync();
+            var geocodeData = JsonSerializer.Deserialize<List<ResponseGeocodeModel>>(geocodeJson);
+
+            var location = geocodeData?.FirstOrDefault();
+            if (location == null || string.IsNullOrEmpty(location.RefId))
                 throw new Exception($"Unable to geocode address {address}.");
 
-            return (double.Parse(location.Lat), double.Parse(location.Lon));
+            var placeUrl = $"https://maps.vietmap.vn/api/place/v3?apikey={_apiKey}&refid={location.RefId}";
+            var placeResponse = await httpClient.GetAsync(placeUrl);
+
+            if (!placeResponse.IsSuccessStatusCode)
+                throw new Exception("Failed to fetch place data from VietMap.");
+
+            var placeJson = await placeResponse.Content.ReadAsStringAsync();
+            var placeData = JsonSerializer.Deserialize<ResponsePlaceModel>(placeJson);
+
+            return (placeData.Lat, placeData.Lng);
         }
         #endregion
 
         #region Implementation Interface
         public async Task<IEnumerable<ResponseLocalGuideModel>> GetLocalGuidesAsync(double latitude, double longitude, string? name = null, string? city = null, string? district = null, double? minPrice = null, double? maxPrice = null, double? minRating = null, double? maxRating = null, bool? isVerified = null, bool? sortByPrice = null, bool? sortByNearest = null)
         {
-            const double radiusInKm = 10.0;
-
-            var localGuides = await _unitOfWork.GetRepository<ApplicationUser>()
+            var query = _unitOfWork.GetRepository<ApplicationUser>()
                 .Entities
-                .Where(u => u.UserRoles.Any(ur => ur.Role.Name == "LocalGuide") && !u.DeletedTime.HasValue)
-                .ToListAsync();
+                .Where(u => u.UserRoles.Any(ur => ur.Role.Name == "LocalGuide") && !u.DeletedTime.HasValue);
 
             if (!string.IsNullOrWhiteSpace(name))
-            {
-                localGuides = localGuides.Where(lg => lg.FullName.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
-            }
+                query = query.Where(lg => lg.FullName.Contains(name));
 
             if (!string.IsNullOrWhiteSpace(city))
-            {
-                localGuides = localGuides.Where(lg => lg.Address.Contains(city)).ToList();
-            }
+                query = query.Where(lg => lg.Address.Contains(city));
 
             if (!string.IsNullOrWhiteSpace(district))
-            {
-                localGuides = localGuides.Where(lg => lg.Address.Contains(district)).ToList();
-            }
+                query = query.Where(lg => lg.Address.Contains(district));
 
-            if (minPrice.HasValue && maxPrice.HasValue)
-            {
-                localGuides = localGuides.Where(lg => lg.MinHourlyRate >= minPrice && lg.MinHourlyRate <= maxPrice).ToList();
-            }
+            if (minPrice.HasValue)
+                query = query.Where(lg => lg.MinHourlyRate >= minPrice);
 
-            if (minRating.HasValue && maxRating.HasValue)
-            {
-                localGuides = localGuides.Where(lg => lg.AvgRating >= minRating && lg.AvgRating <= maxRating).ToList();
-            }
+            if (maxPrice.HasValue)
+                query = query.Where(lg => lg.MinHourlyRate <= maxPrice);
+
+            if (minRating.HasValue)
+                query = query.Where(lg => lg.AvgRating >= minRating);
+
+            if (maxRating.HasValue)
+                query = query.Where(lg => lg.AvgRating <= maxRating);
 
             if (isVerified.HasValue)
-            {
-                localGuides = localGuides.Where(lg => lg.IsVerified == isVerified).ToList();
-            }
+                query = query.Where(lg => lg.IsVerified == isVerified);
 
-            var nearbyLocalGuides = new List<ResponseLocalGuideModel>();
+            var localGuides = await query
+                .Select(lg => new
+                {
+                    lg.Id,
+                    lg.FullName,
+                    lg.Address,
+                    lg.AvgRating,
+                    lg.MinHourlyRate,
+                    lg.IsPremium,
+                    lg.IsVerified,
+                    ReviewCount = lg.Reviews.Count
+                })
+                .ToListAsync();
 
-            foreach (var localGuide in localGuides)
+            var tasks = localGuides.Select(async lg =>
             {
-                var (lat, lon) = await GeocodeAddressAsync(localGuide.Address);
+                var (lat, lon) = await GeocodeAddressAsync(lg.Address);
                 var distance = GeoHelper.GetDistance(latitude, longitude, lat, lon);
 
-                if (string.IsNullOrWhiteSpace(city) && string.IsNullOrWhiteSpace(district))
+                return new ResponseLocalGuideModel
                 {
-                    if (distance > radiusInKm) continue;
-                }
-
-                nearbyLocalGuides.Add(new ResponseLocalGuideModel
-                {
-                    Id = localGuide.Id,
-                    FullName = localGuide.FullName,
-                    Address = localGuide.Address,
-                    AvgRating = localGuide.AvgRating,
-                    ReviewCount = localGuide.Reviews != null ? localGuide.Reviews.Count : 0,
-                    MinHourlyRate = localGuide.MinHourlyRate,
+                    Id = lg.Id,
+                    FullName = lg.FullName,
+                    Address = lg.Address,
+                    AvgRating = lg.AvgRating,
+                    ReviewCount = lg.ReviewCount,
+                    MinHourlyRate = lg.MinHourlyRate,
                     Distance = distance,
-                    IsPremium = localGuide.IsPremium,
-                    IsVerified = localGuide.IsVerified
-                });
+                    IsPremium = lg.IsPremium,
+                    IsVerified = lg.IsVerified
+                };
+            });
+
+            var nearbyLocalGuides = (await Task.WhenAll(tasks)).ToList();
+
+            if (sortByNearest == true)
+            {
+                nearbyLocalGuides = nearbyLocalGuides.OrderBy(lg => lg.Distance).ToList();
             }
 
-            if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(city) && string.IsNullOrWhiteSpace(district) &&
-        !minPrice.HasValue && !maxPrice.HasValue && !minRating.HasValue && !maxRating.HasValue && !isVerified.HasValue)
+            if (sortByPrice.HasValue)
             {
-                nearbyLocalGuides = nearbyLocalGuides
-                    .OrderByDescending(lg => lg.IsVerified && lg.IsPremium)
-                    .ThenByDescending(lg => lg.IsPremium)
-                    .ThenByDescending(lg => lg.IsVerified)
-                    .ThenBy(lg => lg.Distance)
-                    .ToList();
-            }
-            else
-            {
-                if (sortByPrice.HasValue)
-                {
-                    nearbyLocalGuides = sortByPrice.Value
-                        ? nearbyLocalGuides.OrderBy(lg => lg.MinHourlyRate).ToList()
-                        : nearbyLocalGuides.OrderByDescending(lg => lg.MinHourlyRate).ToList();
-                }
-
-                if (sortByNearest.HasValue && sortByNearest.Value)
-                {
-                    nearbyLocalGuides = nearbyLocalGuides.OrderBy(lg => lg.Distance).ToList();
-                }
+                nearbyLocalGuides = sortByPrice.Value
+                    ? nearbyLocalGuides.OrderBy(lg => lg.MinHourlyRate).ToList()
+                    : nearbyLocalGuides.OrderByDescending(lg => lg.MinHourlyRate).ToList();
             }
 
             return nearbyLocalGuides;

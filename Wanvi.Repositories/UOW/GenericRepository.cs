@@ -2,6 +2,7 @@
 using Wanvi.Core.Bases;
 using Wanvi.Repositories.Context;
 using Wanvi.Contract.Repositories.IUOW;
+using System.Linq.Expressions;
 
 namespace Wanvi.Repositories.UOW
 {
@@ -89,6 +90,26 @@ namespace Wanvi.Repositories.UOW
         public Task UpdateAsync(T obj)
         {
             return Task.FromResult(_dbSet.Update(obj));
+        }
+
+        public async Task<List<T>> FindAllAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.Where(predicate).ToListAsync();
+        }
+
+        public async Task<T> FindAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.FirstOrDefaultAsync(predicate);
+        }
+
+        public async Task<IQueryable<T>> GetAllQueryableAsync()
+        {
+            return await Task.FromResult(_dbSet.AsQueryable());
+        }
+
+        public IQueryable<T> GetQueryable()
+        {
+            return _dbSet.AsQueryable();
         }
     }
 }
