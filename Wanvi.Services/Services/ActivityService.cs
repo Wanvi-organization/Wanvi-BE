@@ -27,6 +27,12 @@ namespace Wanvi.Services.Services
         public async Task<IEnumerable<ResponseActivityModel>> GetAllAsync()
         {
             var activities = await _unitOfWork.GetRepository<Activity>().FindAllAsync(a => !a.DeletedTime.HasValue);
+
+            if (!activities.Any())
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Hoạt động không tồn tại.");
+            }
+
             return _mapper.Map<IEnumerable<ResponseActivityModel>>(activities);
         }
 

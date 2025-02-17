@@ -30,7 +30,7 @@ namespace Wanvi.API.Controllers
                 data: await _tourService.GetAllAsync()));
         }
         /// <summary>
-        /// Lấy toàn bộ tour bằng id của hướng dẫn viên
+        /// Lấy toàn bộ tour bằng id của hướng dẫn viên.
         /// </summary>
         /// <param name="id">ID của hướng dẫn viên của tour cần lấy</param>
         [HttpGet("Get_All_Tours_By_Local_Guide_Id/{userId}")]
