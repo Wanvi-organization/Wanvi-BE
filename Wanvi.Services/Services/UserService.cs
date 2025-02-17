@@ -35,55 +35,55 @@ namespace Wanvi.Services.Services
         }
 
         #region Private Service
-        private async Task<(double Latitude, double Longitude)> GeocodeAddressAsync(string address)
-        {
-            var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "Wanvi");
-            var requestUrl = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(address)}&format=json";
-
-            var response = await httpClient.GetAsync(requestUrl);
-            if (!response.IsSuccessStatusCode)
-                throw new Exception("Failed to fetch geocoding data.");
-
-            var json = await response.Content.ReadAsStringAsync();
-            var data = JsonSerializer.Deserialize<List<NominatimResponseModelView>>(json);
-            var location = data?.FirstOrDefault();
-
-            if (location == null)
-                throw new Exception($"Unable to geocode address {address}.");
-
-            return (double.Parse(location.Lat), double.Parse(location.Lon));
-        }
-
         //private async Task<(double Latitude, double Longitude)> GeocodeAddressAsync(string address)
         //{
-        //    using var httpClient = new HttpClient();
+        //    var httpClient = new HttpClient();
         //    httpClient.DefaultRequestHeaders.Add("User-Agent", "Wanvi");
+        //    var requestUrl = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(address)}&format=json";
 
-        //    var geocodeUrl = $"https://maps.vietmap.vn/api/search/v3?apikey={_apiKey}&text={Uri.EscapeDataString(address)}";
-        //    var geocodeResponse = await httpClient.GetAsync(geocodeUrl);
+        //    var response = await httpClient.GetAsync(requestUrl);
+        //    if (!response.IsSuccessStatusCode)
+        //        throw new Exception("Failed to fetch geocoding data.");
 
-        //    if (!geocodeResponse.IsSuccessStatusCode)
-        //        throw new Exception("Failed to fetch geocoding data from VietMap.");
+        //    var json = await response.Content.ReadAsStringAsync();
+        //    var data = JsonSerializer.Deserialize<List<NominatimResponseModelView>>(json);
+        //    var location = data?.FirstOrDefault();
 
-        //    var geocodeJson = await geocodeResponse.Content.ReadAsStringAsync();
-        //    var geocodeData = JsonSerializer.Deserialize<List<ResponseGeocodeModel>>(geocodeJson);
-
-        //    var location = geocodeData?.FirstOrDefault();
-        //    if (location == null || string.IsNullOrEmpty(location.RefId))
+        //    if (location == null)
         //        throw new Exception($"Unable to geocode address {address}.");
 
-        //    var placeUrl = $"https://maps.vietmap.vn/api/place/v3?apikey={_apiKey}&refid={location.RefId}";
-        //    var placeResponse = await httpClient.GetAsync(placeUrl);
-
-        //    if (!placeResponse.IsSuccessStatusCode)
-        //        throw new Exception("Failed to fetch place data from VietMap.");
-
-        //    var placeJson = await placeResponse.Content.ReadAsStringAsync();
-        //    var placeData = JsonSerializer.Deserialize<ResponsePlaceModel>(placeJson);
-
-        //    return (placeData.Lat, placeData.Lng);
+        //    return (double.Parse(location.Lat), double.Parse(location.Lon));
         //}
+
+        private async Task<(double Latitude, double Longitude)> GeocodeAddressAsync(string address)
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Wanvi");
+
+            var geocodeUrl = $"https://maps.vietmap.vn/api/search/v3?apikey={_apiKey}&text={Uri.EscapeDataString(address)}";
+            var geocodeResponse = await httpClient.GetAsync(geocodeUrl);
+
+            if (!geocodeResponse.IsSuccessStatusCode)
+                throw new Exception("Failed to fetch geocoding data from VietMap.");
+
+            var geocodeJson = await geocodeResponse.Content.ReadAsStringAsync();
+            var geocodeData = JsonSerializer.Deserialize<List<ResponseGeocodeModel>>(geocodeJson);
+
+            var location = geocodeData?.FirstOrDefault();
+            if (location == null || string.IsNullOrEmpty(location.RefId))
+                throw new Exception($"Unable to geocode address {address}.");
+
+            var placeUrl = $"https://maps.vietmap.vn/api/place/v3?apikey={_apiKey}&refid={location.RefId}";
+            var placeResponse = await httpClient.GetAsync(placeUrl);
+
+            if (!placeResponse.IsSuccessStatusCode)
+                throw new Exception("Failed to fetch place data from VietMap.");
+
+            var placeJson = await placeResponse.Content.ReadAsStringAsync();
+            var placeData = JsonSerializer.Deserialize<ResponsePlaceModel>(placeJson);
+
+            return (placeData.Lat, placeData.Lng);
+        }
         #endregion
 
         #region Implementation Interface
