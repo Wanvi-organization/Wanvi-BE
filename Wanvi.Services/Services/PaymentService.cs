@@ -75,6 +75,8 @@ namespace Wanvi.Services.Services
             return checkoutUrl;
         }
 
+
+
         private long GenerateRandomOrderCode()
         {
             Random random = new Random();

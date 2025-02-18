@@ -4,6 +4,8 @@ namespace Wanvi.Contract.Repositories.Entities
 {
     public enum BookingStatus
     {
+        DepositedAll,
+        DepositedHaft,
         Pending,
         Confirmed,
         Completed,
@@ -17,7 +19,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public int TotalTravelers { get; set; }
         public double TotalPrice { get; set; }
         public string? Note { get; set; }
-
+        public DateTime RentalDate { get; set; }
         public string ScheduleId { get; set; }
         public virtual Schedule Schedule { get; set; }
         public Guid UserId { get; set; }
