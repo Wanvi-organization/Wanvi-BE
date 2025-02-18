@@ -4,6 +4,8 @@
     {
         public Guid Id { get; set; }
         public string FullName { get; set; }
+        public bool Gender { get; set; }
+        public string ProfileImageUrl { get; set; }
         public double AvgRating { get; set; }
         public int ReviewCount { get; set; }
         public string Address { get; set; }

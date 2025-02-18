@@ -1,15 +1,10 @@
 ﻿using Wanvi.Core.Bases;
+using static Wanvi.Core.Constants.Enum;
 
 namespace Wanvi.Contract.Repositories.Entities
 {
     public class Media : BaseEntity
     {
-        public enum MediaType
-        {
-            Image,
-            Video
-        }
-
         public string Url { get; set; }
         public MediaType Type { get; set; }
         public string? AltText { get; set; }

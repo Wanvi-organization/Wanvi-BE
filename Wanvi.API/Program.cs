@@ -1,8 +1,6 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 using System.Text.Json.Serialization;
-using Wanvi.API.Middleware;
-using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Repositories.Context;
 using WanviBE.API;
 using WanviBE.API.Middleware;
@@ -17,8 +15,7 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 //builder.Services.AddDbContext<DatabaseContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+//    options.UseLazyLoadingProxies().UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -29,7 +26,11 @@ builder.Services.AddControllers()
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+});
 builder.Services.AddConfig(builder.Configuration);
 builder.Services.AddHttpClient();
 var app = builder.Build();

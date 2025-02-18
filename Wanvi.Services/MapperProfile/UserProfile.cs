@@ -4,9 +4,9 @@ using Wanvi.ModelViews.UserModelViews;
 
 namespace Wanvi.Services.MapperProfile
 {
-    public class UserMapperProfile : Profile
+    public class UserProfile : Profile
     {
-        public UserMapperProfile()
+        public UserProfile()
         {
         }
     }

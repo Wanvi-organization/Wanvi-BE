@@ -20,16 +20,16 @@ namespace Wanvi.Services.Services
             _mapper = mapper;
         }
 
-        public IEnumerable<ResponseDistrictModel> GetByCityId(string id)
+        public async Task<IEnumerable<ResponseDistrictModel>> GetAllByCityId(string cityId)
         {
-            var districts = _unitOfWork.GetRepository<District>().Entities.Where(d => d.CityId == id).OrderBy(c => c.Name);
+            var districts = await _unitOfWork.GetRepository<District>().FindAllAsync(d => d.CityId == cityId);
 
             if (!districts.Any())
             {
                 throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Quận/huyện không tồn tại.");
             }
 
-            return _mapper.Map<IEnumerable<ResponseDistrictModel>>(districts.ToList());
+            return _mapper.Map<IEnumerable<ResponseDistrictModel>>(districts.OrderBy(x => x.Name));
         }
     }
 }

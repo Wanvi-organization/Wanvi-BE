@@ -92,9 +92,9 @@ namespace Wanvi.Repositories.UOW
             return Task.FromResult(_dbSet.Update(obj));
         }
 
-        public async Task<IQueryable<T>> FindAllAsync(Expression<Func<T, bool>> predicate)
+        public async Task<List<T>> FindAllAsync(Expression<Func<T, bool>> predicate)
         {
-            return await Task.FromResult(_dbSet.Where(predicate));
+            return await _dbSet.Where(predicate).ToListAsync();
         }
 
         public async Task<T> FindAsync(Expression<Func<T, bool>> predicate)
@@ -105,6 +105,11 @@ namespace Wanvi.Repositories.UOW
         public async Task<IQueryable<T>> GetAllQueryableAsync()
         {
             return await Task.FromResult(_dbSet.AsQueryable());
+        }
+
+        public IQueryable<T> GetQueryable()
+        {
+            return _dbSet.AsQueryable();
         }
     }
 }

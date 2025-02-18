@@ -6,8 +6,11 @@ using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
+using Wanvi.Core.Utils;
+using Wanvi.ModelViews.ActivityModelViews;
 using Wanvi.ModelViews.TourModelViews;
 using Wanvi.Services.Services.Infrastructure;
+using static Wanvi.Core.Constants.Enum;
 
 namespace Wanvi.Services.Services
 {
@@ -28,14 +31,70 @@ namespace Wanvi.Services.Services
 
         public async Task<IEnumerable<ResponseTourModel>> GetAllAsync()
         {
-            var tours = await _unitOfWork.GetRepository<Tour>().GetAllAsync();
+            var tours = await _unitOfWork.GetRepository<Tour>().FindAllAsync(a => !a.DeletedTime.HasValue);
             return _mapper.Map<IEnumerable<ResponseTourModel>>(tours);
         }
 
-        public async Task<ResponseTourModel> CreateTourAsync(CreateTourModel model)
+        public async Task<IEnumerable<ResponseTourModel>> GetAllByLocalGuideId(string userId)
+        {
+            var tours = await _unitOfWork.GetRepository<Tour>().FindAllAsync(a => a.UserId.ToString() == userId && !a.DeletedTime.HasValue);
+            return _mapper.Map<IEnumerable<ResponseTourModel>>(tours);
+        }
+
+        public async Task<ResponseTourModel> GetByIdAsync(string id)
+        {
+            var tour = await _unitOfWork.GetRepository<Tour>().GetByIdAsync(id.Trim())
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tour không tồn tại.");
+
+            if (tour.DeletedTime.HasValue)
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tour đã bị xóa.");
+            }
+
+            return _mapper.Map<ResponseTourModel>(tour); ;
+        }
+
+        public async Task CreateAsync(CreateTourModel model)
         {
             string strUserId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
             Guid.TryParse(strUserId, out Guid userId);
+            model.TrimAllStrings();
+
+            foreach (var schedule in model.Schedules)
+            {
+                if (!TimeSpan.TryParse(schedule.StartTime, out TimeSpan startTime))
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian bắt đầu không hợp lệ.");
+                }
+
+                if (!TimeSpan.TryParse(schedule.EndTime, out TimeSpan endTime))
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian kết thúc không hợp lệ.");
+                }
+
+                if (startTime >= endTime)
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.");
+                }
+
+                if ((endTime - startTime).TotalMinutes < 30)
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian bắt đầu và kết thúc phải cách nhau ít nhất 30 phút.");
+                }
+            }
+
+            var existingActivityIds = await _unitOfWork.GetRepository<Activity>()
+                .GetQueryable()
+                .Where(a => model.TourActivityIds.Contains(a.Id.ToString()))
+                .Select(a => a.Id.ToString())
+                .ToListAsync();
+
+            var invalidActivityIds = model.TourActivityIds.Except(existingActivityIds).ToList();
+
+            if (invalidActivityIds.Any())
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, $"Các hoạt động sau không tồn tại: {string.Join(", ", invalidActivityIds)}");
+            }
 
             var pickupAddress = await _addressService.GetOrCreateAddressAsync(model.PickupAddress.Latitude, model.PickupAddress.Longitude);
             var dropoffAddress = await _addressService.GetOrCreateAddressAsync(model.DropoffAddress.Latitude, model.DropoffAddress.Longitude);
@@ -50,8 +109,8 @@ namespace Wanvi.Services.Services
                 UserId = userId,
                 TourAddresses = new List<TourAddress>(),
                 Schedules = new List<Schedule>(),
-                TourActivities = new List<TourActivity>(),
-                Medias = new List<Media>()
+                Medias = new List<Media>(),
+                TourActivities = new List<TourActivity>()
             };
 
             foreach (var addressModel in model.TourAddresses)
@@ -61,15 +120,6 @@ namespace Wanvi.Services.Services
                 {
                     TourId = newTour.Id.ToString(),
                     AddressId = address.Id
-                });
-            }
-
-            foreach (var activityId in model.TourActivityIds)
-            {
-                newTour.TourActivities.Add(new TourActivity
-                {
-                    TourId = newTour.Id.ToString(),
-                    ActivityId = activityId
                 });
             }
 
@@ -87,7 +137,7 @@ namespace Wanvi.Services.Services
 
                 newTour.Schedules.Add(new Schedule
                 {
-                    Day = (Schedule.DayOfWeek)schedule.Day,
+                    Day = (Core.Constants.Enum.DayOfWeek)schedule.Day,
                     StartTime = startTime,
                     EndTime = endTime,
                     MaxTraveler = schedule.MaxTraveler,
@@ -101,22 +151,197 @@ namespace Wanvi.Services.Services
                 newTour.Medias.Add(new Media
                 {
                     Url = media.Url,
-                    Type = (Media.MediaType)media.Type,
+                    Type = (MediaType)media.Type,
                     AltText = media.AltText,
                     TourId = newTour.Id.ToString()
                 });
             }
 
+            foreach (var activityId in model.TourActivityIds)
+            {
+                newTour.TourActivities.Add(new TourActivity
+                {
+                    TourId = newTour.Id.ToString(),
+                    ActivityId = activityId
+                });
+            }
+
+            newTour.CreatedBy = userId.ToString();
+            newTour.LastUpdatedBy = userId.ToString();
+
             await _unitOfWork.GetRepository<Tour>().InsertAsync(newTour);
             await _unitOfWork.SaveAsync();
-
-            var createdTour = await _unitOfWork.GetRepository<Tour>().Entities
-            .Where(t => t.Id == newTour.Id)
-            .Include(t => t.TourActivities)
-            .ThenInclude(t => t.Activity)
-            .FirstOrDefaultAsync();
-
-            return _mapper.Map<ResponseTourModel>(createdTour);
         }
+
+        public async Task UpdateAsync(string id, UpdateTourModel model)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            model.TrimAllStrings();
+
+            var tour = await _unitOfWork.GetRepository<Tour>().GetByIdAsync(id.Trim())
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tour không tồn tại.");
+
+            if (tour.DeletedTime.HasValue)
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tour đã bị xóa.");
+            }
+
+            if (model.Name != null && string.IsNullOrWhiteSpace(model.Name))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Tên tour không hợp lệ.");
+            }
+
+            if (model.Description != null && string.IsNullOrWhiteSpace(model.Description))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Mô tả tour không hợp lệ.");
+            }
+
+            if (model.HourlyRate.HasValue && model.HourlyRate <= 0)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Giá theo giờ phải lớn hơn 0.");
+            }
+
+            if (model.PickupAddress != null)
+            {
+                var pickupAddress = await _addressService.GetOrCreateAddressAsync(model.PickupAddress.Latitude, model.PickupAddress.Longitude);
+                tour.PickupAddressId = pickupAddress.Id;
+            }
+
+            if (model.DropoffAddress != null)
+            {
+                var dropoffAddress = await _addressService.GetOrCreateAddressAsync(model.DropoffAddress.Latitude, model.DropoffAddress.Longitude);
+                tour.DropoffAddressId = dropoffAddress.Id;
+            }
+
+            if (model.TourAddresses != null)
+            {
+                tour.TourAddresses.Clear();
+                foreach (var addressModel in model.TourAddresses)
+                {
+                    var address = await _addressService.GetOrCreateAddressAsync(addressModel.Latitude, addressModel.Longitude);
+                    tour.TourAddresses.Add(new TourAddress
+                    {
+                        TourId = tour.Id.ToString(),
+                        AddressId = address.Id
+                    });
+                }
+            }
+
+            if (model.Schedules != null)
+            {
+                tour.Schedules.Clear();
+                foreach (var schedule in model.Schedules)
+                {
+                    if (!TimeSpan.TryParse(schedule.StartTime, out TimeSpan startTime))
+                    {
+                        throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian bắt đầu không hợp lệ.");
+                    }
+
+                    if (!TimeSpan.TryParse(schedule.EndTime, out TimeSpan endTime))
+                    {
+                        throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian kết thúc không hợp lệ.");
+                    }
+
+                    if (startTime >= endTime)
+                    {
+                        throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.");
+                    }
+
+                    if ((endTime - startTime).TotalMinutes < 30)
+                    {
+                        throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian bắt đầu và kết thúc phải cách nhau ít nhất 30 phút.");
+                    }
+
+                    tour.Schedules.Add(new Schedule
+                    {
+                        Day = (Core.Constants.Enum.DayOfWeek)schedule.Day,
+                        StartTime = startTime,
+                        EndTime = endTime,
+                        MaxTraveler = schedule.MaxTraveler,
+                        BookedTraveler = 0,
+                        TourId = tour.Id.ToString()
+                    });
+                }
+            }
+
+            if (model.Medias != null)
+            {
+                tour.Medias.Clear();
+                foreach (var media in model.Medias)
+                {
+                    tour.Medias.Add(new Media
+                    {
+                        Url = media.Url,
+                        Type = (MediaType)media.Type,
+                        AltText = media.AltText,
+                        TourId = tour.Id.ToString()
+                    });
+                }
+            }
+
+            if (model.TourActivityIds != null)
+            {
+                var existingActivityIds = await _unitOfWork.GetRepository<Activity>()
+                    .GetQueryable()
+                    .Where(a => model.TourActivityIds.Contains(a.Id.ToString()))
+                    .Select(a => a.Id.ToString())
+                    .ToListAsync();
+
+                var invalidActivityIds = model.TourActivityIds.Except(existingActivityIds).ToList();
+
+                if (invalidActivityIds.Any())
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, $"Các hoạt động sau không tồn tại: {string.Join(", ", invalidActivityIds)}");
+                }
+
+                tour.TourActivities.Clear();
+                foreach (var activityId in model.TourActivityIds)
+                {
+                    tour.TourActivities.Add(new TourActivity
+                    {
+                        TourId = tour.Id.ToString(),
+                        ActivityId = activityId
+                    });
+                }
+            }
+
+            _mapper.Map(model, tour);
+            tour.LastUpdatedTime = CoreHelper.SystemTimeNow;
+            tour.LastUpdatedBy = userId;
+
+            await _unitOfWork.GetRepository<Tour>().UpdateAsync(tour);
+            await _unitOfWork.SaveAsync();
+        }
+
+        public async Task DeleteAsync(string id)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+
+            var tour = await _unitOfWork.GetRepository<Tour>().GetByIdAsync(id.Trim())
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tour không tồn tại.");
+
+            if (tour.DeletedTime.HasValue)
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tour đã bị xóa.");
+            }
+
+            var hasBookedSchedule = await _unitOfWork.GetRepository<Booking>()
+                .GetQueryable()
+                .AnyAsync(b => b.Schedule.TourId == id && !b.DeletedTime.HasValue);
+
+            if (hasBookedSchedule)
+            {
+                throw new ErrorException(StatusCodes.Status409Conflict, ResponseCodeConstants.FAILED, "Không thể xóa vì tour có lịch trình đã được đặt.");
+            }
+
+            tour.LastUpdatedTime = CoreHelper.SystemTimeNow;
+            tour.LastUpdatedBy = userId;
+            tour.DeletedTime = CoreHelper.SystemTimeNow;
+            tour.DeletedBy = userId;
+
+            await _unitOfWork.GetRepository<Tour>().UpdateAsync(tour);
+            await _unitOfWork.SaveAsync();
+        }
+
     }
 }

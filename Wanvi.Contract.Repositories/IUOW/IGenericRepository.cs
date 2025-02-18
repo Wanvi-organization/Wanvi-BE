@@ -26,7 +26,8 @@ namespace Wanvi.Contract.Repositories.IUOW
         Task DeleteAsync(object id);
         Task SaveAsync();
         Task<T> FindAsync(Expression<Func<T, bool>> predicate);
-        Task<IQueryable<T>> FindAllAsync(Expression<Func<T, bool>> predicate);
+        Task<List<T>> FindAllAsync(Expression<Func<T, bool>> predicate);
         Task<IQueryable<T>> GetAllQueryableAsync();
+        IQueryable<T> GetQueryable();
     }
 }
