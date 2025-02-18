@@ -122,6 +122,8 @@ namespace Wanvi.Services.Services
                 {
                     lg.Id,
                     lg.FullName,
+                    lg.Gender,
+                    lg.ProfileImageUrl,
                     lg.Address,
                     lg.AvgRating,
                     lg.MinHourlyRate,
@@ -140,6 +142,8 @@ namespace Wanvi.Services.Services
                 {
                     Id = lg.Id,
                     FullName = lg.FullName,
+                    Gender = lg.Gender,
+                    ProfileImageUrl = lg.ProfileImageUrl,
                     Address = lg.Address,
                     AvgRating = lg.AvgRating,
                     ReviewCount = lg.ReviewCount,
