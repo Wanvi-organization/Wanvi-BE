@@ -4,6 +4,6 @@ namespace Wanvi.Contract.Services.Interfaces
 {
     public interface IDistrictService
     {
-        IEnumerable<ResponseDistrictModel> GetByCityId(string id);
+        Task<IEnumerable<ResponseDistrictModel>> GetAllByCityId(string icityId);
     }
 }

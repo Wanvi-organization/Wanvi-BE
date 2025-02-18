@@ -10,7 +10,8 @@ namespace Wanvi.Services.MapperProfile
         {
             CreateMap<Activity, ResponseActivityModel>().ReverseMap();
             CreateMap<Activity, CreateActivityModel>().ReverseMap();
-            CreateMap<Activity, UpdateActivityModel>().ReverseMap();
+            CreateMap<Activity, UpdateActivityModel>().ReverseMap()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
 }

@@ -1,21 +1,8 @@
 ﻿using Wanvi.Core.Bases;
+using static Wanvi.Core.Constants.Enum;
 
 namespace Wanvi.Contract.Repositories.Entities
 {
-    public enum PaymentMethod
-    {
-        EWallet,
-        ByCash
-    }
-
-    public enum PaymentStatus
-    {
-        Unpaid,
-        Deposited,
-        Paid,
-        Refunded
-    }
-
     public class Payment : BaseEntity
     {
         public PaymentMethod Method { get; set; }

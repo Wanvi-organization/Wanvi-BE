@@ -27,7 +27,26 @@ namespace Wanvi.Services.Services
         public async Task<IEnumerable<ResponseActivityModel>> GetAllAsync()
         {
             var activities = await _unitOfWork.GetRepository<Activity>().FindAllAsync(a => !a.DeletedTime.HasValue);
-            return _mapper.Map<IEnumerable<ResponseActivityModel>>(activities.ToList());
+
+            if (!activities.Any())
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Hoạt động không tồn tại.");
+            }
+
+            return _mapper.Map<IEnumerable<ResponseActivityModel>>(activities);
+        }
+
+        public async Task<ResponseActivityModel> GetByIdAsync(string id)
+        {
+            var activity = await _unitOfWork.GetRepository<Activity>().GetByIdAsync(id.Trim())
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động không tồn tại.");
+
+            if (activity.DeletedTime.HasValue)
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động đã bị xóa.");
+            }
+
+            return _mapper.Map<ResponseActivityModel>(activity); ;
         }
 
         public async Task CreateAsync(CreateActivityModel model)
@@ -59,7 +78,7 @@ namespace Wanvi.Services.Services
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
             model.TrimAllStrings();
 
-            Activity activity = await _unitOfWork.GetRepository<Activity>().GetByIdAsync(id.Trim()) 
+            var activity = await _unitOfWork.GetRepository<Activity>().GetByIdAsync(id.Trim()) 
                 ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động không tồn tại.");
 
             if (activity.DeletedTime.HasValue)
@@ -67,14 +86,14 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động đã bị xóa.");
             }
 
-            if (string.IsNullOrWhiteSpace(model.Name))
+            if (model.Name != null && string.IsNullOrWhiteSpace(model.Name))
             {
-                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Vui lòng điền tên hoạt động.");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Tên hoạt động không hợp lệ.");
             }
 
-            if (string.IsNullOrWhiteSpace(model.Description))
+            if (model.Description != null && string.IsNullOrWhiteSpace(model.Description))
             {
-                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Vui lòng điền mô tả hoạt động.");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Mô tả hoạt động không hợp lệ.");
             }
 
             _mapper.Map(model, activity);
@@ -89,7 +108,7 @@ namespace Wanvi.Services.Services
         {
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
 
-            Activity activity = await _unitOfWork.GetRepository<Activity>().GetByIdAsync(id.Trim())
+            var activity = await _unitOfWork.GetRepository<Activity>().GetByIdAsync(id.Trim())
                 ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động không tồn tại.");
 
             if (activity.DeletedTime.HasValue)
