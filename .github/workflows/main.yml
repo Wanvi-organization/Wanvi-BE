@@ -12,7 +12,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Stop and remove old container
+      - name: Dọn dẹp tài nguyên Docker để giảm RAM
+        run: |
+          echo "Dọn dẹp container cũ..."
+          docker container prune -f
+          echo "Dọn dẹp image cũ..."
+          docker image prune -af
+          echo "Dọn dẹp cache..."
+          docker builder prune --all --force
+          
+      - name: Kiểm tra & tạo Swap nếu RAM thấp (<2GB)
+        run: |
+          TOTAL_RAM=$(free -m | awk '/^Mem:/{print $2}')
+          if [ "$TOTAL_RAM" -lt 2048 ]; then
+            echo "RAM thấp ($TOTAL_RAM MB), tạo swap..."
+            sudo fallocate -l 2G /swapfile
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+            echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+          else
+            echo "RAM đủ ($TOTAL_RAM MB), không cần swap."
+          fi
+
+      - name: Stop và remove container cũ
         run: |
           CONTAINER_NAME="wanvi-be-server-1"
           if docker ps -a --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
@@ -20,36 +43,20 @@ jobs:
             docker stop $CONTAINER_NAME
             docker rm $CONTAINER_NAME
           else
-            echo "Container $CONTAINER_NAME does not exist, skipping..."
+            echo "Container $CONTAINER_NAME không tồn tại, bỏ qua..."
           fi
 
-      - name: Remove old image
+      - name: Build container với cache để giảm tải
         run: |
-          IMAGE_NAME="wanvi-be-server"
-          IMAGE_ID=$(docker images -q "$IMAGE_NAME")
-
-          if [ -n "$IMAGE_ID" ]; then
-            echo "Removing old image: $IMAGE_NAME"
-            docker rmi "$IMAGE_ID"
-          else
-            echo "No image found for $IMAGE_NAME, skipping..."
-          fi
-
-          DANGING_IMAGES=$(docker images -f "dangling=true" -q)
-          if [ -n "$DANGING_IMAGES" ]; then
-            echo "Removing dangling images..."
-            docker rmi $DANGING_IMAGES
-          else
-            echo "No dangling images found, skipping..."
-          fi
-
-      - name: Build and start new container
+          echo "Building container với cache..."
+          docker compose build --cache-from=wanvi-be-server
+          
+      - name: Chạy container với giới hạn RAM
         run: |
-          echo "Building and starting new container..."
-          docker compose up --build -d
+          echo "Starting container với giới hạn RAM..."
+          docker compose up -d --memory=1g --cpus="0.75"
 
-      - name: Verify running container
+      - name: Kiểm tra container đã chạy thành công
         run: |
           sleep 5  # Chờ container khởi động
           docker ps
-
