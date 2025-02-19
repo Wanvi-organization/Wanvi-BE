@@ -3,13 +3,24 @@ using static Wanvi.Core.Constants.Enum;
 
 namespace Wanvi.Contract.Repositories.Entities
 {
+    public enum BookingStatus
+    {
+        DepositedAll,
+        DepositedHaft,
+        Pending,
+        Confirmed,
+        Completed,
+        Cancelled,
+        Refunded
+    }
+
     public class Booking : BaseEntity
     {
         public BookingStatus Status { get; set; }
         public int TotalTravelers { get; set; }
         public double TotalPrice { get; set; }
         public string? Note { get; set; }
-
+        public DateTime RentalDate { get; set; }
         public string ScheduleId { get; set; }
         public virtual Schedule Schedule { get; set; }
         public Guid UserId { get; set; }
