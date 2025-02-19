@@ -45,14 +45,14 @@ jobs:
             echo "Container $CONTAINER_NAME không tồn tại, bỏ qua..."
           fi
 
-      - name: Build container sử dụng cache để giảm tải
+      - name: Build container
         run: |
-          echo "Building container sử dụng cache..."
-          docker compose build --cache-from=wanvi-be-server
+          echo "Building container..."
+          docker compose build  # ❌ Loại bỏ --cache-from
 
-      - name: Chạy container KHÔNG giới hạn RAM
+      - name: Chạy container
         run: |
-          echo "Khởi động container không giới hạn RAM..."
+          echo "Khởi động container..."
           docker compose up -d
 
       - name: Kiểm tra container có chạy không
