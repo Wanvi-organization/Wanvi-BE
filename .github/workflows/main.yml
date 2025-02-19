@@ -12,30 +12,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Dọn dẹp tài nguyên Docker để giảm RAM
+      - name: Dọn dẹp tài nguyên Docker để giải phóng RAM
         run: |
-          echo "Dọn dẹp container cũ..."
+          echo "Dọn dẹp container không dùng..."
           docker container prune -f
-          echo "Dọn dẹp image cũ..."
-          docker image prune -af
-          echo "Dọn dẹp cache..."
-          docker builder prune --all --force
-          
-      - name: Kiểm tra & tạo Swap nếu RAM thấp (<2GB)
+          echo "Dọn dẹp image không dùng..."
+          docker image prune -f
+          echo "Dọn dẹp cache build cũ..."
+          docker builder prune --force
+
+      - name: Kiểm tra & tạo Swap 2GB (nếu chưa có)
         run: |
-          TOTAL_RAM=$(free -m | awk '/^Mem:/{print $2}')
-          if [ "$TOTAL_RAM" -lt 2048 ]; then
-            echo "RAM thấp ($TOTAL_RAM MB), tạo swap..."
+          if [ ! -f /swapfile ]; then
+            echo "Tạo Swap 2GB để hỗ trợ RAM..."
             sudo fallocate -l 2G /swapfile
             sudo chmod 600 /swapfile
             sudo mkswap /swapfile
             sudo swapon /swapfile
             echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
           else
-            echo "RAM đủ ($TOTAL_RAM MB), không cần swap."
+            echo "Swap đã tồn tại, bỏ qua."
           fi
 
-      - name: Stop và remove container cũ
+      - name: Dừng và xóa container cũ (nếu có)
         run: |
           CONTAINER_NAME="wanvi-be-server-1"
           if docker ps -a --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
@@ -46,17 +45,17 @@ jobs:
             echo "Container $CONTAINER_NAME không tồn tại, bỏ qua..."
           fi
 
-      - name: Build container với cache để giảm tải
+      - name: Build container sử dụng cache để giảm tải
         run: |
-          echo "Building container với cache..."
+          echo "Building container sử dụng cache..."
           docker compose build --cache-from=wanvi-be-server
-          
-      - name: Chạy container với giới hạn RAM
-        run: |
-          echo "Starting container với giới hạn RAM..."
-          docker compose up -d --memory=1g --cpus="0.75"
 
-      - name: Kiểm tra container đã chạy thành công
+      - name: Chạy container KHÔNG giới hạn RAM
+        run: |
+          echo "Khởi động container không giới hạn RAM..."
+          docker compose up -d
+
+      - name: Kiểm tra container có chạy không
         run: |
           sleep 5  # Chờ container khởi động
           docker ps
