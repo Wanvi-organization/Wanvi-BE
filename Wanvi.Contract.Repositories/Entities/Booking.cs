@@ -5,13 +5,14 @@ namespace Wanvi.Contract.Repositories.Entities
 {
     public enum BookingStatus
     {
-        DepositedAll,
-        DepositedHaft,
-        Pending,
-        Confirmed,
-        Completed,
-        Cancelled,
-        Refunded
+        DepositHaft = 0,
+        DepositAll = 1,
+        DepositedHaft = 2,
+        DepositHaftEnd = 3,
+        Paid = 4,
+        Completed = 5,
+        Cancelled = 6,
+        Refunded = 7
     }
 
     public class Booking : BaseEntity
@@ -26,6 +27,6 @@ namespace Wanvi.Contract.Repositories.Entities
         public Guid UserId { get; set; }
         public virtual ApplicationUser User { get; set; }
         public virtual ICollection<BookingDetail> BookingDetails { get; set; }
-        public virtual ICollection<BookingPayment> BookingPayments { get; set; }
+        public virtual ICollection<Payment> Payments { get; set; }
     }
 }

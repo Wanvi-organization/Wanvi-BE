@@ -52,6 +52,7 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng điền số người tham gia!");
             }
             var schedule = await _unitOfWork.GetRepository<Schedule>().Entities.FirstOrDefaultAsync(x => x.Id == model.ScheduleId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy lịch");
+
             //Số giờ của dịch vụ
             int countHour = (schedule.EndTime.Hours - schedule.StartTime.Hours);
             if (countHour < 0)
@@ -62,20 +63,23 @@ namespace Wanvi.Services.Services
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, $"Số người đăng kí lớn hơn số người mặc định({schedule.MaxTraveler} người)!");
             }
-            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh
-            if (model.RentalDate.Date < DateTime.Now.Date)
+            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 2 ngày
+            if (model.RentalDate.ToUniversalTime().Date < DateTime.UtcNow.AddDays(2).Date)
             {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Ngày đến phải lớn hơn hoặc bằng ngày hiện tại!");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đặt tour trước 2 ngày!");
             }
 
-            // Lấy danh sách booking hợp lệ (trạng thái không phải Cancelled)
+            // Lấy danh sách booking hợp lệ (cùng Schedule, cùng ngày, trạng thái hợp lệ)
             var existingBookings = await _unitOfWork.GetRepository<Booking>().Entities
+                .Include(p=>p.Payments)
                 .Where(x => x.ScheduleId == model.ScheduleId
                             && x.Status != BookingStatus.Cancelled
-                            && x.Status != BookingStatus.Refunded) // Loại bỏ booking bị hủy hoặc hoàn tiền
+                            && x.Status != BookingStatus.Refunded
+                            && x.RentalDate.Date == model.RentalDate.Date
+                            && !x.DeletedTime.HasValue) // Chỉ lấy booking có ngày đặt trùng với model
                 .ToListAsync();
 
-            // Tính tổng số người đã đặt trước đó
+            // Tính tổng số người đã đặt trước đó trong ngày
             int totalBooked = existingBookings.Sum(b => b.TotalTravelers);
 
             // Tính số chỗ còn trống
@@ -84,8 +88,9 @@ namespace Wanvi.Services.Services
             if (model.NumberOfParticipants > availableSlots)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
-                    $"Số người đăng ký ({model.NumberOfParticipants}) vượt quá số slot trống ({availableSlots})!");
+                    $"Số người đăng ký ({model.NumberOfParticipants}) vượt quá số slot trống ({availableSlots}) trong ngày {model.RentalDate:dd/MM/yyyy}!");
             }
+
 
             //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
             var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
@@ -94,16 +99,6 @@ namespace Wanvi.Services.Services
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
 
-            }
-            user.Balance -= Total;
-            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
-
-            // Lấy giờ, phút của StartTime và so sánh với giờ phút hiện tại
-            TimeSpan currentTime = DateTime.Now.TimeOfDay;
-
-            if (schedule.StartTime.Add(TimeSpan.FromHours(1)) < currentTime)
-            {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng đặt tour trước 1 tiếng!");
             }
 
             var booking = new Booking
@@ -118,7 +113,7 @@ namespace Wanvi.Services.Services
                 LastUpdatedBy = userId,
                 TotalPrice = model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour,
                 TotalTravelers = model.NumberOfParticipants,
-                Status = BookingStatus.DepositedAll,
+                Status = BookingStatus.DepositAll,
             };
             await _unitOfWork.GetRepository<Booking>().InsertAsync(booking);
             //await _unitOfWork.SaveAsync();
@@ -135,18 +130,10 @@ namespace Wanvi.Services.Services
                 PassportNumber = user.IdentificationNumber,
                 IdentityCard = user.IdentificationNumber,
                 PhoneNumber = model.PhoneNumber,
-                TravelerName = model.TravelerName,           
+                TravelerName = model.TravelerName,
             };
 
             await _unitOfWork.GetRepository<BookingDetail>().InsertAsync(bookingDetail);
-
-
-            // Create PayOS payment request
-            var payOSRequest = new CreatePayOSPaymentRequest
-            {
-                Id = booking.Id,
-                //... other necessary information for PayOS...
-            };
 
             // 7. Tạo bản ghi Payment mới
             var payment = new Payment
@@ -159,24 +146,147 @@ namespace Wanvi.Services.Services
                 LastUpdatedBy = userId,
                 CreatedTime = DateTime.UtcNow,
                 LastUpdatedTime = DateTime.UtcNow,
-                 
+                BookingId = booking.Id
                 //... các thông tin khác (nếu cần)...
             };
             await _unitOfWork.GetRepository<Payment>().InsertAsync(payment);
 
-            // 8. Tạo bản ghi BookingPayment để liên kết Booking và Payment
-            var bookingPayment = new BookingPayment
+            await _unitOfWork.SaveAsync();
+
+            // Call PaymentService to generate payment link
+            //string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(payOSRequest);
+            return "Tạo đơn hàng thành công";
+        }
+        public async Task<string> CreateBookingHaft(CreateBookingModel model)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            Guid.TryParse(userId, out Guid cb);
+
+            if (model.Email == null)
             {
-                BookingId = booking.Id,
-                PaymentId = payment.Id
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng email không để trống!");
+            }
+            if (model.PhoneNumber == null)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng số điện thoại không để trống!");
+            }
+            if (model.NumberOfParticipants <= 0)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng điền số người tham gia!");
+            }
+            var schedule = await _unitOfWork.GetRepository<Schedule>().Entities.FirstOrDefaultAsync(x => x.Id == model.ScheduleId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy lịch");
+            //Số giờ của dịch vụ
+            int countHour = (schedule.EndTime.Hours - schedule.StartTime.Hours);
+            if (countHour < 0)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Lỗi tính lịch");
+            }
+            if (model.NumberOfParticipants > schedule.MaxTraveler)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, $"Số người đăng kí lớn hơn số người mặc định({schedule.MaxTraveler} người)!");
+            }
+            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 2 ngày
+            if (model.RentalDate.Date < DateTime.Now.AddDays(2).Date)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đạt tour trước 2 ngày!");
+            }
+
+            // Lấy danh sách booking hợp lệ (cùng Schedule, cùng ngày, trạng thái hợp lệ)
+            var existingBookings = await _unitOfWork.GetRepository<Booking>().Entities
+                .Where(x => x.ScheduleId == model.ScheduleId
+                            && x.Status != BookingStatus.Cancelled
+                            && x.Status != BookingStatus.Refunded
+                            && x.RentalDate.Date == model.RentalDate.Date
+                            && !x.DeletedTime.HasValue) // Chỉ lấy booking có ngày đặt trùng với model
+                .ToListAsync();
+
+            // Tính tổng số người đã đặt trước đó trong ngày
+            int totalBooked = existingBookings.Sum(b => b.TotalTravelers);
+
+            // Tính số chỗ còn trống
+            int availableSlots = schedule.MaxTraveler - totalBooked;
+
+            if (model.NumberOfParticipants > availableSlots)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
+                    $"Số người đăng ký ({model.NumberOfParticipants}) vượt quá số slot trống ({availableSlots}) trong ngày {model.RentalDate:dd/MM/yyyy}!");
+            }
+
+
+            //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
+            var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
+            //Số tiền tour phải cọc
+            int Total = (int)(model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour * 0.5 )  ;
+            if (user.Balance < Total)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
+
+            }
+
+            //// Lấy giờ, phút của StartTime và so sánh với giờ phút hiện tại
+            //TimeSpan currentTime = DateTime.Now.TimeOfDay;
+
+            //if (schedule.StartTime.Add(TimeSpan.FromHours(1)) < currentTime)
+            //{
+            //    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng đặt tour trước 1 tiếng!");
+            //}
+
+            var booking = new Booking
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                ScheduleId = model.ScheduleId,
+                Note = model.Note,
+                CreatedBy = userId,
+                UserId = model.UserId,
+                CreatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.UtcNow,
+                LastUpdatedBy = userId,
+                TotalPrice = model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour,
+                TotalTravelers = model.NumberOfParticipants,
+                Status = BookingStatus.DepositHaft,
             };
-            await _unitOfWork.GetRepository<BookingPayment>().InsertAsync(bookingPayment);
+            await _unitOfWork.GetRepository<Booking>().InsertAsync(booking);
+            //await _unitOfWork.SaveAsync();
+
+            var bookingDetail = new BookingDetail
+            {
+                Age = model.Age,
+                BookingId = booking.Id,
+                CreatedBy = userId,
+                Email = model.Email,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.UtcNow,
+                LastUpdatedBy = userId,
+                PassportNumber = user.IdentificationNumber,
+                IdentityCard = user.IdentificationNumber,
+                PhoneNumber = model.PhoneNumber,
+                TravelerName = model.TravelerName,
+            };
+
+            await _unitOfWork.GetRepository<BookingDetail>().InsertAsync(bookingDetail);
+
+            // 7. Tạo bản ghi Payment mới
+            var payment = new Payment
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Method = PaymentMethod.Banking, // Hoặc PaymentMethod phù hợp với PayOS
+                Status = PaymentStatus.Unpaid,
+                Amount = booking.TotalPrice * 0.5,
+                CreatedBy = userId,
+                LastUpdatedBy = userId,
+                CreatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.UtcNow,
+                BookingId = booking.Id,
+                //... các thông tin khác (nếu cần)...
+            };
+            await _unitOfWork.GetRepository<Payment>().InsertAsync(payment);
 
             await _unitOfWork.SaveAsync();
 
             // Call PaymentService to generate payment link
-            string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(payOSRequest);
-            return checkoutUrl;
+            //string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(payOSRequest);
+            return "Tạo đơn hàng thành công";
         }
+       
     }
 }

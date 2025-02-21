@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Wanvi.Repositories.Context;
 
@@ -11,9 +12,11 @@ using Wanvi.Repositories.Context;
 namespace Wanvi.Repositories.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250220085841_UpdateDataBase")]
+    partial class UpdateDataBase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -212,9 +215,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Property<string>("BankAccountName")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Bio")
-                        .HasColumnType("longtext");
-
                     b.Property<DateTime?>("CodeGeneratedTime")
                         .HasColumnType("datetime(6)");
 
@@ -261,9 +261,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Property<bool>("IsVerified")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<string>("Language")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("LastUpdatedBy")
                         .HasColumnType("longtext");
 
@@ -292,9 +289,6 @@ namespace Wanvi.Repositories.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("PersonalVehicle")
                         .HasColumnType("longtext");
 
                     b.Property<string>("PhoneNumber")

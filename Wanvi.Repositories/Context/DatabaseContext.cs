@@ -20,7 +20,6 @@ namespace Wanvi.Repositories.Context
         public virtual DbSet<ApplicationUserToken> ApplicationUserTokens => Set<ApplicationUserToken>();
         public virtual DbSet<Booking> Bookings => Set<Booking>();
         public virtual DbSet<BookingDetail> BookingDetails => Set<BookingDetail>();
-        public virtual DbSet<BookingPayment> BookingPayments => Set<BookingPayment>();
         public virtual DbSet<Category> Categories => Set<Category>();
         public virtual DbSet<City> Cities => Set<City>();
         public virtual DbSet<Comment> Comments => Set<Comment>();
@@ -277,19 +276,6 @@ namespace Wanvi.Repositories.Context
                 .WithMany(h => h.PostHashtags)
                 .HasForeignKey(ph => ph.HashtagId);
 
-            modelBuilder.Entity<BookingPayment>()
-                .HasKey(bp => new { bp.BookingId, bp.PaymentId });
-
-            modelBuilder.Entity<BookingPayment>()
-                .HasOne(bp => bp.Booking)
-                .WithMany(b => b.BookingPayments)
-                .HasForeignKey(bp => bp.BookingId);
-
-            modelBuilder.Entity<BookingPayment>()
-                .HasOne(bp => bp.Payment)
-                .WithMany(p => p.BookingPayments)
-                .HasForeignKey(bp => bp.PaymentId);
-
             modelBuilder.Entity<Booking>()
                 .HasOne(b => b.Schedule)
                 .WithMany(b => b.Bookings)
@@ -303,7 +289,7 @@ namespace Wanvi.Repositories.Context
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Booking>()
-                .HasMany(b => b.BookingPayments)
+                .HasMany(b => b.Payments)
                 .WithOne(bp => bp.Booking)
                 .HasForeignKey(bp => bp.BookingId)
                 .OnDelete(DeleteBehavior.Cascade);

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
 using System.Text.Json;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
@@ -11,6 +12,7 @@ using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
 using Wanvi.Core.Utils;
+using Wanvi.ModelViews.ActivityModelViews;
 using Wanvi.ModelViews.UserModelViews;
 using Wanvi.ModelViews.VietMapModelViews;
 using Wanvi.Services.Services.Infrastructure;
@@ -264,6 +266,23 @@ namespace Wanvi.Services.Services
 
             await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
             await _unitOfWork.SaveAsync();
+        }
+
+        public async Task<ResponseLocalGuideProfileModel> GetLocalGuideProfileInfoByIdAsync(Guid localGuideId)
+        {
+            //string currentUserId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+
+            //Guid.TryParse(currentUserId, out Guid cb);
+
+            var localGuide = await _unitOfWork.GetRepository<ApplicationUser>().GetByIdAsync(localGuideId)
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hướng dẫn viên không tồn tại.");
+
+            if (localGuide.DeletedTime.HasValue)
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hướng dẫn viên đã bị xóa.");
+            }
+
+            return _mapper.Map<ResponseLocalGuideProfileModel>(localGuide);
         }
         #endregion
     }

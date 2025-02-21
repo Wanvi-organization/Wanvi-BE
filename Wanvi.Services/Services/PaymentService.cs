@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,9 @@ using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
+using Wanvi.ModelViews.BookingModelViews;
 using Wanvi.ModelViews.PaymentModelViews;
+using Wanvi.Services.Services.Infrastructure;
 
 namespace Wanvi.Services.Services
 {
@@ -27,8 +30,10 @@ namespace Wanvi.Services.Services
         private string _checksumKey;
         private string _clientKey; // Thêm biến lưu ClientKey
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<PaymentService> _logger;
+        private readonly IHttpContextAccessor _contextAccessor;
 
-        public PaymentService(HttpClient httpClient, IConfiguration configuration, IUnitOfWork unitOfWork)
+        public PaymentService(HttpClient httpClient, IConfiguration configuration, IUnitOfWork unitOfWork, ILogger<PaymentService> logger, IHttpContextAccessor contextAccessor)
         {
             _httpClient = httpClient;
             _payOSApiUrl = configuration["PayOS:ApiUrl"];
@@ -36,12 +41,14 @@ namespace Wanvi.Services.Services
             _checksumKey = configuration["PayOS:ChecksumKey"];
             _clientKey = configuration["PayOS:ClientKey"]; // Lấy ClientKey từ appsettings.json
             _unitOfWork = unitOfWork;
+            _logger = logger;
+            _contextAccessor = contextAccessor;
         }
 
         public async Task<string> CreatePayOSPaymentLink(CreatePayOSPaymentRequest request)
         {
             // 1. Lấy thông tin booking từ database dựa trên BookingId
-            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == request.Id && !x.DeletedTime.HasValue); // _context là DbContext của bạn
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == request.BookingId && !x.DeletedTime.HasValue); // _context là DbContext của bạn
             if (booking == null)
             {
                 throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy booking");
@@ -58,7 +65,7 @@ namespace Wanvi.Services.Services
                 buyerEmail = buyer.Email,   // Lấy email người dùng từ booking.User
                 buyerPhone = buyer.PhoneNumber, // Lấy số điện thoại từ booking.User
                 buyerAddress = buyer.Address,  // Lấy địa chỉ từ booking.User
-                items = GetBookingItems(booking.Id), // Hàm này sẽ lấy danh sách sản phẩm từ booking (xem bên dưới)
+                /*items = GetBookingItems(booking.Id), */// Hàm này sẽ lấy danh sách sản phẩm từ booking (xem bên dưới)
                 cancelUrl = "https://wanvi-landing-page.vercel.app/", // Thay thế bằng URL của bạn
                 returnUrl = "https://wanvi-landing-page.vercel.app/",  // Thay thế bằng URL của bạn
                 expiredAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 1800,
@@ -75,8 +82,6 @@ namespace Wanvi.Services.Services
             return checkoutUrl;
         }
 
-
-
         private long GenerateRandomOrderCode()
         {
             Random random = new Random();
@@ -88,16 +93,23 @@ namespace Wanvi.Services.Services
             // Ví dụ: Lấy danh sách sản phẩm từ bảng BookingDetails
             var bookingDetails = _unitOfWork.GetRepository<BookingDetail>().Entities.Where(bd => bd.BookingId == bookingId).ToList();
 
-            return bookingDetails.Select(bd => new PayOSItem
+            var items = bookingDetails.Select(bd => new PayOSItem
             {
+                Name = "Tour Booking",
                 TravelerName = bd.TravelerName,
                 Age = bd.Age,
                 Email = bd.Email,
                 IdentityCard = bd.IdentityCard,
                 PassportNumber = bd.PassportNumber,
                 PhoneNumber = bd.PhoneNumber
-
             }).ToList();
+
+            foreach (var item in items)
+            {
+                _logger.LogInformation("PayOSItem: {Item}", JsonConvert.SerializeObject(item));
+            }
+
+            return items;
         }
 
         private string CalculateSignature(PayOSPaymentRequest request)
@@ -179,39 +191,118 @@ namespace Wanvi.Services.Services
         }
         public async Task PayOSCallback(PayOSWebhookRequest request, string signature)
         {
-            // 1. Xác thực signature (xem tài liệu PayOS)
+            // 1. Xác thực chữ ký
             if (!VerifyPayOSSignature(request, signature))
             {
                 throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, "Invalid signature");
             }
 
-            // 2. Tìm Payment trong database dựa trên thông tin trong request
-            var payment = await _unitOfWork.GetRepository<Payment>().Entities.FirstOrDefaultAsync(x => x.Id == request.paymentId && !x.DeletedTime.HasValue);
-            if (payment == null)
-            {
-                throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, "Payment not found");
-
-            }
+            // 2. Tìm Payment trong database
+            var payment = await _unitOfWork.GetRepository<Payment>().Entities
+                .FirstOrDefaultAsync(x => x.Id == request.paymentId && !x.DeletedTime.HasValue)
+                ?? throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, "Không tìm thấy thanh toán!");
 
             // 3. Cập nhật trạng thái Payment
             switch (request.status)
             {
                 case "success":
                     payment.Status = PaymentStatus.Paid;
+                    await _unitOfWork.SaveAsync();
+
+                    // 4. Tìm Booking và tính tổng tiền đã thanh toán
+                    var booking = await _unitOfWork.GetRepository<Booking>().Entities
+                        .FirstOrDefaultAsync(x => x.Id == payment.BookingId && !x.DeletedTime.HasValue)
+                        ?? throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, "Không tìm thấy đơn hàng!");
+
+                    double totalPaid = booking.Payments
+                        .Where(x => x.Status == PaymentStatus.Paid && !x.DeletedTime.HasValue)
+                        .Sum(x => x.Amount);
+
+                    // 5. Xác định trạng thái mới của Booking
+                    if (totalPaid >= booking.TotalPrice)
+                    {
+                        booking.Status = BookingStatus.Paid; // Đã thanh toán đủ 100%
+                    }
+                    else if (totalPaid >= booking.TotalPrice * 0.5)
+                    {
+                        if (booking.Status == BookingStatus.DepositHaft)
+                            booking.Status = BookingStatus.DepositedHaft;
+                        else if (booking.Status == BookingStatus.DepositHaftEnd)
+                            booking.Status = BookingStatus.Paid;
+                    }
+
+                    var schedule = await _unitOfWork.GetRepository<Schedule>().Entities.FirstOrDefaultAsync(x => x.Id == booking.ScheduleId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy lịch");
+
+                    //Tìm người HDV để cộng tiền
+                    var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == schedule.Tour.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
+                    tourGuide.Balance += (int)(payment.Amount);
+                    await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
+                    ////Tìm người dùng để trừ tiền
+                    //var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
+                    //user.Balance -= (int)(payment.Amount);
+                    //await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+
                     break;
                 case "failed":
-                    payment.Status = PaymentStatus.Unpaid; // Hoặc một trạng thái lỗi khác
+                    payment.Status = PaymentStatus.Unpaid;
                     break;
                 case "canceled":
-                    payment.Status = PaymentStatus.Canceled; // Hoặc một trạng thái hủy khác
+                    payment.Status = PaymentStatus.Canceled;
                     break;
-                    // ... các trạng thái khác
             }
-
             await _unitOfWork.SaveAsync();
         }
 
+        public async Task<string> CreateBookingHaftEnd(CreateBookingEndModel model)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            Guid.TryParse(userId, out Guid cb);
 
+            // Lấy danh sách booking hợp lệ (cùng Schedule, cùng ngày, trạng thái hợp lệ)
+            var existingBookings = await _unitOfWork.GetRepository<Booking>().Entities
+                .Include(bp => bp.Payments)
+                .FirstOrDefaultAsync(x => x.Id == model.BookingId
+                                    && !x.DeletedTime.HasValue
+                                    && x.Status == BookingStatus.DepositedHaft);
+            //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
+            var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
+            //Số tiền tour phải trả còn lại
+            int Total = (int)(existingBookings.TotalPrice * 0.5);
+            if (user.Balance < Total)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
+            }
+            user.Balance -= Total;
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+
+            // 7. Tạo bản ghi Payment mới
+            var payment = new Payment
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Method = PaymentMethod.Banking, // Hoặc PaymentMethod phù hợp với PayOS
+                Status = PaymentStatus.Unpaid,
+                Amount = existingBookings.TotalPrice * 0.5,
+                CreatedBy = userId,
+                LastUpdatedBy = userId,
+                CreatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.UtcNow,
+                BookingId = existingBookings.Id,
+                //... các thông tin khác (nếu cần)...
+            };
+            await _unitOfWork.GetRepository<Payment>().InsertAsync(payment);
+
+            existingBookings.Status = BookingStatus.DepositHaftEnd;
+            await _unitOfWork.GetRepository<Booking>().UpdateAsync(existingBookings);
+            await _unitOfWork.SaveAsync();
+
+            var payOSRequest = new CreatePayOSPaymentRequest { BookingId = existingBookings.Id };
+
+            // Call PaymentService to generate payment link
+            string checkoutUrl = await  CreatePayOSPaymentLink(payOSRequest);
+
+
+            return checkoutUrl;
+        }
 
     }
 }

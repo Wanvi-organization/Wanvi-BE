@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Wanvi.ModelViews.PaymentModelViews
+namespace Wanvi.ModelViews.BookingModelViews
 {
-    public class CreatePayOSPaymentRequest
+    public class CreateBookingEndModel
     {
         public string BookingId { get; set; }
     }

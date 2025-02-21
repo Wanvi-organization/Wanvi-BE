@@ -22,6 +22,9 @@ namespace Wanvi.Contract.Repositories.Entities
         public bool IsPremium { get; set; } = false;
         public bool IsVerified { get; set; } = false;
         public string? IdentificationNumber { get; set; }
+        public string? Bio {  get; set; }
+        public string? Language {  get; set; }
+        public string? PersonalVehicle { get; set; }
         public int? EmailCode { get; set; }
         public DateTime? CodeGeneratedTime { get; set; }
         public string? CreatedBy { get; set; }
