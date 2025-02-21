@@ -3,7 +3,9 @@ using Wanvi.Contract.Repositories.Base;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
+using Wanvi.ModelViews.ActivityModelViews;
 using Wanvi.ModelViews.UserModelViews;
+using Wanvi.Services.Services;
 
 namespace WanviBE.API.Controllers
 {
@@ -81,6 +83,18 @@ namespace WanviBE.API.Controllers
                  code: ResponseCodeConstants.SUCCESS,
                  data: "Cập nhật tài khoản thành công!"
              ));
+        }
+        /// <summary>
+        /// Lấy thông tin profile hướng dẫn viên bằng id.
+        /// </summary>
+        /// <param name="id">ID của hướng dẫn viên cần lấy</param>
+        [HttpGet("Get_Local_Guide_Profile_Info_By_Id/{id}")]
+        public async Task<IActionResult> GetLocalGuideProfileInfoById(Guid id)
+        {
+            return Ok(new BaseResponseModel<ResponseLocalGuideProfileModel>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: await _userService.GetLocalGuideProfileInfoByIdAsync(id)));
         }
     }
 }
