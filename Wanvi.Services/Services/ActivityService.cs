@@ -46,7 +46,7 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động đã bị xóa.");
             }
 
-            return _mapper.Map<ResponseActivityModel>(activity); ;
+            return _mapper.Map<ResponseActivityModel>(activity);
         }
 
         public async Task CreateAsync(CreateActivityModel model)
