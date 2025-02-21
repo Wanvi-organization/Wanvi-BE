@@ -23,6 +23,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public PaymentMethod Method { get; set; }
         public PaymentStatus Status { get; set; }
         public double Amount { get; set; }
-        public virtual ICollection<BookingPayment> BookingPayments { get; set; }
+        public string BookingId { get; set; }
+        public virtual Booking Booking { get; set; }
     }
 }

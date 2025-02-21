@@ -19,9 +19,19 @@ namespace Wanvi.API.Controllers
         }
 
         [HttpPost("create_booking")]
-        public async Task<IActionResult> Login(CreateBookingModel request)
+        public async Task<IActionResult> CreateBooingAll(CreateBookingModel request)
         {
             string res = await _bookingService.CreateBookingAll(request);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        [HttpPost("create_booking_haft")]
+        public async Task<IActionResult> CreateBookingHaft(CreateBookingModel request)
+        {
+            string res = await _bookingService.CreateBookingHaft(request);
             return Ok(new BaseResponseModel<string>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,
