@@ -91,7 +91,6 @@ namespace Wanvi.Services.Services
                     $"Số người đăng ký ({model.NumberOfParticipants}) vượt quá số slot trống ({availableSlots}) trong ngày {model.RentalDate:dd/MM/yyyy}!");
             }
 
-
             //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
             var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
             int Total = (int)(model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour);
@@ -134,22 +133,6 @@ namespace Wanvi.Services.Services
             };
 
             await _unitOfWork.GetRepository<BookingDetail>().InsertAsync(bookingDetail);
-
-            // 7. Tạo bản ghi Payment mới
-            var payment = new Payment
-            {
-                Id = Guid.NewGuid().ToString("N"),
-                Method = PaymentMethod.Banking, // Hoặc PaymentMethod phù hợp với PayOS
-                Status = PaymentStatus.Unpaid,
-                Amount = booking.TotalPrice,
-                CreatedBy = userId,
-                LastUpdatedBy = userId,
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
-                BookingId = booking.Id
-                //... các thông tin khác (nếu cần)...
-            };
-            await _unitOfWork.GetRepository<Payment>().InsertAsync(payment);
 
             await _unitOfWork.SaveAsync();
 
@@ -212,7 +195,6 @@ namespace Wanvi.Services.Services
                     $"Số người đăng ký ({model.NumberOfParticipants}) vượt quá số slot trống ({availableSlots}) trong ngày {model.RentalDate:dd/MM/yyyy}!");
             }
 
-
             //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
             var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
             //Số tiền tour phải cọc
@@ -222,14 +204,6 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
 
             }
-
-            //// Lấy giờ, phút của StartTime và so sánh với giờ phút hiện tại
-            //TimeSpan currentTime = DateTime.Now.TimeOfDay;
-
-            //if (schedule.StartTime.Add(TimeSpan.FromHours(1)) < currentTime)
-            //{
-            //    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vui lòng đặt tour trước 1 tiếng!");
-            //}
 
             var booking = new Booking
             {
@@ -264,22 +238,6 @@ namespace Wanvi.Services.Services
             };
 
             await _unitOfWork.GetRepository<BookingDetail>().InsertAsync(bookingDetail);
-
-            // 7. Tạo bản ghi Payment mới
-            var payment = new Payment
-            {
-                Id = Guid.NewGuid().ToString("N"),
-                Method = PaymentMethod.Banking, // Hoặc PaymentMethod phù hợp với PayOS
-                Status = PaymentStatus.Unpaid,
-                Amount = booking.TotalPrice * 0.5,
-                CreatedBy = userId,
-                LastUpdatedBy = userId,
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
-                BookingId = booking.Id,
-                //... các thông tin khác (nếu cần)...
-            };
-            await _unitOfWork.GetRepository<Payment>().InsertAsync(payment);
 
             await _unitOfWork.SaveAsync();
 

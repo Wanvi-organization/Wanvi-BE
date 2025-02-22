@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using Wanvi.Contract.Repositories.Base;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
@@ -25,12 +27,12 @@ namespace Wanvi.API.Controllers
             _unitOfWork = unitOfWork;
         }
         /// <summary>
-        /// Tạo link thanh toán dành cho hóa đơn mới bắt đầu tạo(cả 100% và 50%)
+        /// Tạo link thanh toán dành cho hóa đơn 100%
         /// </summary>
-        [HttpPost("create_payment_link")]
-        public async Task<IActionResult> CreatePaymentLink(CreatePayOSPaymentRequest request)
+        [HttpPost("create_payment_all_link")]
+        public async Task<IActionResult> CreatePaymentAllLink(CreatePayOSPaymentRequest request)
         {
-            string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(request);
+            string checkoutUrl = await _paymentService.CreatePayOSPaymentAllLink(request);
             return Ok(new BaseResponseModel<string>(
                 statusCode: StatusCodes.Status200OK,
                 code: ResponseCodeConstants.SUCCESS, // Thay bằng hằng số của bạn
@@ -38,10 +40,24 @@ namespace Wanvi.API.Controllers
             ));
         }
         /// <summary>
-        /// Tạo link thanh toán dành cho hóa đơn lần 2(dành cho đã cọc 50%)
+        /// Tạo link thanh toán dành cho hóa đơn cọc 50% đầu
         /// </summary>
-        [HttpPost("create_payment_link_end")]
-        public async Task<IActionResult> CreateBookingHaftEnd(CreateBookingEndModel request)
+        [HttpPost("create_payment_haft_link")]
+        public async Task<IActionResult> CreatePaymentHaftLink(CreatePayOSPaymentRequest request)
+        {
+            string checkoutUrl = await _paymentService.CreatePayOSPaymentAllLink(request);
+            return Ok(new BaseResponseModel<string>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS, // Thay bằng hằng số của bạn
+                data: checkoutUrl
+            ));
+        }
+
+        /// <summary>
+        /// Tạo link thanh toán dành cho hóa đơn trả 50% sau
+        /// </summary>
+        [HttpPost("create_payment_haft_end_link")]
+        public async Task<IActionResult> CreateBookingHaftEndLink(CreateBookingEndModel request)
         {
             string res = await _paymentService.CreateBookingHaftEnd(request);
             return Ok(new BaseResponseModel<string>(
@@ -50,14 +66,42 @@ namespace Wanvi.API.Controllers
                  data: res
              ));
         }
-        // Trong PayOSController.cs
+        [AllowAnonymous]
         [HttpPost("payos_callback")]
-        public async Task<IActionResult> PayOSCallback([FromBody] PayOSWebhookRequest request, [FromHeader(Name = "x-payos-signature")] string signature)
+        public async Task<IActionResult> PayOSCallback(
+     [FromBody] PayOSWebhookRequest request)
         {
-            await _paymentService.PayOSCallback(request, signature);
+            try
+            {
+                string jsonRequest = JsonSerializer.Serialize(request);
+                Console.WriteLine($"📌 Received Webhook Data: {jsonRequest}");
+                //Console.WriteLine($"📌 Signature: {signature}");
 
-            // 4. Trả về response cho PayOS (thường là 200 OK)
-            return Ok();
+                // Nếu request null, trả về lỗi
+                if (request == null || request.data == null)
+                {
+                    return BadRequest(new { message = "Dữ liệu webhook không hợp lệ" });
+                }
+
+                // 🚀 Nếu request từ PayOS kiểm tra Webhook, bỏ qua xử lý nhưng vẫn trả về 200 OK
+                if (request.data.orderCode == null)
+                {
+                    Console.WriteLine("📌 PayOS Webhook Verification - Skipping Processing");
+                    return Ok(new { message = "Webhook verified successfully" });
+                }
+
+                // Xử lý khi có orderCode thật từ PayOS
+                await _paymentService.PayOSCallback(request);
+                return Ok(new { message = "Webhook processed successfully" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Webhook Error: {ex.Message}");
+                return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
+            }
         }
+
+
+
     }
 }
