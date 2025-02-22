@@ -285,13 +285,8 @@ namespace WanviBE.API
             var initialiser = new ApplicationDbContextInitialiser(context);
             initialiser.Initialise();
         }
-    }
-
-    public static class S3ServiceExtensions
-    {
         public static void AddS3Service(this IServiceCollection services, IConfiguration configuration)
         {
-            // 1. Đăng ký IAmazonS3 trước
             services.AddTransient<IAmazonS3>(sp =>
             {
                 var awsConfig = configuration.GetSection("AWS");
@@ -302,24 +297,30 @@ namespace WanviBE.API
 
                 string accessKeyId = awsConfig["AccessKeyId"];
                 string secretAccessKey = awsConfig["SecretAccessKey"];
-                string region = awsConfig["Region"]; // Đã lấy region từ config
-                                                     //string bucketName = awsConfig["BucketName"]; // Lấy bucketName từ config
+                string serviceURL = awsConfig["ServiceURL"]; // Get the ServiceURL
 
                 if (string.IsNullOrEmpty(accessKeyId) || string.IsNullOrEmpty(secretAccessKey) ||
-                    string.IsNullOrEmpty(region)) // bucketName có thể null, tùy theo logic của S3Service
+                    string.IsNullOrEmpty(serviceURL))
                 {
                     throw new InvalidOperationException("Missing required AWS configuration values.");
                 }
 
                 var credentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
-                var config = new AmazonS3Config { RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region) };
+                var config = new AmazonS3Config
+                {
+                    ServiceURL = serviceURL,  // Use the ServiceURL
+                    ForcePathStyle = true,     // MUST be true for Clever Cloud Cellar
+                    UseHttp = true,
+                    SignatureVersion = "4", // Hoặc thử "2" nếu 4 không hoạt động
+
+                };
                 return new AmazonS3Client(credentials, config);
             });
 
-            // 2. Sau đó đăng ký S3Service
-            services.AddTransient<IS3Service, S3Service>(); // Chú ý: Đăng ký interface IS3Service
-                                                            // Hoặc, nếu bạn muốn S3Service tự lấy bucketName từ Configuration:
-                                                            // services.AddTransient<IS3Service, S3Service>(sp => new S3Service(sp.GetRequiredService<IAmazonS3>(), configuration));
+            services.AddTransient<IS3Service, S3Service>();
         }
     }
+
+
+
 }
