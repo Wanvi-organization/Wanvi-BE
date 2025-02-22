@@ -46,82 +46,82 @@ namespace Wanvi.Repositories.SeedData
         {
             int data = 0;
 
-            data = _context.ApplicationRoles.Count();
-            if (data is 0)
-            {
-                ApplicationRole[] roles = CreateRoles();
-                _context.AddRange(roles);
-            }
+            //data = _context.ApplicationRoles.Count();
+            //if (data is 0)
+            //{
+            //    ApplicationRole[] roles = CreateRoles();
+            //    _context.AddRange(roles);
+            //}
 
-            data = _context.ApplicationUsers.Count();
-            if (data is 0)
-            {
-                ApplicationUser[] user = CreateUsers();
-                _context.AddRange(user);
-            }
-            _context.SaveChanges();
+            //data = _context.ApplicationUsers.Count();
+            //if (data is 0)
+            //{
+            //    ApplicationUser[] user = CreateUsers();
+            //    _context.AddRange(user);
+            //}
+            //_context.SaveChanges();
 
-            AssignRoleToUser("admin", "Admin");
-            AssignRoleToUser("staff", "Staff");
-            AssignRoleToUser("user1", "LocalGuide");
-            AssignRoleToUser("user2", "LocalGuide");
-            AssignRoleToUser("user3", "LocalGuide");
-            AssignRoleToUser("user4", "LocalGuide");
-            AssignRoleToUser("user5", "LocalGuide");
-            AssignRoleToUser("user6", "LocalGuide");
-            AssignRoleToUser("user7", "LocalGuide");
-            AssignRoleToUser("user8", "LocalGuide");
-            AssignRoleToUser("user9", "LocalGuide");
-            AssignRoleToUser("user10", "LocalGuide");
-            AssignRoleToUser("user11", "LocalGuide");
-            AssignRoleToUser("user12", "LocalGuide");
-            AssignRoleToUser("user13", "LocalGuide");
-            AssignRoleToUser("user14", "LocalGuide");
-            AssignRoleToUser("user15", "LocalGuide");
-            AssignRoleToUser("user16", "LocalGuide");
-            AssignRoleToUser("user17", "LocalGuide");
-            AssignRoleToUser("user18", "LocalGuide");
-            AssignRoleToUser("user19", "LocalGuide");
-            AssignRoleToUser("user20", "LocalGuide");
-            AssignRoleToUser("user21", "LocalGuide");
-            AssignRoleToUser("user22", "LocalGuide");
-            AssignRoleToUser("user23", "LocalGuide");
-            AssignRoleToUser("user24", "LocalGuide");
-            AssignRoleToUser("user25", "LocalGuide");
-            AssignRoleToUser("user26", "LocalGuide");
-            AssignRoleToUser("user27", "LocalGuide");
-            AssignRoleToUser("user28", "LocalGuide");
-            AssignRoleToUser("user29", "LocalGuide");
-            AssignRoleToUser("user30", "LocalGuide");
-            AssignRoleToUser("user31", "LocalGuide");
-            AssignRoleToUser("user32", "LocalGuide");
-            AssignRoleToUser("user33", "LocalGuide");
-            AssignRoleToUser("user34", "LocalGuide");
-            AssignRoleToUser("user35", "LocalGuide");
-            AssignRoleToUser("user36", "LocalGuide");
-            AssignRoleToUser("user37", "LocalGuide");
-            AssignRoleToUser("user38", "LocalGuide");
-            AssignRoleToUser("user39", "LocalGuide");
-            AssignRoleToUser("user40", "LocalGuide");
-            AssignRoleToUser("user41", "LocalGuide");
-            AssignRoleToUser("user42", "LocalGuide");
-            AssignRoleToUser("user43", "LocalGuide");
-            AssignRoleToUser("user44", "LocalGuide");
-            AssignRoleToUser("user45", "LocalGuide");
-            AssignRoleToUser("user46", "LocalGuide");
-            AssignRoleToUser("user47", "LocalGuide");
-            AssignRoleToUser("user48", "LocalGuide");
+            //AssignRoleToUser("admin", "Admin");
+            //AssignRoleToUser("staff", "Staff");
+            //AssignRoleToUser("user1", "LocalGuide");
+            //AssignRoleToUser("user2", "LocalGuide");
+            //AssignRoleToUser("user3", "LocalGuide");
+            //AssignRoleToUser("user4", "LocalGuide");
+            //AssignRoleToUser("user5", "LocalGuide");
+            //AssignRoleToUser("user6", "LocalGuide");
+            //AssignRoleToUser("user7", "LocalGuide");
+            //AssignRoleToUser("user8", "LocalGuide");
+            //AssignRoleToUser("user9", "LocalGuide");
+            //AssignRoleToUser("user10", "LocalGuide");
+            //AssignRoleToUser("user11", "LocalGuide");
+            //AssignRoleToUser("user12", "LocalGuide");
+            //AssignRoleToUser("user13", "LocalGuide");
+            //AssignRoleToUser("user14", "LocalGuide");
+            //AssignRoleToUser("user15", "LocalGuide");
+            //AssignRoleToUser("user16", "LocalGuide");
+            //AssignRoleToUser("user17", "LocalGuide");
+            //AssignRoleToUser("user18", "LocalGuide");
+            //AssignRoleToUser("user19", "LocalGuide");
+            //AssignRoleToUser("user20", "LocalGuide");
+            //AssignRoleToUser("user21", "LocalGuide");
+            //AssignRoleToUser("user22", "LocalGuide");
+            //AssignRoleToUser("user23", "LocalGuide");
+            //AssignRoleToUser("user24", "LocalGuide");
+            //AssignRoleToUser("user25", "LocalGuide");
+            //AssignRoleToUser("user26", "LocalGuide");
+            //AssignRoleToUser("user27", "LocalGuide");
+            //AssignRoleToUser("user28", "LocalGuide");
+            //AssignRoleToUser("user29", "LocalGuide");
+            //AssignRoleToUser("user30", "LocalGuide");
+            //AssignRoleToUser("user31", "LocalGuide");
+            //AssignRoleToUser("user32", "LocalGuide");
+            //AssignRoleToUser("user33", "LocalGuide");
+            //AssignRoleToUser("user34", "LocalGuide");
+            //AssignRoleToUser("user35", "LocalGuide");
+            //AssignRoleToUser("user36", "LocalGuide");
+            //AssignRoleToUser("user37", "LocalGuide");
+            //AssignRoleToUser("user38", "LocalGuide");
+            //AssignRoleToUser("user39", "LocalGuide");
+            //AssignRoleToUser("user40", "LocalGuide");
+            //AssignRoleToUser("user41", "LocalGuide");
+            //AssignRoleToUser("user42", "LocalGuide");
+            //AssignRoleToUser("user43", "LocalGuide");
+            //AssignRoleToUser("user44", "LocalGuide");
+            //AssignRoleToUser("user45", "LocalGuide");
+            //AssignRoleToUser("user46", "LocalGuide");
+            //AssignRoleToUser("user47", "LocalGuide");
+            //AssignRoleToUser("user48", "LocalGuide");
 
 
-            data = _context.Cities.Count();
-            if (data is 0)
-            {
-                City[] cities = CreateCities();
-                _context.AddRange(cities);
+            //data = _context.Cities.Count();
+            //if (data is 0)
+            //{
+            //    City[] cities = CreateCities();
+            //    _context.AddRange(cities);
 
-                District[] districts = CreateDistricts(cities);
-                _context.AddRange(districts);
-            }
+            //    District[] districts = CreateDistricts(cities);
+            //    _context.AddRange(districts);
+            //}
 
             data = _context.Activities.Count();
             if (data is 0)

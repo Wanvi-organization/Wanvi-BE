@@ -83,10 +83,12 @@ namespace Wanvi.Services.Services
                 }
             }
 
+            var tourActivityIdsList = model.TourActivityIds.ToList();
+
             var existingActivityIds = await _unitOfWork.GetRepository<Activity>()
                 .GetQueryable()
-                .Where(a => model.TourActivityIds.Contains(a.Id.ToString()))
-                .Select(a => a.Id.ToString())
+                .Where(a => tourActivityIdsList.Contains(a.Id))
+                .Select(a => a.Id)
                 .ToListAsync();
 
             var invalidActivityIds = model.TourActivityIds.Except(existingActivityIds).ToList();
