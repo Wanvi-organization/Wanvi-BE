@@ -228,17 +228,30 @@ namespace WanviBE.API
 
         }
 
+        //public static void AddDatabase(this IServiceCollection services, IConfiguration configuration)
+        //{
+        //    services.AddDbContext<DatabaseContext>(options =>
+        //    {
+        //        options.UseLazyLoadingProxies()
+        //               .UseMySql(configuration.GetConnectionString("DefaultConnection"),
+        //                         new MySqlServerVersion(new Version(8, 0, 32)), // Đảm bảo phiên bản đúng
+        //                         mySqlOptions => mySqlOptions.EnableRetryOnFailure(
+        //                             maxRetryCount: 5, // Số lần thử lại tối đa
+        //                             maxRetryDelay: TimeSpan.FromSeconds(10), // Delay giữa các lần thử
+        //                             errorNumbersToAdd: null)); // Lỗi MySQL có thể được thêm vào nếu cần
+        //    });
+        //}
+
         public static void AddDatabase(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<DatabaseContext>(options =>
             {
                 options.UseLazyLoadingProxies()
-                       .UseMySql(configuration.GetConnectionString("DefaultConnection"),
-                                 new MySqlServerVersion(new Version(8, 0, 32)), // Đảm bảo phiên bản đúng
-                                 mySqlOptions => mySqlOptions.EnableRetryOnFailure(
-                                     maxRetryCount: 5, // Số lần thử lại tối đa
-                                     maxRetryDelay: TimeSpan.FromSeconds(10), // Delay giữa các lần thử
-                                     errorNumbersToAdd: null)); // Lỗi MySQL có thể được thêm vào nếu cần
+                       .UseSqlServer(configuration.GetConnectionString("DefaultConnection"),
+                                     sqlServerOptions => sqlServerOptions.EnableRetryOnFailure(
+                                         maxRetryCount: 5,
+                                         maxRetryDelay: TimeSpan.FromSeconds(10),
+                                         errorNumbersToAdd: null));
             });
         }
 
