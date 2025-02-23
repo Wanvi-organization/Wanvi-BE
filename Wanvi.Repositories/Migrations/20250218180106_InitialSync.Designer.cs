@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Wanvi.Repositories.Context;
 
@@ -11,9 +12,11 @@ using Wanvi.Repositories.Context;
 namespace Wanvi.Repositories.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250218180106_InitialSync")]
+    partial class InitialSync
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -212,9 +215,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Property<string>("BankAccountName")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Bio")
-                        .HasColumnType("longtext");
-
                     b.Property<DateTime?>("CodeGeneratedTime")
                         .HasColumnType("datetime(6)");
 
@@ -261,9 +261,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Property<bool>("IsVerified")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<string>("Language")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("LastUpdatedBy")
                         .HasColumnType("longtext");
 
@@ -292,9 +289,6 @@ namespace Wanvi.Repositories.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("PersonalVehicle")
                         .HasColumnType("longtext");
 
                     b.Property<string>("PhoneNumber")
@@ -578,6 +572,21 @@ namespace Wanvi.Repositories.Migrations
                     b.HasIndex("BookingId");
 
                     b.ToTable("BookingDetails");
+                });
+
+            modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.BookingPayment", b =>
+                {
+                    b.Property<string>("BookingId")
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("PaymentId")
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("BookingId", "PaymentId");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("BookingPayments");
                 });
 
             modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Category", b =>
@@ -1058,22 +1067,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Property<double>("Amount")
                         .HasColumnType("double");
 
-                    b.Property<string>("BookingId")
-                        .IsRequired()
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<string>("BuyerAddress")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("BuyerEmail")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("BuyerName")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("BuyerPhone")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("CreatedBy")
                         .HasColumnType("longtext");
 
@@ -1086,9 +1079,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Property<DateTimeOffset?>("DeletedTime")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("LastUpdatedBy")
                         .HasColumnType("longtext");
 
@@ -1098,18 +1088,10 @@ namespace Wanvi.Repositories.Migrations
                     b.Property<int>("Method")
                         .HasColumnType("int");
 
-                    b.Property<long>("OrderCode")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Signature")
-                        .HasColumnType("longtext");
-
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("BookingId");
 
                     b.ToTable("Payments");
                 });
@@ -1609,6 +1591,25 @@ namespace Wanvi.Repositories.Migrations
                     b.Navigation("Booking");
                 });
 
+            modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.BookingPayment", b =>
+                {
+                    b.HasOne("Wanvi.Contract.Repositories.Entities.Booking", "Booking")
+                        .WithMany("BookingPayments")
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wanvi.Contract.Repositories.Entities.Payment", "Payment")
+                        .WithMany("BookingPayments")
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+
+                    b.Navigation("Payment");
+                });
+
             modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Comment", b =>
                 {
                     b.HasOne("Wanvi.Contract.Repositories.Entities.News", "News")
@@ -1770,17 +1771,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Navigation("Media");
 
                     b.Navigation("News");
-                });
-
-            modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Payment", b =>
-                {
-                    b.HasOne("Wanvi.Contract.Repositories.Entities.Booking", "Booking")
-                        .WithMany("Payments")
-                        .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Booking");
                 });
 
             modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Post", b =>
@@ -1969,7 +1959,7 @@ namespace Wanvi.Repositories.Migrations
                 {
                     b.Navigation("BookingDetails");
 
-                    b.Navigation("Payments");
+                    b.Navigation("BookingPayments");
                 });
 
             modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Category", b =>
@@ -2019,6 +2009,11 @@ namespace Wanvi.Repositories.Migrations
                     b.Navigation("Comments");
 
                     b.Navigation("NewsDetails");
+                });
+
+            modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Payment", b =>
+                {
+                    b.Navigation("BookingPayments");
                 });
 
             modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Post", b =>

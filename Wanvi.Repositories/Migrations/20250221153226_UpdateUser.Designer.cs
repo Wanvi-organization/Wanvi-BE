@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Wanvi.Repositories.Context;
 
@@ -11,9 +12,11 @@ using Wanvi.Repositories.Context;
 namespace Wanvi.Repositories.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250221153226_UpdateUser")]
+    partial class UpdateUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1062,18 +1065,6 @@ namespace Wanvi.Repositories.Migrations
                         .IsRequired()
                         .HasColumnType("varchar(255)");
 
-                    b.Property<string>("BuyerAddress")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("BuyerEmail")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("BuyerName")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("BuyerPhone")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("CreatedBy")
                         .HasColumnType("longtext");
 
@@ -1086,9 +1077,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Property<DateTimeOffset?>("DeletedTime")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("LastUpdatedBy")
                         .HasColumnType("longtext");
 
@@ -1097,12 +1085,6 @@ namespace Wanvi.Repositories.Migrations
 
                     b.Property<int>("Method")
                         .HasColumnType("int");
-
-                    b.Property<long>("OrderCode")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Signature")
-                        .HasColumnType("longtext");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");

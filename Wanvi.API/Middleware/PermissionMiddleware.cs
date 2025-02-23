@@ -34,7 +34,8 @@ namespace Wanvi.API.Middleware
                 "/api/auth/create_user_by_phone",
                 "/api/auth/check_phone",
                 "/api/auth/forgot_password",
-                "/api/user/get_local_guides"
+                "/api/user/get_local_guides",
+                "/api/payment/payos_callback"
             ];
             _rolePermissions = new Dictionary<string, List<string>>()
             {

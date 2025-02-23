@@ -1,0 +1,453 @@
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
+using Wanvi.Contract.Repositories.Base;
+using Wanvi.Contract.Repositories.Entities;
+using Wanvi.Contract.Repositories.IUOW;
+using Wanvi.Contract.Services.Interfaces;
+using Wanvi.Core.Bases;
+using Wanvi.Core.Constants;
+using Wanvi.ModelViews.BookingModelViews;
+using Wanvi.ModelViews.PaymentModelViews;
+using Wanvi.Services.Services.Infrastructure;
+
+namespace Wanvi.Services.Services
+{
+    public class PaymentService : IPaymentService
+    {
+        private readonly HttpClient _httpClient;
+        private string _payOSApiUrl;
+        private string _apiKey;
+        private string _checksumKey;
+        private string _clientKey; // Thêm biến lưu ClientKey
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<PaymentService> _logger;
+        private readonly IHttpContextAccessor _contextAccessor;
+
+        public PaymentService(HttpClient httpClient, IConfiguration configuration, IUnitOfWork unitOfWork, ILogger<PaymentService> logger, IHttpContextAccessor contextAccessor)
+        {
+            _httpClient = httpClient;
+            _payOSApiUrl = configuration["PayOS:ApiUrl"];
+            _apiKey = configuration["PayOS:ApiKey"];
+            _checksumKey = configuration["PayOS:ChecksumKey"];
+            _clientKey = configuration["PayOS:ClientKey"]; // Lấy ClientKey từ appsettings.json
+            _unitOfWork = unitOfWork;
+            _logger = logger;
+            _contextAccessor = contextAccessor;
+        }
+
+        public async Task<string> CreatePayOSPaymentAllLink(CreatePayOSPaymentRequest request)
+        {
+            // 1. Lấy thông tin booking từ database dựa trên BookingId
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities
+                .FirstOrDefaultAsync(x => x.Id == request.BookingId
+                                        && x.Status == BookingStatus.DepositAll
+                                        && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy booking");
+
+            var buyer = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id.ToString() == booking.CreatedBy && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy người mua!");
+
+            // 2. Tạo PayOSPaymentRequest từ thông tin booking
+            var payOSRequest = new PayOSPaymentRequest
+            {
+                orderCode = await GenerateUniqueOrderCodeAsync(),
+                amount = (long)booking.TotalPrice, // Chuyển đổi TotalPrice sang long
+                description = $"Thanh toán!!!",
+                buyerName = buyer.FullName, // Lấy tên người dùng từ booking.User
+                buyerEmail = buyer.Email,   // Lấy email người dùng từ booking.User
+                buyerPhone = buyer.PhoneNumber, // Lấy số điện thoại từ booking.User
+                buyerAddress = buyer.Address,  // Lấy địa chỉ từ booking.User
+                /*items = GetBookingItems(booking.Id), */// Hàm này sẽ lấy danh sách sản phẩm từ booking (xem bên dưới)
+                cancelUrl = "https://wanvi-landing-page.vercel.app/", // Thay thế bằng URL của bạn
+                returnUrl = "https://wanvi-landing-page.vercel.app/",  // Thay thế bằng URL của bạn
+                expiredAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 1800,
+
+                // ... các trường khác 
+            };
+
+            // 3. Tạo chữ ký
+            payOSRequest.signature = CalculateSignature(payOSRequest);
+
+            // 7. Tạo bản ghi Payment mới
+            var payment = new Payment
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Method = PaymentMethod.Banking, // Hoặc PaymentMethod phù hợp với PayOS
+                Status = PaymentStatus.Unpaid,
+                Amount = booking.TotalPrice,
+                OrderCode = payOSRequest.orderCode,
+                BuyerAddress = payOSRequest.buyerAddress,
+                Description = payOSRequest.description,
+                Signature = payOSRequest.signature,
+                BuyerEmail = payOSRequest.buyerEmail,
+                BuyerPhone = payOSRequest.buyerPhone,
+                BuyerName = payOSRequest.buyerName,
+                CreatedBy = buyer.Id.ToString(),
+                LastUpdatedBy = buyer.Id.ToString(),
+                CreatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.UtcNow,
+                BookingId = booking.Id,
+                //... các thông tin khác (nếu cần)...
+            };
+
+            await _unitOfWork.GetRepository<Payment>().InsertAsync(payment);
+
+            await _unitOfWork.SaveAsync();
+            // 4. Gọi API PayOS
+            string checkoutUrl = await CallPayOSApi(payOSRequest);
+
+            // 5. Trả về checkout URL
+            return checkoutUrl;
+        }
+
+        public async Task<string> CreatePayOSPaymentHaftLink(CreatePayOSPaymentRequest request)
+        {
+            // 1. Lấy thông tin booking từ database dựa trên BookingId
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities
+                .FirstOrDefaultAsync(x => x.Id == request.BookingId
+                                        && x.Status == BookingStatus.DepositHaft
+                                        && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy booking");
+
+            var buyer = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id.ToString() == booking.CreatedBy && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy người mua!");
+
+            // 2. Tạo PayOSPaymentRequest từ thông tin booking
+            var payOSRequest = new PayOSPaymentRequest
+            {
+                orderCode = await GenerateUniqueOrderCodeAsync(),
+                amount = (long)(booking.TotalPrice * 0.5), // Chuyển đổi TotalPrice sang long
+                description = $"Thanh toán!!!",
+                buyerName = buyer.FullName, // Lấy tên người dùng từ booking.User
+                buyerEmail = buyer.Email,   // Lấy email người dùng từ booking.User
+                buyerPhone = buyer.PhoneNumber, // Lấy số điện thoại từ booking.User
+                buyerAddress = buyer.Address,  // Lấy địa chỉ từ booking.User
+                /*items = GetBookingItems(booking.Id), */// Hàm này sẽ lấy danh sách sản phẩm từ booking (xem bên dưới)
+                cancelUrl = "https://wanvi-landing-page.vercel.app/", // Thay thế bằng URL của bạn
+                returnUrl = "https://wanvi-landing-page.vercel.app/",  // Thay thế bằng URL của bạn
+                expiredAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 1800,
+
+                // ... các trường khác 
+            };
+
+            // 3. Tạo chữ ký
+            payOSRequest.signature = CalculateSignature(payOSRequest);
+
+            // 7. Tạo bản ghi Payment mới
+            var payment = new Payment
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Method = PaymentMethod.Banking, // Hoặc PaymentMethod phù hợp với PayOS
+                Status = PaymentStatus.Unpaid,
+                Amount = booking.TotalPrice * 0.5,
+                OrderCode = payOSRequest.orderCode,
+                BuyerAddress = payOSRequest.buyerAddress,
+                Description = payOSRequest.description,
+                Signature = payOSRequest.signature,
+                BuyerEmail = payOSRequest.buyerEmail,
+                BuyerPhone = payOSRequest.buyerPhone,
+                BuyerName = payOSRequest.buyerName,
+                CreatedBy = buyer.Id.ToString(),
+                LastUpdatedBy = buyer.Id.ToString(),
+                CreatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.UtcNow,
+                BookingId = booking.Id,
+                //... các thông tin khác (nếu cần)...
+            };
+
+            await _unitOfWork.GetRepository<Payment>().InsertAsync(payment);
+
+            await _unitOfWork.SaveAsync();
+            // 4. Gọi API PayOS
+            string checkoutUrl = await CallPayOSApi(payOSRequest);
+
+            // 5. Trả về checkout URL
+            return checkoutUrl;
+        }
+
+        public async Task<string> CreateBookingHaftEnd(CreateBookingEndModel model)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            Guid.TryParse(userId, out Guid cb);
+
+            // Lấy danh sách booking hợp lệ (cùng Schedule, cùng ngày, trạng thái hợp lệ)
+            var existingBookings = await _unitOfWork.GetRepository<Booking>().Entities
+                .Include(bp => bp.Payments)
+                .FirstOrDefaultAsync(x => x.Id == model.BookingId
+                                    && !x.DeletedTime.HasValue
+                                    && x.Status == BookingStatus.DepositedHaft);
+            //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
+            var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
+            //Số tiền tour phải trả còn lại
+            int Total = (int)(existingBookings.TotalPrice * 0.5);
+            if (user.Balance < Total)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
+            }
+            user.Balance -= Total;
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+
+            // 7. Tạo bản ghi Payment mới
+            var payment = new Payment
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Method = PaymentMethod.Banking, // Hoặc PaymentMethod phù hợp với PayOS
+                Status = PaymentStatus.Unpaid,
+                Amount = existingBookings.TotalPrice * 0.5,
+                CreatedBy = userId,
+                LastUpdatedBy = userId,
+                CreatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.UtcNow,
+                BookingId = existingBookings.Id,
+                //... các thông tin khác (nếu cần)...
+            };
+            await _unitOfWork.GetRepository<Payment>().InsertAsync(payment);
+
+            existingBookings.Status = BookingStatus.DepositHaftEnd;
+            await _unitOfWork.GetRepository<Booking>().UpdateAsync(existingBookings);
+            await _unitOfWork.SaveAsync();
+
+            var payOSRequest = new CreatePayOSPaymentRequest { BookingId = existingBookings.Id };
+
+            // Call PaymentService to generate payment link
+            string checkoutUrl = await CreatePayOSPaymentAllLink(payOSRequest);
+
+
+            return checkoutUrl;
+        }
+
+        private async Task<long> GenerateUniqueOrderCodeAsync()
+        {
+            Random random = new Random();
+            long orderCode;
+            bool exists;
+
+            do
+            {
+                orderCode = random.NextInt64(11111111, 99999999); // Sinh số ngẫu nhiên 8 chữ số
+                exists = await _unitOfWork.GetRepository<Payment>().Entities
+                    .AnyAsync(x => x.OrderCode == orderCode && !x.DeletedTime.HasValue);
+            }
+            while (exists);
+
+            return orderCode;
+        }
+
+        // Hàm lấy danh sách sản phẩm từ booking (bạn cần điều chỉnh theo cấu trúc database của bạn)
+        private List<PayOSItem> GetBookingItems(string bookingId)
+        {
+            // Ví dụ: Lấy danh sách sản phẩm từ bảng BookingDetails
+            var bookingDetails = _unitOfWork.GetRepository<BookingDetail>().Entities.Where(bd => bd.BookingId == bookingId).ToList();
+
+            var items = bookingDetails.Select(bd => new PayOSItem
+            {
+                Name = "Tour Booking",
+                TravelerName = bd.TravelerName,
+                Age = bd.Age,
+                Email = bd.Email,
+                IdentityCard = bd.IdentityCard,
+                PassportNumber = bd.PassportNumber,
+                PhoneNumber = bd.PhoneNumber
+            }).ToList();
+
+            foreach (var item in items)
+            {
+                _logger.LogInformation("PayOSItem: {Item}", JsonConvert.SerializeObject(item));
+            }
+
+            return items;
+        }
+
+        private string CalculateSignature(PayOSPaymentRequest request)
+        {
+            // 1. Đảm bảo amount là số nguyên
+            int amount = (int)request.amount;
+
+            // 2. Chỉ lấy các thông tin có trong dữ liệu PayOS gửi về (không có `cancelUrl`, `returnUrl`)
+            string data = $"amount={amount}&orderCode={request.orderCode}&description={request.description}";
+
+            Console.WriteLine($"Data to sign: {data}");
+
+            // 3. Tạo HMAC-SHA256 signature
+            byte[] keyBytes = Encoding.UTF8.GetBytes(_checksumKey);
+            byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+
+            using (HMACSHA256 hmac = new HMACSHA256(keyBytes))
+            {
+                byte[] hash = hmac.ComputeHash(dataBytes);
+                string signature = BitConverter.ToString(hash).Replace("-", "").ToLower();
+
+                Console.WriteLine($"Generated signature: {signature}");
+                return signature;
+            }
+        }
+
+
+        private async Task<string> CallPayOSApi(PayOSPaymentRequest payOSRequest)
+        {
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient.DefaultRequestHeaders.Add("x-api-key", _apiKey); // Đổi từ "Authorization: Bearer" sang "x-api-key"
+            _httpClient.DefaultRequestHeaders.Add("x-client-id", _clientKey);
+
+            string json = JsonConvert.SerializeObject(payOSRequest);
+            StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+            foreach (var header in _httpClient.DefaultRequestHeaders)
+            {
+                Console.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
+            }
+
+            using (HttpResponseMessage response = await _httpClient.PostAsync(_payOSApiUrl, content))
+            {
+                if (response.IsSuccessStatusCode)
+                {
+                    string responseJson = await response.Content.ReadAsStringAsync();
+                    PayOSResponse payOSResponse = JsonConvert.DeserializeObject<PayOSResponse>(responseJson);
+
+                    if (payOSResponse != null && payOSResponse.data != null && !string.IsNullOrEmpty(payOSResponse.data.checkoutUrl))
+                    {
+                        return payOSResponse.data.checkoutUrl;
+                    }
+                    else
+                    {
+                        throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, "Invalid PayOS response: " + responseJson);
+                    }
+                }
+                else
+                {
+                    string errorJson = await response.Content.ReadAsStringAsync();
+                    throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, $"Error calling PayOS API: {response.StatusCode} - {errorJson}");
+                }
+            }
+        }
+        public bool VerifyPayOSSignature(PayOSWebhookRequest request, string signature)
+        {
+            // 1. Kiểm tra xem request.data có null không
+            if (request.data == null)
+            {
+                return false;
+            }
+
+            // 2. Lấy dữ liệu cần ký (sắp xếp theo thứ tự alphabet nếu cần)
+            string data = $"amount={request.data.amount}&orderCode={request.data.orderCode}&description={request.data.description}";
+
+            // 3. Tạo chữ ký bằng HMAC-SHA256
+            using (HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_checksumKey)))
+            {
+                byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
+                string computedSignature = BitConverter.ToString(hash).Replace("-", "").ToLower();
+
+                // 4. So sánh chữ ký với chữ ký nhận được từ PayOS
+                return computedSignature == signature;
+            }
+        }
+
+        public async Task PayOSCallback(PayOSWebhookRequest request)
+        {
+            // Kiểm tra request có data hay không
+            if (request?.data == null)
+            {
+                Console.WriteLine("📌 Webhook request không có data, bỏ qua xử lý.");
+                return; // Trả về luôn, không ném lỗi để tránh PayOS báo lỗi webhook
+            }
+
+            // Xác thực chữ ký
+            if (!VerifyPayOSSignature(request, request.signature))
+            {
+                Console.WriteLine("❌ Invalid signature, bỏ qua xử lý.");
+                return; // Không ném lỗi, tránh PayOS báo lỗi webhook
+            }
+
+            // 1. Tìm Payment theo orderCode
+            var payment = await _unitOfWork.GetRepository<Payment>().Entities
+                .OrderByDescending(x => x.CreatedTime)
+                .FirstOrDefaultAsync(x => x.OrderCode == request.data.orderCode && !x.DeletedTime.HasValue);
+
+            // Nếu không tìm thấy payment, có thể đây là request test từ PayOS -> Bỏ qua
+            if (payment == null)
+            {
+                Console.WriteLine($"📌 Không tìm thấy thanh toán với orderCode: {request.data.orderCode}. Bỏ qua xử lý.");
+                return;
+            }
+
+            // 2. Xử lý trạng thái thanh toán
+            switch (request.data.code)
+            {
+                case "00": // Thành công
+                    payment.Status = PaymentStatus.Paid;
+                    await _unitOfWork.SaveAsync();
+
+                    // Tìm Booking liên quan
+                    var booking = await _unitOfWork.GetRepository<Booking>().Entities
+                        .FirstOrDefaultAsync(x => x.Id == payment.BookingId && !x.DeletedTime.HasValue);
+
+                    if (booking == null)
+                    {
+                        Console.WriteLine("📌 Không tìm thấy đơn hàng liên quan.");
+                        return;
+                    }
+
+                    // Tính tổng số tiền đã thanh toán
+                    double totalPaid = booking.Payments
+                        .Where(x => x.Status == PaymentStatus.Paid && !x.DeletedTime.HasValue)
+                        .Sum(x => x.Amount);
+
+                    // Cập nhật trạng thái Booking
+                    if (totalPaid >= booking.TotalPrice)
+                    {
+                        booking.Status = BookingStatus.Paid;
+                    }
+                    else if (totalPaid >= booking.TotalPrice * 0.5)
+                    {
+                        booking.Status = (booking.Status == BookingStatus.DepositHaft) ? BookingStatus.DepositedHaft : BookingStatus.Paid;
+                    }
+
+                    // Cập nhật số dư của hướng dẫn viên
+                    var schedule = await _unitOfWork.GetRepository<Schedule>().Entities
+                        .FirstOrDefaultAsync(x => x.Id == booking.ScheduleId && !x.DeletedTime.HasValue);
+
+                    if (schedule == null)
+                    {
+                        Console.WriteLine("📌 Không tìm thấy lịch.");
+                        return;
+                    }
+
+                    var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities
+                        .FirstOrDefaultAsync(x => x.Id == schedule.Tour.UserId && !x.DeletedTime.HasValue);
+
+                    if (tourGuide == null)
+                    {
+                        Console.WriteLine("📌 Không tìm thấy hướng dẫn viên.");
+                        return;
+                    }
+
+                    tourGuide.Balance += (int)(payment.Amount);
+                    await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
+                    break;
+
+                case "01": // Giao dịch thất bại
+                    payment.Status = PaymentStatus.Unpaid;
+                    break;
+
+                case "02": // Hủy giao dịch
+                    payment.Status = PaymentStatus.Canceled;
+                    break;
+
+                default:
+                    Console.WriteLine($"📌 Trạng thái không xác định: {request.data.code}, bỏ qua xử lý.");
+                    return;
+            }
+
+            await _unitOfWork.SaveAsync();
+        }
+
+
+    }
+}
+

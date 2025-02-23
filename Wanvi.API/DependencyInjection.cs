@@ -14,6 +14,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Wanvi.Repositories.SeedData;
+using Amazon.Runtime;
+using Amazon.S3;
 
 namespace WanviBE.API
 {
@@ -32,6 +34,7 @@ namespace WanviBE.API
             services.AddGoogleAuthentication(configuration);
             services.AddFacebookAuthentication(configuration);
             services.AddDatabase(configuration);
+            services.AddS3Service(configuration);
             services.AddServices();
             services.ConfigCors();
             //services.ConfigCorsSignalR();
@@ -55,6 +58,7 @@ namespace WanviBE.API
                 return jwtSettings;
             });
         }
+
         public static void RabbitMQConfig(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddSingleton(option =>
@@ -260,9 +264,12 @@ namespace WanviBE.API
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ICityService, CityService>();
             services.AddScoped<IDistrictService, DistrictService>();
+            services.AddScoped<IS3Service, S3Service>();
+            services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<IActivityService, ActivityService>();
             services.AddScoped<IAddressService, AddressService>();
             services.AddScoped<ITourService, TourService>();
+            services.AddScoped<IBookingService, BookingService>();
             services.AddScoped<IDashboardService, DashboardService>();
         }
 
@@ -278,5 +285,42 @@ namespace WanviBE.API
             var initialiser = new ApplicationDbContextInitialiser(context);
             initialiser.Initialise();
         }
+        public static void AddS3Service(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddTransient<IAmazonS3>(sp =>
+            {
+                var awsConfig = configuration.GetSection("AWS");
+                if (!awsConfig.Exists())
+                {
+                    throw new InvalidOperationException("Missing AWS configuration section in appsettings.json.");
+                }
+
+                string accessKeyId = awsConfig["AccessKeyId"];
+                string secretAccessKey = awsConfig["SecretAccessKey"];
+                string serviceURL = awsConfig["ServiceURL"]; // Get the ServiceURL
+
+                if (string.IsNullOrEmpty(accessKeyId) || string.IsNullOrEmpty(secretAccessKey) ||
+                    string.IsNullOrEmpty(serviceURL))
+                {
+                    throw new InvalidOperationException("Missing required AWS configuration values.");
+                }
+
+                var credentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
+                var config = new AmazonS3Config
+                {
+                    ServiceURL = serviceURL,  // Use the ServiceURL
+                    ForcePathStyle = true,     // MUST be true for Clever Cloud Cellar
+                    UseHttp = true,
+                    SignatureVersion = "4", // Hoặc thử "2" nếu 4 không hoạt động
+
+                };
+                return new AmazonS3Client(credentials, config);
+            });
+
+            services.AddTransient<IS3Service, S3Service>();
+        }
     }
+
+
+
 }
