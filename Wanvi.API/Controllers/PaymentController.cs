@@ -45,7 +45,7 @@ namespace Wanvi.API.Controllers
         [HttpPost("create_payment_haft_link")]
         public async Task<IActionResult> CreatePaymentHaftLink(CreatePayOSPaymentRequest request)
         {
-            string checkoutUrl = await _paymentService.CreatePayOSPaymentAllLink(request);
+            string checkoutUrl = await _paymentService.CreatePayOSPaymentHaftLink(request);
             return Ok(new BaseResponseModel<string>(
                 statusCode: StatusCodes.Status200OK,
                 code: ResponseCodeConstants.SUCCESS, // Thay bằng hằng số của bạn

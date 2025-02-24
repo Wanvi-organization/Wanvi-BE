@@ -92,7 +92,6 @@ namespace Wanvi.Services.Services
             return bookingModels;
         }
 
-
         public async Task<List<GetBookingUsermodel>> GetBookingUser(
             string? searchNote = null,
             string? sortBy = null,
@@ -297,6 +296,23 @@ namespace Wanvi.Services.Services
             }
             var schedule = await _unitOfWork.GetRepository<Schedule>().Entities.FirstOrDefaultAsync(x => x.Id == model.ScheduleId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy lịch");
 
+            // Danh sách tên thứ trong tuần theo ENUM của bạn (Thứ 2 = 0)
+            string[] daysInVietnamese = { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật" };
+
+            // Lấy thứ trong tuần của ngày đặt
+            int rentalDayIndex = ((int)model.RentalDate.DayOfWeek + 6) % 7; // Chuyển đổi để Thứ 2 = 0
+            string rentalDay = daysInVietnamese[rentalDayIndex];
+
+            // Lấy thứ trong tuần của Schedule
+            string scheduleDay = daysInVietnamese[(int)schedule.Day];
+
+            // Kiểm tra ngày đặt có đúng với lịch trình không
+            if (rentalDayIndex != (int)schedule.Day)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
+                    $"Ngày đặt: ({rentalDay}) không phù hợp với lịch trình: ({scheduleDay})!");
+            }
+
             //Số giờ của dịch vụ
             int countHour = (schedule.EndTime.Hours - schedule.StartTime.Hours);
             if (countHour < 0)
@@ -338,11 +354,11 @@ namespace Wanvi.Services.Services
             //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
             var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
             int Total = (int)(model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour);
-            if (user.Balance < Total)
-            {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
+            //if (user.Balance < Total)
+            //{
+            //    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
 
-            }
+            //}
 
             var booking = new Booking
             {
@@ -350,7 +366,7 @@ namespace Wanvi.Services.Services
                 ScheduleId = model.ScheduleId,
                 Note = model.Note,
                 CreatedBy = userId,
-                UserId = model.UserId,
+                UserId = cb,
                 CreatedTime = DateTime.UtcNow,
                 LastUpdatedTime = DateTime.UtcNow,
                 LastUpdatedBy = userId,
@@ -412,6 +428,24 @@ namespace Wanvi.Services.Services
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, $"Số người đăng kí lớn hơn số người mặc định({schedule.MaxTraveler} người)!");
             }
+
+            // Danh sách tên thứ trong tuần theo ENUM của bạn (Thứ 2 = 0)
+            string[] daysInVietnamese = { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật" };
+
+            // Lấy thứ trong tuần của ngày đặt
+            int rentalDayIndex = ((int)model.RentalDate.DayOfWeek + 6) % 7; // Chuyển đổi để Thứ 2 = 0
+            string rentalDay = daysInVietnamese[rentalDayIndex];
+
+            // Lấy thứ trong tuần của Schedule
+            string scheduleDay = daysInVietnamese[(int)schedule.Day];
+
+            // Kiểm tra ngày đặt có đúng với lịch trình không
+            if (rentalDayIndex != (int)schedule.Day)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
+                    $"Ngày đặt: ({rentalDay}) không phù hợp với lịch trình: ({scheduleDay})!");
+            }
+
             // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 2 ngày
             if (model.RentalDate.Date < DateTime.Now.AddDays(2).Date)
             {
@@ -443,11 +477,11 @@ namespace Wanvi.Services.Services
             var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
             //Số tiền tour phải cọc
             int Total = (int)(model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour * 0.5);
-            if (user.Balance < Total)
-            {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
+            //if (user.Balance < Total)
+            //{
+            //    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
 
-            }
+            //}
 
             var booking = new Booking
             {
@@ -455,7 +489,7 @@ namespace Wanvi.Services.Services
                 ScheduleId = model.ScheduleId,
                 Note = model.Note,
                 CreatedBy = userId,
-                UserId = model.UserId,
+                UserId = cb,
                 CreatedTime = DateTime.UtcNow,
                 LastUpdatedTime = DateTime.UtcNow,
                 LastUpdatedBy = userId,

@@ -17,6 +17,5 @@ namespace Wanvi.ModelViews.BookingModelViews
         public int NumberOfParticipants { get; set; }
         public string Note { get; set; }
         public string ScheduleId { get; set; }
-        public Guid UserId { get; set; }
     }
 }
