@@ -46,37 +46,37 @@ namespace Wanvi.Repositories.SeedData
         {
             int data = 0;
 
-            //data = _context.ApplicationRoles.Count();
-            //if (data is 0)
-            //{
-            //    ApplicationRole[] roles = CreateRoles();
-            //    _context.AddRange(roles);
-            //}
+            data = _context.ApplicationRoles.Count();
+            if (data is 0)
+            {
+                ApplicationRole[] roles = CreateRoles();
+                _context.AddRange(roles);
+            }
 
-            //data = _context.ApplicationUsers.Count();
-            //if (data is 0)
-            //{
-            //    ApplicationUser[] user = CreateUsers();
-            //    _context.AddRange(user);
-            //}
-            //_context.SaveChanges();
+            data = _context.ApplicationUsers.Count();
+            if (data is 0)
+            {
+                ApplicationUser[] user = CreateUsers();
+                _context.AddRange(user);
+            }
+            _context.SaveChanges();
 
-            //AssignRoleToUser("admin", "Admin");
-            //AssignRoleToUser("staff", "Staff");
-            //AssignRoleToUser("user1", "LocalGuide");
-            //AssignRoleToUser("user2", "LocalGuide");
-            //AssignRoleToUser("user3", "LocalGuide");
-            //AssignRoleToUser("user4", "LocalGuide");
-            //AssignRoleToUser("user5", "LocalGuide");
-            //AssignRoleToUser("user6", "LocalGuide");
-            //AssignRoleToUser("user7", "LocalGuide");
-            //AssignRoleToUser("user8", "LocalGuide");
-            //AssignRoleToUser("user9", "LocalGuide");
-            //AssignRoleToUser("user10", "LocalGuide");
-            //AssignRoleToUser("user11", "LocalGuide");
-            //AssignRoleToUser("user12", "LocalGuide");
-            //AssignRoleToUser("user13", "LocalGuide");
-            //AssignRoleToUser("user14", "LocalGuide");
+            AssignRoleToUser("admin", "Admin");
+            AssignRoleToUser("staff", "Staff");
+            AssignRoleToUser("localguide1", "LocalGuide");
+            AssignRoleToUser("localguide2", "LocalGuide");
+            AssignRoleToUser("localguide3", "LocalGuide");
+            AssignRoleToUser("localguide4", "LocalGuide");
+            AssignRoleToUser("localguide5", "LocalGuide");
+            AssignRoleToUser("localguide6", "LocalGuide");
+            AssignRoleToUser("localguide7", "LocalGuide");
+            AssignRoleToUser("localguide8", "LocalGuide");
+            AssignRoleToUser("localguide9", "LocalGuide");
+            AssignRoleToUser("traveler1", "LocalGuide");
+            AssignRoleToUser("traveler2", "LocalGuide");
+            AssignRoleToUser("traveler3", "LocalGuide");
+            AssignRoleToUser("traveler4", "LocalGuide");
+            AssignRoleToUser("traveler5", "LocalGuide");
             //AssignRoleToUser("user15", "LocalGuide");
             //AssignRoleToUser("user16", "LocalGuide");
             //AssignRoleToUser("user17", "LocalGuide");
@@ -113,15 +113,15 @@ namespace Wanvi.Repositories.SeedData
             //AssignRoleToUser("user48", "LocalGuide");
 
 
-            //data = _context.Cities.Count();
-            //if (data is 0)
-            //{
-            //    City[] cities = CreateCities();
-            //    _context.AddRange(cities);
+            data = _context.Cities.Count();
+            if (data is 0)
+            {
+                City[] cities = CreateCities();
+                _context.AddRange(cities);
 
-            //    District[] districts = CreateDistricts(cities);
-            //    _context.AddRange(districts);
-            //}
+                District[] districts = CreateDistricts(cities);
+                _context.AddRange(districts);
+            }
 
             data = _context.Activities.Count();
             if (data is 0)
@@ -177,6 +177,7 @@ namespace Wanvi.Repositories.SeedData
                 FullName = "Admin",
                 Gender = true,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "79B/1 Nguyễn Thị Tràng, Hiệp Thành, Quận 12, Hồ Chí Minh",
                 PhoneNumber = "0123456789",
                 PhoneNumberConfirmed = true,
@@ -193,6 +194,7 @@ namespace Wanvi.Repositories.SeedData
                 FullName = "Staff",
                 Gender = true,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "89 Nguyễn Ảnh Thủ, Hiệp Thành, Quận 12, Hồ Chí Minh",
                 PhoneNumber = "0123456788",
                 EmailConfirmed = true,
@@ -202,11 +204,12 @@ namespace Wanvi.Repositories.SeedData
             },
             new ApplicationUser
             {
-                UserName = "user1",
-                NormalizedUserName = "USER1",
-                FullName = "Nguyễn Văn A",
+                UserName = "localguide1",
+                NormalizedUserName = "LOCALGUIDE1",
+                FullName = "Nguyễn Văn An",
                 Gender = true,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "123 Đường 3/2, Quận 10, Hồ Chí Minh",
                 PhoneNumber = "0123456781",
                 PhoneNumberConfirmed = true,
@@ -218,15 +221,19 @@ namespace Wanvi.Repositories.SeedData
                 AvgRating = 4.2,
                 MinHourlyRate = 250000,
                 IsPremium = true,
-                IsVerified = true
+                IsVerified = true,
+                Bio = "Thông tin du lịch và sự kiện.Thông tin thú vị về văn hóa và thiên nhiên. Những trải nghiệm đặc biệt, du lịch ngay cả khi bạn nằm trên giường ngủ.",
+                Language = "Tiếng Việt, tiếng Anh",
+                PersonalVehicle = "xe máy, ô tô 5 chỗ"
             },
             new ApplicationUser
             {
-                UserName = "user2",
-                NormalizedUserName = "USER2",
-                FullName = "Trần Thị B",
+                UserName = "localguide2",
+                NormalizedUserName = "LOCALGUIDE2",
+                FullName = "Trần Thị Bích",
                 Gender = false,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "456 Nguyễn Thái Học, Quận 1, Hồ Chí Minh",
                 PhoneNumber = "0123456782",
                 PhoneNumberConfirmed = true,
@@ -238,15 +245,19 @@ namespace Wanvi.Repositories.SeedData
                 AvgRating = 3.5,
                 MinHourlyRate = 150000,
                 IsPremium = false,
-                IsVerified = false
+                IsVerified = false,
+                Bio = "Thông tin du lịch và sự kiện.Thông tin thú vị về văn hóa và thiên nhiên. Những trải nghiệm đặc biệt, du lịch ngay cả khi bạn nằm trên giường ngủ.",
+                Language = "Tiếng Việt, tiếng Anh",
+                PersonalVehicle = "xe máy, ô tô 5 chỗ"
             },
             new ApplicationUser
             {
-                UserName = "user3",
-                NormalizedUserName = "USER3",
-                FullName = "Lê Minh C",
+                UserName = "localguide3",
+                NormalizedUserName = "LOCALGUIDE3",
+                FullName = "Lê Minh Chiến",
                 Gender = true,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "789 Lý Thường Kiệt, Tân Bình, Hồ Chí Minh",
                 PhoneNumber = "0123456783",
                 PhoneNumberConfirmed = true,
@@ -258,15 +269,19 @@ namespace Wanvi.Repositories.SeedData
                 AvgRating = 4.7,
                 MinHourlyRate = 300000,
                 IsPremium = true,
-                IsVerified = true
+                IsVerified = true,
+                Bio = "Thông tin du lịch và sự kiện.Thông tin thú vị về văn hóa và thiên nhiên. Những trải nghiệm đặc biệt, du lịch ngay cả khi bạn nằm trên giường ngủ.",
+                Language = "Tiếng Việt, tiếng Anh",
+                PersonalVehicle = "xe máy, ô tô 5 chỗ"
             },
             new ApplicationUser
             {
-                UserName = "user4",
-                NormalizedUserName = "USER4",
-                FullName = "Phạm Thị D",
+                UserName = "localguide4",
+                NormalizedUserName = "LOCALGUIDE4",
+                FullName = "Phạm Thị Dung",
                 Gender = false,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "321 Nguyễn Đình Chiểu, Quận 3, Hồ Chí Minh",
                 PhoneNumber = "0123456784",
                 PhoneNumberConfirmed = true,
@@ -278,15 +293,19 @@ namespace Wanvi.Repositories.SeedData
                 AvgRating = 2.8,
                 MinHourlyRate = 120000,
                 IsPremium = false,
-                IsVerified = true
+                IsVerified = true,
+                Bio = "Thông tin du lịch và sự kiện.Thông tin thú vị về văn hóa và thiên nhiên. Những trải nghiệm đặc biệt, du lịch ngay cả khi bạn nằm trên giường ngủ.",
+                Language = "Tiếng Việt, tiếng Anh",
+                PersonalVehicle = "xe máy, ô tô 5 chỗ"
             },
             new ApplicationUser
             {
-                UserName = "user5",
+                UserName = "localguide5",
                 NormalizedUserName = "USER5",
                 FullName = "Huỳnh Quang E",
                 Gender = true,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "654 Bà Hạt, Quận 10, Hồ Chí Minh",
                 PhoneNumber = "0123456785",
                 PhoneNumberConfirmed = true,
@@ -298,15 +317,19 @@ namespace Wanvi.Repositories.SeedData
                 AvgRating = 3.9,
                 MinHourlyRate = 220000,
                 IsPremium = true,
-                IsVerified = false
+                IsVerified = false,
+                Bio = "Thông tin du lịch và sự kiện.Thông tin thú vị về văn hóa và thiên nhiên. Những trải nghiệm đặc biệt, du lịch ngay cả khi bạn nằm trên giường ngủ.",
+                Language = "Tiếng Việt, tiếng Anh",
+                PersonalVehicle = "xe máy, ô tô 5 chỗ"
             },
             new ApplicationUser
             {
-                UserName = "user6",
+                UserName = "localguide6",
                 NormalizedUserName = "USER6",
                 FullName = "Ngô Bảo F",
                 Gender = true,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "987 Cách Mạng Tháng 8, Quận 1, Hồ Chí Minh",
                 PhoneNumber = "0123456786",
                 PhoneNumberConfirmed = true,
@@ -318,15 +341,19 @@ namespace Wanvi.Repositories.SeedData
                 AvgRating = 4.5,
                 MinHourlyRate = 180000,
                 IsPremium = false,
-                IsVerified = true
+                IsVerified = true,
+                Bio = "Thông tin du lịch và sự kiện.Thông tin thú vị về văn hóa và thiên nhiên. Những trải nghiệm đặc biệt, du lịch ngay cả khi bạn nằm trên giường ngủ.",
+                Language = "Tiếng Việt, tiếng Anh",
+                PersonalVehicle = "xe máy, ô tô 5 chỗ"
             },
             new ApplicationUser
             {
-                UserName = "user7",
-                NormalizedUserName = "USER7",
-                FullName = "Đặng Thị G",
+                UserName = "localguide7",
+                NormalizedUserName = "LOCALGUIDE7",
+                FullName = "Đặng Thị Giang",
                 Gender = false,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "135 Hồ Tùng Mậu, Bình Thạnh, Hồ Chí Minh",
                 PhoneNumber = "0123456787",
                 PhoneNumberConfirmed = true,
@@ -338,15 +365,19 @@ namespace Wanvi.Repositories.SeedData
                 AvgRating = 3.0,
                 MinHourlyRate = 250000,
                 IsPremium = true,
-                IsVerified = false
+                IsVerified = false,
+                Bio = "Thông tin du lịch và sự kiện.Thông tin thú vị về văn hóa và thiên nhiên. Những trải nghiệm đặc biệt, du lịch ngay cả khi bạn nằm trên giường ngủ.",
+                Language = "Tiếng Việt, tiếng Anh",
+                PersonalVehicle = "xe máy, ô tô 5 chỗ"
             },
             new ApplicationUser
             {
-                UserName = "user8",
-                NormalizedUserName = "USER8",
-                FullName = "Vũ Thái H",
+                UserName = "localguide8",
+                NormalizedUserName = "LOCALGUIDE8",
+                FullName = "Vũ Thái Hòa",
                 Gender = true,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "258 Phan Đăng Lưu, Phú Nhuận, Hồ Chí Minh",
                 PhoneNumber = "0123456788",
                 PhoneNumberConfirmed = true,
@@ -358,15 +389,19 @@ namespace Wanvi.Repositories.SeedData
                 AvgRating = 4.0,
                 MinHourlyRate = 400000,
                 IsPremium = false,
-                IsVerified = true
+                IsVerified = true,
+                Bio = "Thông tin du lịch và sự kiện.Thông tin thú vị về văn hóa và thiên nhiên. Những trải nghiệm đặc biệt, du lịch ngay cả khi bạn nằm trên giường ngủ.",
+                Language = "Tiếng Việt, tiếng Anh",
+                PersonalVehicle = "xe máy, ô tô 5 chỗ"
             },
             new ApplicationUser
             {
-                UserName = "user9",
-                NormalizedUserName = "USER9",
-                FullName = "Bùi Minh I",
+                UserName = "localguide9",
+                NormalizedUserName = "LOCALGUIDE9",
+                FullName = "Bùi Minh Lâm",
                 Gender = true,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "567 Trường Chinh, Tân Phú, Hồ Chí Minh",
                 PhoneNumber = "0123456789",
                 PhoneNumberConfirmed = true,
@@ -378,15 +413,19 @@ namespace Wanvi.Repositories.SeedData
                 AvgRating = 3.8,
                 MinHourlyRate = 290000,
                 IsPremium = true,
-                IsVerified = false
+                IsVerified = false,
+                Bio = "Thông tin du lịch và sự kiện.Thông tin thú vị về văn hóa và thiên nhiên. Những trải nghiệm đặc biệt, du lịch ngay cả khi bạn nằm trên giường ngủ.",
+                Language = "Tiếng Việt, tiếng Anh",
+                PersonalVehicle = "xe máy, ô tô 5 chỗ"
             },
             new ApplicationUser
             {
-                UserName = "user10",
-                NormalizedUserName = "USER10",
-                FullName = "Lê Thị K",
+                UserName = "traveler1",
+                NormalizedUserName = "TRAVELER1",
+                FullName = "Lê Thị Khánh",
                 Gender = false,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "789 Nguyễn Cảnh Chân, Quận 1, Hồ Chí Minh",
                 PhoneNumber = "0123456790",
                 PhoneNumberConfirmed = true,
@@ -395,18 +434,16 @@ namespace Wanvi.Repositories.SeedData
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString(),
                 PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 2.5,
-                MinHourlyRate = 150000,
-                IsPremium = false,
-                IsVerified = true
+                IsPremium = false
             },
             new ApplicationUser
             {
-                UserName = "user11",
-                NormalizedUserName = "USER11",
-                FullName = "Trần Thị L",
+                UserName = "traveler2",
+                NormalizedUserName = "TRAVELER2",
+                FullName = "Trần Thị Linh",
                 Gender = false,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "15 Nguyễn Văn Cừ, Quận 5, Hồ Chí Minh",
                 PhoneNumber = "0123456711",
                 PhoneNumberConfirmed = true,
@@ -415,18 +452,16 @@ namespace Wanvi.Repositories.SeedData
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString(),
                 PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.8,
-                MinHourlyRate = 220000,
-                IsPremium = false,
-                IsVerified = true
+                IsPremium = false
             },
             new ApplicationUser
             {
-                UserName = "user12",
-                NormalizedUserName = "USER12",
-                FullName = "Lê Hoàng M",
+                UserName = "traveler3",
+                NormalizedUserName = "TRAVELER3",
+                FullName = "Lê Hoàng Minh",
                 Gender = true,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "88 Lê Lợi, Quận 1, Hồ Chí Minh",
                 PhoneNumber = "0123456712",
                 PhoneNumberConfirmed = true,
@@ -435,18 +470,16 @@ namespace Wanvi.Repositories.SeedData
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString(),
                 PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.5,
-                MinHourlyRate = 320000,
-                IsPremium = true,
-                IsVerified = false
+                IsPremium = true
             },
             new ApplicationUser
             {
-                UserName = "user13",
-                NormalizedUserName = "USER13",
-                FullName = "Nguyễn Văn N",
+                UserName = "traveler4",
+                NormalizedUserName = "TRAVELER4",
+                FullName = "Nguyễn Văn Ninh",
                 Gender = true,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "99 Nguyễn Trãi, Quận 1, Hồ Chí Minh",
                 PhoneNumber = "0123456713",
                 PhoneNumberConfirmed = true,
@@ -455,18 +488,16 @@ namespace Wanvi.Repositories.SeedData
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString(),
                 PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.0,
-                MinHourlyRate = 290000,
-                IsPremium = false,
-                IsVerified = true
+                IsPremium = false
             },
             new ApplicationUser
             {
-                UserName = "user14",
-                NormalizedUserName = "USER14",
-                FullName = "Phạm Thị O",
+                UserName = "traveler5",
+                NormalizedUserName = "TRAVELER5",
+                FullName = "Phạm Thị Oanh",
                 Gender = false,
                 DateOfBirth = DateTime.UtcNow,
+                ProfileImageUrl = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp",
                 Address = "105 Trường Chinh, Tân Bình, Hồ Chí Minh",
                 PhoneNumber = "0123456714",
                 PhoneNumberConfirmed = true,
@@ -475,691 +506,688 @@ namespace Wanvi.Repositories.SeedData
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString(),
                 PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.2,
-                MinHourlyRate = 180000,
-                IsPremium = false,
-                IsVerified = false
+                IsPremium = false
             },
-            new ApplicationUser
-            {
-                UserName = "user15",
-                NormalizedUserName = "USER15",
-                FullName = "Vũ Đình P",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "58 Nguyễn Thị Minh Khai, Quận 3, Hồ Chí Minh",
-                PhoneNumber = "0123456715",
-                PhoneNumberConfirmed = true,
-                Email = "vudinhp@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.8,
-                MinHourlyRate = 450000,
-                IsPremium = true,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user16",
-                NormalizedUserName = "USER16",
-                FullName = "Đặng Minh Q",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "45 Lý Thường Kiệt, Tân Bình, Hồ Chí Minh",
-                PhoneNumber = "0123456716",
-                PhoneNumberConfirmed = true,
-                Email = "dangminhq@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.1,
-                MinHourlyRate = 300000,
-                IsPremium = true,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user17",
-                NormalizedUserName = "USER17",
-                FullName = "Hoàng Lan R",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "22 Phan Xích Long, Phú Nhuận, Hồ Chí Minh",
-                PhoneNumber = "0123456717",
-                PhoneNumberConfirmed = true,
-                Email = "hoanglanr@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.6,
-                MinHourlyRate = 200000,
-                IsPremium = false,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user18",
-                NormalizedUserName = "USER18",
-                FullName = "Phạm Văn S",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "79B Điện Biên Phủ, Bình Thạnh, Hồ Chí Minh",
-                PhoneNumber = "0123456718",
-                PhoneNumberConfirmed = true,
-                Email = "phamvans@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.7,
-                MinHourlyRate = 400000,
-                IsPremium = true,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user19",
-                NormalizedUserName = "USER19",
-                FullName = "Lê Thị T",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "158 Đ. số 17, Phường Linh Trung, Thủ Đức, Hồ Chí Minh",
-                PhoneNumber = "0123456719",
-                PhoneNumberConfirmed = true,
-                Email = "lethit@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 2.9,
-                MinHourlyRate = 150000,
-                IsPremium = false,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user20",
-                NormalizedUserName = "USER20",
-                FullName = "Nguyễn Thành U",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "60 Trần Hưng Đạo, Quận 1, Hồ Chí Minh",
-                PhoneNumber = "0123456720",
-                PhoneNumberConfirmed = true,
-                Email = "nguyenthanhu@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 5.0,
-                MinHourlyRate = 500000,
-                IsPremium = true,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user21",
-                NormalizedUserName = "USER21",
-                FullName = "Trần Minh V",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "15 Nguyễn Văn Trỗi, Phú Nhuận, Hồ Chí Minh",
-                PhoneNumber = "0123456721",
-                PhoneNumberConfirmed = true,
-                Email = "tranminhv@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.2,
-                MinHourlyRate = 180000,
-                IsPremium = false,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user22",
-                NormalizedUserName = "USER22",
-                FullName = "Bùi Thị W",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "Số 5 Đ. Số 16, Phường Linh Trung, Thủ Đức, Hồ Chí Minh",
-                PhoneNumber = "0123456722",
-                PhoneNumberConfirmed = true,
-                Email = "buithiw@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.8,
-                MinHourlyRate = 450000,
-                IsPremium = true,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user23",
-                NormalizedUserName = "USER23",
-                FullName = "Đỗ Văn X",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "33B Lê Văn Lương, Quận 7, Hồ Chí Minh",
-                PhoneNumber = "0123456723",
-                PhoneNumberConfirmed = true,
-                Email = "dovanx@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.9,
-                MinHourlyRate = 220000,
-                IsPremium = false,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user24",
-                NormalizedUserName = "USER24",
-                FullName = "Lý Thị Y",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "50 Đinh Bộ Lĩnh, Bình Thạnh, Hồ Chí Minh",
-                PhoneNumber = "0123456724",
-                PhoneNumberConfirmed = true,
-                Email = "lythiy@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.5,
-                MinHourlyRate = 300000,
-                IsPremium = true,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user25",
-                NormalizedUserName = "USER25",
-                FullName = "Phan Văn Z",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "12 Trường Chinh, Tân Phú, Hồ Chí Minh",
-                PhoneNumber = "0123456725",
-                PhoneNumberConfirmed = true,
-                Email = "phanvanz@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 2.5,
-                MinHourlyRate = 120000,
-                IsPremium = false,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user26",
-                NormalizedUserName = "USER26",
-                FullName = "Lê Văn B",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "45 Lê Duẩn, Quận 1, Hồ Chí Minh",
-                PhoneNumber = "0123456726",
-                PhoneNumberConfirmed = true,
-                Email = "levanb@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.6,
-                MinHourlyRate = 200000,
-                IsPremium = false,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user27",
-                NormalizedUserName = "USER27",
-                FullName = "Trịnh Thị C",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "78 Nguyễn Cư Trinh, Quận 1, Hồ Chí Minh",
-                PhoneNumber = "0123456727",
-                PhoneNumberConfirmed = true,
-                Email = "trinhthic@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.9,
-                MinHourlyRate = 480000,
-                IsPremium = true,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user28",
-                NormalizedUserName = "USER28",
-                FullName = "Vũ Văn D",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "24B Hoàng Văn Thụ, Phú Nhuận, Hồ Chí Minh",
-                PhoneNumber = "0123456728",
-                PhoneNumberConfirmed = true,
-                Email = "vuvand@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.1,
-                MinHourlyRate = 170000,
-                IsPremium = false,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user29",
-                NormalizedUserName = "USER29",
-                FullName = "Đặng Thị E",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "77 Nguyễn Văn Nghi, Quận Gò Vấp, Hồ Chí Minh",
-                PhoneNumber = "0123456729",
-                PhoneNumberConfirmed = true,
-                Email = "dangthie@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.6,
-                MinHourlyRate = 350000,
-                IsPremium = true,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user30",
-                NormalizedUserName = "USER30",
-                FullName = "Ngô Văn F",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "89 Lê Trọng Tấn, Tân Phú, Hồ Chí Minh",
-                PhoneNumber = "0123456730",
-                PhoneNumberConfirmed = true,
-                Email = "ngovanf@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.4,
-                MinHourlyRate = 190000,
-                IsPremium = false,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user31",
-                NormalizedUserName = "USER31",
-                FullName = "Hoàng Thị G",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "55 Nguyễn Thị Minh Khai, Quận 3, Hồ Chí Minh",
-                PhoneNumber = "0123456731",
-                PhoneNumberConfirmed = true,
-                Email = "hoangthig@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.2,
-                MinHourlyRate = 290000,
-                IsPremium = true,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user32",
-                NormalizedUserName = "USER32",
-                FullName = "Phạm Văn H",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "99 Tô Ký, Quận 12, Hồ Chí Minh",
-                PhoneNumber = "0123456732",
-                PhoneNumberConfirmed = true,
-                Email = "phamvanh@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 2.9,
-                MinHourlyRate = 150000,
-                IsPremium = false,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user33",
-                NormalizedUserName = "USER33",
-                FullName = "Đoàn Thị I",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "12 Lê Hồng Phong, Quận 10, Hồ Chí Minh",
-                PhoneNumber = "0123456733",
-                PhoneNumberConfirmed = true,
-                Email = "doanthiI@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.9,
-                MinHourlyRate = 480000,
-                IsPremium = true,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user34",
-                NormalizedUserName = "USER34",
-                FullName = "Tạ Văn J",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "18 Trần Hưng Đạo, Quận 1, Hồ Chí Minh",
-                PhoneNumber = "0123456734",
-                PhoneNumberConfirmed = true,
-                Email = "tavanj@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.7,
-                MinHourlyRate = 210000,
-                IsPremium = false,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user35",
-                NormalizedUserName = "USER35",
-                FullName = "Lương Thị K",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "74 Hoàng Sa, Bình Thạnh, Hồ Chí Minh",
-                PhoneNumber = "0123456735",
-                PhoneNumberConfirmed = true,
-                Email = "luongthik@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.3,
-                MinHourlyRate = 310000,
-                IsPremium = true,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user36",
-                NormalizedUserName = "USER36",
-                FullName = "Lý Văn L",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "60A Nguyễn Kiệm, Quận Gò Vấp, Hồ Chí Minh",
-                PhoneNumber = "0123456736",
-                PhoneNumberConfirmed = true,
-                Email = "lyvanl@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 2.8,
-                MinHourlyRate = 140000,
-                IsPremium = false,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user37",
-                NormalizedUserName = "USER37",
-                FullName = "Nguyễn Thị M",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "20 Tôn Đức Thắng, Quận 1, Hồ Chí Minh",
-                PhoneNumber = "0123456737",
-                PhoneNumberConfirmed = true,
-                Email = "nguyenthim@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.7,
-                MinHourlyRate = 360000,
-                IsPremium = true,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user38",
-                NormalizedUserName = "USER38",
-                FullName = "Trần Văn N",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "86 Điện Biên Phủ, Phường 17, Bình Thạnh, Hồ Chí Minh",
-                PhoneNumber = "0123456738",
-                PhoneNumberConfirmed = true,
-                Email = "tranvann@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.5,
-                MinHourlyRate = 220000,
-                IsPremium = false,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user39",
-                NormalizedUserName = "USER39",
-                FullName = "Phạm Thị O",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "102 Trường Chinh, Tân Bình, Hồ Chí Minh",
-                PhoneNumber = "0123456739",
-                PhoneNumberConfirmed = true,
-                Email = "phamthio@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.8,
-                MinHourlyRate = 450000,
-                IsPremium = true,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user40",
-                NormalizedUserName = "USER40",
-                FullName = "Lê Văn P",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "200 Lý Thường Kiệt, Quận 10, Hồ Chí Minh",
-                PhoneNumber = "0123456740",
-                PhoneNumberConfirmed = true,
-                Email = "levanp@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 2.7,
-                MinHourlyRate = 180000,
-                IsPremium = false,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user41",
-                NormalizedUserName = "USER41",
-                FullName = "Ngô Thị Q",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "150 Hoàng Văn Thụ, Phú Nhuận, Hồ Chí Minh",
-                PhoneNumber = "0123456741",
-                PhoneNumberConfirmed = true,
-                Email = "ngothiq@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.1,
-                MinHourlyRate = 320000,
-                IsPremium = true,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user42",
-                NormalizedUserName = "USER42",
-                FullName = "Hoàng Văn R",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "222 Cộng Hòa, Tân Bình, Hồ Chí Minh",
-                PhoneNumber = "0123456742",
-                PhoneNumberConfirmed = true,
-                Email = "hoangvanr@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.2,
-                MinHourlyRate = 250000,
-                IsPremium = false,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user43",
-                NormalizedUserName = "USER43",
-                FullName = "Võ Thị S",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "99 Phan Xích Long, Bình Thạnh, Hồ Chí Minh",
-                PhoneNumber = "0123456743",
-                PhoneNumberConfirmed = true,
-                Email = "vothis@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.5,
-                MinHourlyRate = 400000,
-                IsPremium = true,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user44",
-                NormalizedUserName = "USER44",
-                FullName = "Đặng Văn T",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "85 Nguyễn Trãi, Quận 5, Hồ Chí Minh",
-                PhoneNumber = "0123456744",
-                PhoneNumberConfirmed = true,
-                Email = "dangvant@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.9,
-                MinHourlyRate = 280000,
-                IsPremium = false,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user45",
-                NormalizedUserName = "USER45",
-                FullName = "Tạ Thị U",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "188 Võ Văn Kiệt, Quận 1, Hồ Chí Minh",
-                PhoneNumber = "0123456745",
-                PhoneNumberConfirmed = true,
-                Email = "tathiu@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.6,
-                MinHourlyRate = 420000,
-                IsPremium = true,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user46",
-                NormalizedUserName = "USER46",
-                FullName = "Lý Văn V",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "35 Điện Biên Phủ, Bình Thạnh, Hồ Chí Minh",
-                PhoneNumber = "0123456746",
-                PhoneNumberConfirmed = true,
-                Email = "lyvanv@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 2.9,
-                MinHourlyRate = 170000,
-                IsPremium = false,
-                IsVerified = true
-            },
-            new ApplicationUser
-            {
-                UserName = "user47",
-                NormalizedUserName = "USER47",
-                FullName = "Lương Thị W",
-                Gender = false,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "14A Phan Văn Trị, Quận Gò Vấp, Hồ Chí Minh",
-                PhoneNumber = "0123456747",
-                PhoneNumberConfirmed = true,
-                Email = "luongthiw@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 4.0,
-                MinHourlyRate = 300000,
-                IsPremium = true,
-                IsVerified = false
-            },
-            new ApplicationUser
-            {
-                UserName = "user48",
-                NormalizedUserName = "USER48",
-                FullName = "Phạm Văn X",
-                Gender = true,
-                DateOfBirth = DateTime.UtcNow,
-                Address = "220 Đặng Văn Bi, Thủ Đức, Hồ Chí Minh",
-                PhoneNumber = "0123456748",
-                PhoneNumberConfirmed = true,
-                Email = "phamvanx@gmail.com",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = passwordHasher.HashPassword(null, "1234"),
-                AvgRating = 3.3,
-                MinHourlyRate = 230000,
-                IsPremium = false,
-                IsVerified = true
-            }
+            //new ApplicationUser
+            //{
+            //    UserName = "user15",
+            //    NormalizedUserName = "USER15",
+            //    FullName = "Vũ Đình P",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "58 Nguyễn Thị Minh Khai, Quận 3, Hồ Chí Minh",
+            //    PhoneNumber = "0123456715",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "vudinhp@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.8,
+            //    MinHourlyRate = 450000,
+            //    IsPremium = true,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user16",
+            //    NormalizedUserName = "USER16",
+            //    FullName = "Đặng Minh Q",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "45 Lý Thường Kiệt, Tân Bình, Hồ Chí Minh",
+            //    PhoneNumber = "0123456716",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "dangminhq@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.1,
+            //    MinHourlyRate = 300000,
+            //    IsPremium = true,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user17",
+            //    NormalizedUserName = "USER17",
+            //    FullName = "Hoàng Lan R",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "22 Phan Xích Long, Phú Nhuận, Hồ Chí Minh",
+            //    PhoneNumber = "0123456717",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "hoanglanr@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 3.6,
+            //    MinHourlyRate = 200000,
+            //    IsPremium = false,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user18",
+            //    NormalizedUserName = "USER18",
+            //    FullName = "Phạm Văn S",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "79B Điện Biên Phủ, Bình Thạnh, Hồ Chí Minh",
+            //    PhoneNumber = "0123456718",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "phamvans@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.7,
+            //    MinHourlyRate = 400000,
+            //    IsPremium = true,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user19",
+            //    NormalizedUserName = "USER19",
+            //    FullName = "Lê Thị T",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "158 Đ. số 17, Phường Linh Trung, Thủ Đức, Hồ Chí Minh",
+            //    PhoneNumber = "0123456719",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "lethit@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 2.9,
+            //    MinHourlyRate = 150000,
+            //    IsPremium = false,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user20",
+            //    NormalizedUserName = "USER20",
+            //    FullName = "Nguyễn Thành U",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "60 Trần Hưng Đạo, Quận 1, Hồ Chí Minh",
+            //    PhoneNumber = "0123456720",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "nguyenthanhu@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 5.0,
+            //    MinHourlyRate = 500000,
+            //    IsPremium = true,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user21",
+            //    NormalizedUserName = "USER21",
+            //    FullName = "Trần Minh V",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "15 Nguyễn Văn Trỗi, Phú Nhuận, Hồ Chí Minh",
+            //    PhoneNumber = "0123456721",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "tranminhv@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 3.2,
+            //    MinHourlyRate = 180000,
+            //    IsPremium = false,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user22",
+            //    NormalizedUserName = "USER22",
+            //    FullName = "Bùi Thị W",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "Số 5 Đ. Số 16, Phường Linh Trung, Thủ Đức, Hồ Chí Minh",
+            //    PhoneNumber = "0123456722",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "buithiw@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.8,
+            //    MinHourlyRate = 450000,
+            //    IsPremium = true,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user23",
+            //    NormalizedUserName = "USER23",
+            //    FullName = "Đỗ Văn X",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "33B Lê Văn Lương, Quận 7, Hồ Chí Minh",
+            //    PhoneNumber = "0123456723",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "dovanx@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 3.9,
+            //    MinHourlyRate = 220000,
+            //    IsPremium = false,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user24",
+            //    NormalizedUserName = "USER24",
+            //    FullName = "Lý Thị Y",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "50 Đinh Bộ Lĩnh, Bình Thạnh, Hồ Chí Minh",
+            //    PhoneNumber = "0123456724",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "lythiy@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.5,
+            //    MinHourlyRate = 300000,
+            //    IsPremium = true,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user25",
+            //    NormalizedUserName = "USER25",
+            //    FullName = "Phan Văn Z",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "12 Trường Chinh, Tân Phú, Hồ Chí Minh",
+            //    PhoneNumber = "0123456725",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "phanvanz@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 2.5,
+            //    MinHourlyRate = 120000,
+            //    IsPremium = false,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user26",
+            //    NormalizedUserName = "USER26",
+            //    FullName = "Lê Văn B",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "45 Lê Duẩn, Quận 1, Hồ Chí Minh",
+            //    PhoneNumber = "0123456726",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "levanb@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 3.6,
+            //    MinHourlyRate = 200000,
+            //    IsPremium = false,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user27",
+            //    NormalizedUserName = "USER27",
+            //    FullName = "Trịnh Thị C",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "78 Nguyễn Cư Trinh, Quận 1, Hồ Chí Minh",
+            //    PhoneNumber = "0123456727",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "trinhthic@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.9,
+            //    MinHourlyRate = 480000,
+            //    IsPremium = true,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user28",
+            //    NormalizedUserName = "USER28",
+            //    FullName = "Vũ Văn D",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "24B Hoàng Văn Thụ, Phú Nhuận, Hồ Chí Minh",
+            //    PhoneNumber = "0123456728",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "vuvand@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 3.1,
+            //    MinHourlyRate = 170000,
+            //    IsPremium = false,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user29",
+            //    NormalizedUserName = "USER29",
+            //    FullName = "Đặng Thị E",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "77 Nguyễn Văn Nghi, Quận Gò Vấp, Hồ Chí Minh",
+            //    PhoneNumber = "0123456729",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "dangthie@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.6,
+            //    MinHourlyRate = 350000,
+            //    IsPremium = true,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user30",
+            //    NormalizedUserName = "USER30",
+            //    FullName = "Ngô Văn F",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "89 Lê Trọng Tấn, Tân Phú, Hồ Chí Minh",
+            //    PhoneNumber = "0123456730",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "ngovanf@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 3.4,
+            //    MinHourlyRate = 190000,
+            //    IsPremium = false,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user31",
+            //    NormalizedUserName = "USER31",
+            //    FullName = "Hoàng Thị G",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "55 Nguyễn Thị Minh Khai, Quận 3, Hồ Chí Minh",
+            //    PhoneNumber = "0123456731",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "hoangthig@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.2,
+            //    MinHourlyRate = 290000,
+            //    IsPremium = true,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user32",
+            //    NormalizedUserName = "USER32",
+            //    FullName = "Phạm Văn H",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "99 Tô Ký, Quận 12, Hồ Chí Minh",
+            //    PhoneNumber = "0123456732",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "phamvanh@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 2.9,
+            //    MinHourlyRate = 150000,
+            //    IsPremium = false,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user33",
+            //    NormalizedUserName = "USER33",
+            //    FullName = "Đoàn Thị I",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "12 Lê Hồng Phong, Quận 10, Hồ Chí Minh",
+            //    PhoneNumber = "0123456733",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "doanthiI@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.9,
+            //    MinHourlyRate = 480000,
+            //    IsPremium = true,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user34",
+            //    NormalizedUserName = "USER34",
+            //    FullName = "Tạ Văn J",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "18 Trần Hưng Đạo, Quận 1, Hồ Chí Minh",
+            //    PhoneNumber = "0123456734",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "tavanj@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 3.7,
+            //    MinHourlyRate = 210000,
+            //    IsPremium = false,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user35",
+            //    NormalizedUserName = "USER35",
+            //    FullName = "Lương Thị K",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "74 Hoàng Sa, Bình Thạnh, Hồ Chí Minh",
+            //    PhoneNumber = "0123456735",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "luongthik@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.3,
+            //    MinHourlyRate = 310000,
+            //    IsPremium = true,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user36",
+            //    NormalizedUserName = "USER36",
+            //    FullName = "Lý Văn L",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "60A Nguyễn Kiệm, Quận Gò Vấp, Hồ Chí Minh",
+            //    PhoneNumber = "0123456736",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "lyvanl@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 2.8,
+            //    MinHourlyRate = 140000,
+            //    IsPremium = false,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user37",
+            //    NormalizedUserName = "USER37",
+            //    FullName = "Nguyễn Thị M",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "20 Tôn Đức Thắng, Quận 1, Hồ Chí Minh",
+            //    PhoneNumber = "0123456737",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "nguyenthim@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.7,
+            //    MinHourlyRate = 360000,
+            //    IsPremium = true,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user38",
+            //    NormalizedUserName = "USER38",
+            //    FullName = "Trần Văn N",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "86 Điện Biên Phủ, Phường 17, Bình Thạnh, Hồ Chí Minh",
+            //    PhoneNumber = "0123456738",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "tranvann@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 3.5,
+            //    MinHourlyRate = 220000,
+            //    IsPremium = false,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user39",
+            //    NormalizedUserName = "USER39",
+            //    FullName = "Phạm Thị O",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "102 Trường Chinh, Tân Bình, Hồ Chí Minh",
+            //    PhoneNumber = "0123456739",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "phamthio@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.8,
+            //    MinHourlyRate = 450000,
+            //    IsPremium = true,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user40",
+            //    NormalizedUserName = "USER40",
+            //    FullName = "Lê Văn P",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "200 Lý Thường Kiệt, Quận 10, Hồ Chí Minh",
+            //    PhoneNumber = "0123456740",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "levanp@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 2.7,
+            //    MinHourlyRate = 180000,
+            //    IsPremium = false,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user41",
+            //    NormalizedUserName = "USER41",
+            //    FullName = "Ngô Thị Q",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "150 Hoàng Văn Thụ, Phú Nhuận, Hồ Chí Minh",
+            //    PhoneNumber = "0123456741",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "ngothiq@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.1,
+            //    MinHourlyRate = 320000,
+            //    IsPremium = true,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user42",
+            //    NormalizedUserName = "USER42",
+            //    FullName = "Hoàng Văn R",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "222 Cộng Hòa, Tân Bình, Hồ Chí Minh",
+            //    PhoneNumber = "0123456742",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "hoangvanr@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 3.2,
+            //    MinHourlyRate = 250000,
+            //    IsPremium = false,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user43",
+            //    NormalizedUserName = "USER43",
+            //    FullName = "Võ Thị S",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "99 Phan Xích Long, Bình Thạnh, Hồ Chí Minh",
+            //    PhoneNumber = "0123456743",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "vothis@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.5,
+            //    MinHourlyRate = 400000,
+            //    IsPremium = true,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user44",
+            //    NormalizedUserName = "USER44",
+            //    FullName = "Đặng Văn T",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "85 Nguyễn Trãi, Quận 5, Hồ Chí Minh",
+            //    PhoneNumber = "0123456744",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "dangvant@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 3.9,
+            //    MinHourlyRate = 280000,
+            //    IsPremium = false,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user45",
+            //    NormalizedUserName = "USER45",
+            //    FullName = "Tạ Thị U",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "188 Võ Văn Kiệt, Quận 1, Hồ Chí Minh",
+            //    PhoneNumber = "0123456745",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "tathiu@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.6,
+            //    MinHourlyRate = 420000,
+            //    IsPremium = true,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user46",
+            //    NormalizedUserName = "USER46",
+            //    FullName = "Lý Văn V",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "35 Điện Biên Phủ, Bình Thạnh, Hồ Chí Minh",
+            //    PhoneNumber = "0123456746",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "lyvanv@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 2.9,
+            //    MinHourlyRate = 170000,
+            //    IsPremium = false,
+            //    IsVerified = true
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user47",
+            //    NormalizedUserName = "USER47",
+            //    FullName = "Lương Thị W",
+            //    Gender = false,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "14A Phan Văn Trị, Quận Gò Vấp, Hồ Chí Minh",
+            //    PhoneNumber = "0123456747",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "luongthiw@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 4.0,
+            //    MinHourlyRate = 300000,
+            //    IsPremium = true,
+            //    IsVerified = false
+            //},
+            //new ApplicationUser
+            //{
+            //    UserName = "user48",
+            //    NormalizedUserName = "USER48",
+            //    FullName = "Phạm Văn X",
+            //    Gender = true,
+            //    DateOfBirth = DateTime.UtcNow,
+            //    Address = "220 Đặng Văn Bi, Thủ Đức, Hồ Chí Minh",
+            //    PhoneNumber = "0123456748",
+            //    PhoneNumberConfirmed = true,
+            //    Email = "phamvanx@gmail.com",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+            //    ConcurrencyStamp = Guid.NewGuid().ToString(),
+            //    PasswordHash = passwordHasher.HashPassword(null, "1234"),
+            //    AvgRating = 3.3,
+            //    MinHourlyRate = 230000,
+            //    IsPremium = false,
+            //    IsVerified = true
+            //}
             ];
             return users;
         }
