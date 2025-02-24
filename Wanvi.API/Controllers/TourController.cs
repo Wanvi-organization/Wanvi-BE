@@ -34,7 +34,7 @@ namespace Wanvi.API.Controllers
         /// </summary>
         /// <param name="id">ID của hướng dẫn viên của tour cần lấy</param>
         [HttpGet("Get_All_Tours_By_Local_Guide_Id/{userId}")]
-        public async Task<IActionResult> GetAllToursByLocalGuideId(string userId)
+        public async Task<IActionResult> GetAllToursByLocalGuideId(Guid userId)
         {
             return Ok(new BaseResponseModel<IEnumerable<ResponseTourModel>>(
                 statusCode: StatusCodes.Status200OK,

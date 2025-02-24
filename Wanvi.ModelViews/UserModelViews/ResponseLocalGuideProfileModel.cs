@@ -6,6 +6,8 @@
         public bool Gender { get; set; }
         public string ProfileImageUrl { get; set; }
         public string Bio {  get; set; }
+        public string Language { get; set; }
+        public string PersonalVehicle { get; set; }
         public double AvgRating { get; set; }
         public int ReviewCount { get; set; }
         public int TourCount { get; set; }

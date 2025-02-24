@@ -13,7 +13,8 @@ namespace Wanvi.Services.MapperProfile
                 .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => src.StartTime))
                 .ForMember(dest => dest.EndTime, opt => opt.MapFrom(src => src.EndTime))
                 .ForMember(dest => dest.MaxTraveler, opt => opt.MapFrom(src => src.MaxTraveler))
-                .ForMember(dest => dest.BookedTraveler, opt => opt.MapFrom(src => src.BookedTraveler));
+                .ForMember(dest => dest.BookedTraveler, opt => opt.MapFrom(src => src.BookedTraveler))
+                .ForMember(dest => dest.MinDeposit, opt => opt.MapFrom(src => src.MinDeposit));
         }
     }
 }
