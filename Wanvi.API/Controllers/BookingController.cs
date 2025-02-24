@@ -17,6 +17,59 @@ namespace Wanvi.API.Controllers
         {
             _bookingService = bookingService;
         }
+        /// <summary>
+        /// lấy danh sách booking của user
+        /// </summary>
+        [HttpGet("get_booking_user")]
+        public async Task<IActionResult> GetBookingUser(string? searchNote = null,
+            string? sortBy = null,
+            bool isAscending = false,
+            string? status = null)
+        {
+            List<GetBookingUsermodel> res = await _bookingService.GetBookingUser(searchNote, sortBy, isAscending, status);
+            return Ok(new BaseResponseModel<List<GetBookingUsermodel>>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+
+        /// <summary>
+        /// lấy danh sách booking của admnin
+        /// </summary>
+        [HttpGet("get_booking_admin")]
+        public async Task<IActionResult> GetBookingAdmin(string? searchNote = null,
+            string? sortBy = null,
+            bool isAscending = false,
+            string? status = null)
+        {
+            List<GetBookingUsermodel> res = await _bookingService.GetBookingAdmin(searchNote, sortBy, isAscending, status);
+            return Ok(new BaseResponseModel<List<GetBookingUsermodel>>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+
+        /// <summary>
+        /// lấy danh sách booking của tour guide
+        /// </summary>
+        [HttpGet("get_booking_tour_guide")]
+        public async Task<IActionResult> GetBookingTourGuide(string? rentalDate = null,
+            string? status = null,
+            string? scheduleId = null,
+            int? minTravelers = null,
+            int? maxTravelers = null,
+            string? sortBy = "RentalDate",
+            bool ascending = false)
+        {
+            List<GetBookingGuideModel> res = await _bookingService.GetBookingsByTourGuide(rentalDate, status, scheduleId, minTravelers, maxTravelers, sortBy, ascending);
+            return Ok(new BaseResponseModel<List<GetBookingGuideModel>>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
 
         [HttpPost("create_booking")]
         public async Task<IActionResult> CreateBooingAll(CreateBookingModel request)
