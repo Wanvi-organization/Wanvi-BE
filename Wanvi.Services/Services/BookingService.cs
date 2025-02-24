@@ -310,7 +310,7 @@ namespace Wanvi.Services.Services
             if (rentalDayIndex != (int)schedule.Day)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
-                    $"Ngày đặt: ({rentalDay}) không phù hợp với lịch trình: ({scheduleDay})!");
+                    $"Ngày đặt: ({rentalDay}) không phù hợp với lịch trình của hướng dẫn viên: ({scheduleDay})!");
             }
 
             //Số giờ của dịch vụ
@@ -370,6 +370,7 @@ namespace Wanvi.Services.Services
                 CreatedTime = DateTime.UtcNow,
                 LastUpdatedTime = DateTime.UtcNow,
                 LastUpdatedBy = userId,
+                RentalDate = model.RentalDate,
                 TotalPrice = model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour,
                 TotalTravelers = model.NumberOfParticipants,
                 Status = BookingStatus.DepositAll,
@@ -443,7 +444,7 @@ namespace Wanvi.Services.Services
             if (rentalDayIndex != (int)schedule.Day)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
-                    $"Ngày đặt: ({rentalDay}) không phù hợp với lịch trình: ({scheduleDay})!");
+                    $"Ngày đặt: ({rentalDay}) không phù hợp với lịch trình của hướng dẫn viên: ({scheduleDay})!");
             }
 
             // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 2 ngày
@@ -490,6 +491,7 @@ namespace Wanvi.Services.Services
                 Note = model.Note,
                 CreatedBy = userId,
                 UserId = cb,
+                RentalDate = model.RentalDate,
                 CreatedTime = DateTime.UtcNow,
                 LastUpdatedTime = DateTime.UtcNow,
                 LastUpdatedBy = userId,
