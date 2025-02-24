@@ -42,7 +42,18 @@ namespace WanviBE.API.Controllers
             var result = await _userService.GetLocalGuidesAsync(latitude, longitude, name, city, district, minPrice, maxPrice, minRating, maxRating, isVerified, sortByPrice, sortByNearest);
             return Ok(BaseResponse<IEnumerable<ResponseLocalGuideModel>>.OkResponse(result));
         }
-
+        /// <summary>
+        /// Lấy thông tin profile hướng dẫn viên bằng id.
+        /// </summary>
+        /// <param name="id">ID của hướng dẫn viên cần lấy</param>
+        [HttpGet("Get_Local_Guide_Profile_Info_By_Id/{id}")]
+        public async Task<IActionResult> GetLocalGuideProfileInfoById(Guid id)
+        {
+            return Ok(new BaseResponseModel<ResponseLocalGuideProfileModel>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: await _userService.GetLocalGuideProfileInfoByIdAsync(id)));
+        }
         [HttpGet("Get_Infor")]
         public async Task<IActionResult> GetInfor()
         {
@@ -83,18 +94,6 @@ namespace WanviBE.API.Controllers
                  code: ResponseCodeConstants.SUCCESS,
                  data: "Cập nhật tài khoản thành công!"
              ));
-        }
-        /// <summary>
-        /// Lấy thông tin profile hướng dẫn viên bằng id.
-        /// </summary>
-        /// <param name="id">ID của hướng dẫn viên cần lấy</param>
-        [HttpGet("Get_Local_Guide_Profile_Info_By_Id/{id}")]
-        public async Task<IActionResult> GetLocalGuideProfileInfoById(Guid id)
-        {
-            return Ok(new BaseResponseModel<ResponseLocalGuideProfileModel>(
-                statusCode: StatusCodes.Status200OK,
-                code: ResponseCodeConstants.SUCCESS,
-                data: await _userService.GetLocalGuideProfileInfoByIdAsync(id)));
         }
     }
 }
