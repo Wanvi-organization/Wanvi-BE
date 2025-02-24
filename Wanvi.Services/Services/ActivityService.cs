@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
@@ -116,7 +117,7 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động đã bị xóa.");
             }
 
-            var isExistAnyTours = _unitOfWork.GetRepository<Tour>().Entities.Any(p => p.TourActivities.Any(t => t.ActivityId == id) && !p.DeletedTime.HasValue);
+            var isExistAnyTours = await _unitOfWork.GetRepository<Tour>().Entities.AnyAsync(p => p.TourActivities.Any(t => t.ActivityId == id) && !p.DeletedTime.HasValue);
 
             if (isExistAnyTours)
             {

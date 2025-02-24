@@ -13,6 +13,7 @@ using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
 using Wanvi.Core.Utils;
 using Wanvi.ModelViews.ActivityModelViews;
+using Wanvi.ModelViews.TourModelViews;
 using Wanvi.ModelViews.UserModelViews;
 using Wanvi.ModelViews.VietMapModelViews;
 using Wanvi.Services.Services.Infrastructure;
