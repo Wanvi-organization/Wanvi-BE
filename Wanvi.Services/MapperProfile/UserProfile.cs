@@ -9,7 +9,11 @@ namespace Wanvi.Services.MapperProfile
         public UserProfile()
         {
             CreateMap<ApplicationUser, ResponseLocalGuideProfileModel>()
-            .ForMember(dest => dest.TourCount, opt => opt.MapFrom(src => src.Tours.Count))
+            .ForMember(dest => dest.TourCount, opt => opt.MapFrom(src =>
+                src.Tours.SelectMany(t => t.Schedules)
+                        .SelectMany(s => s.Bookings)
+                        .Count(b => b.Status == BookingStatus.Completed || b.Status == BookingStatus.Refunded)
+            ))
             .ForMember(dest => dest.ReviewCount, opt => opt.MapFrom(src => src.Reviews.Count))
             .ReverseMap();
         }

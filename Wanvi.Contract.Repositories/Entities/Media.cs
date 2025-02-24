@@ -13,7 +13,6 @@ namespace Wanvi.Contract.Repositories.Entities
         public virtual Tour Tour { get; set; }
         public string? PostId { get; set; }
         public virtual Post Post { get; set; }
-        public virtual ICollection<NewsDetail> NewsDetails { get; set; }
         public virtual ICollection<MessageMedia> MessageMedias { get; set; }
     }
 }

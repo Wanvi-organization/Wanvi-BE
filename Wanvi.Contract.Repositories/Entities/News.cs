@@ -6,8 +6,8 @@ namespace Wanvi.Contract.Repositories.Entities
     {
         public string Title { get; set; }
         public string Summary { get; set; }
-        public int LikeCount { get; set; }
-        public bool IsLikedByUser { get; set; }
+        public int LikeCount { get; set; } = 0;
+        public bool IsLikedByUser { get; set; } = false;
 
         public string CategoryId { get; set; }
         public virtual Category Category { get; set; }
