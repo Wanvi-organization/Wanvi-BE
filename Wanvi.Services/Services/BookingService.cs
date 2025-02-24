@@ -34,6 +34,250 @@ namespace Wanvi.Services.Services
             _contextAccessor = contextAccessor;
             _paymentService = paymentService;
         }
+
+        public async Task<List<GetBookingUsermodel>> GetBookingAdmin(
+            string? searchNote = null,
+            string? sortBy = null,
+            bool isAscending = false,
+            string? status = null)
+        {
+            //string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            //Guid.TryParse(userId, out Guid cb);
+
+            var query = _unitOfWork.GetRepository<Booking>()
+                .Entities
+                .OrderByDescending(x => x.CreatedTime)
+                .Where(x => !x.DeletedTime.HasValue);
+
+            // Lọc theo `Note` (tìm kiếm gần đúng, không phân biệt hoa thường)
+            if (!string.IsNullOrWhiteSpace(searchNote))
+            {
+                query = query.Where(x => x.Note != null && x.Note.ToLower().Contains(searchNote.ToLower()));
+            }
+
+            // Lọc theo `Status`
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (BookingStatus.TryParse(status, out BookingStatus statusEnum))
+                {
+                    query = query.Where(x => x.Status == statusEnum);
+                }
+            }
+
+            // Sắp xếp theo yêu cầu
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                query = sortBy.ToLower() switch
+                {
+                    "rentaldate" => isAscending ? query.OrderBy(x => x.RentalDate) : query.OrderByDescending(x => x.RentalDate),
+                    "totalprice" => isAscending ? query.OrderBy(x => x.TotalPrice) : query.OrderByDescending(x => x.TotalPrice),
+                    _ => query.OrderByDescending(x => x.CreatedTime) // Mặc định sắp xếp theo thời gian tạo (mới nhất lên đầu)
+                };
+            }
+
+            var bookings = await query.ToListAsync();
+
+            var bookingModels = bookings.Select(b => new GetBookingUsermodel
+            {
+                Id = b.Id.ToString(),
+                TotalTravelers = b.TotalTravelers,
+                TotalPrice = b.TotalPrice,
+                Note = b.Note,
+                RentalDate = b.RentalDate.ToString("dd/MM/yyyy"), // Chỉ lấy ngày/tháng/năm
+                Status = ConvertStatusToString(b.Status),
+                StartTime = b.Schedule?.StartTime.ToString(@"hh\:mm") ?? "00:00", // Chỉ lấy giờ:phút
+                EndTime = b.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00"
+            }).ToList();
+
+            return bookingModels;
+        }
+
+
+        public async Task<List<GetBookingUsermodel>> GetBookingUser(
+            string? searchNote = null,
+            string? sortBy = null,
+            bool isAscending = false,
+            string? status = null)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            Guid.TryParse(userId, out Guid cb);
+
+            var query = _unitOfWork.GetRepository<Booking>()
+                .Entities
+                .OrderByDescending(x => x.CreatedTime)
+                .Where(x => x.UserId == cb && !x.DeletedTime.HasValue);
+
+            // Lọc theo `Note` (tìm kiếm gần đúng, không phân biệt hoa thường)
+            if (!string.IsNullOrWhiteSpace(searchNote))
+            {
+                query = query.Where(x => x.Note != null && x.Note.ToLower().Contains(searchNote.ToLower()));
+            }
+
+            // Lọc theo `Status`
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (BookingStatus.TryParse(status, out BookingStatus statusEnum))
+                {
+                    query = query.Where(x => x.Status == statusEnum);
+                }
+            }
+
+            // Sắp xếp theo yêu cầu
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                query = sortBy.ToLower() switch
+                {
+                    "rentaldate" => isAscending ? query.OrderBy(x => x.RentalDate) : query.OrderByDescending(x => x.RentalDate),
+                    "totalprice" => isAscending ? query.OrderBy(x => x.TotalPrice) : query.OrderByDescending(x => x.TotalPrice),
+                    _ => query.OrderByDescending(x => x.CreatedTime) // Mặc định sắp xếp theo thời gian tạo (mới nhất lên đầu)
+                };
+            }
+
+            var bookings = await query.ToListAsync();
+
+            var bookingModels = bookings.Select(b => new GetBookingUsermodel
+            {
+                Id = b.Id.ToString(),
+                TotalTravelers = b.TotalTravelers,
+                TotalPrice = b.TotalPrice,
+                Note = b.Note,
+                RentalDate = b.RentalDate.ToString("dd/MM/yyyy"), // Chỉ lấy ngày/tháng/năm
+                Status = ConvertStatusToString(b.Status),
+                StartTime = b.Schedule?.StartTime.ToString(@"hh\:mm") ?? "00:00", // Chỉ lấy giờ:phút
+                EndTime = b.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00"
+            }).ToList();
+
+            return bookingModels;
+        }
+
+        // Hàm chuyển đổi Status từ enum sang chữ
+        private string ConvertStatusToString(BookingStatus status)
+        {
+            return status switch
+            {
+                BookingStatus.DepositHaft => "Đặt cọc 50%",
+                BookingStatus.DepositAll => "Đặt cọc toàn bộ",
+                BookingStatus.DepositedHaft => "Đã đặt cọc một phần",
+                BookingStatus.DepositHaftEnd => "Đặt cọc 50% còn lại",
+                BookingStatus.Paid => "Đã thanh toán",
+                BookingStatus.Completed => "Hoàn thành",
+                BookingStatus.Cancelled => "Đã hủy",
+                BookingStatus.Refunded => "Đã hoàn tiền",
+                _ => "Không xác định"
+            };
+        }
+
+        public async Task<List<GetBookingGuideModel>> GetBookingsByTourGuide(
+            string? rentalDate = null,
+            string? status = null,
+            string? scheduleId = null,
+            int? minTravelers = null,
+            int? maxTravelers = null,
+            string? sortBy = "RentalDate",
+            bool ascending = false)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            Guid.TryParse(userId, out Guid guideId);
+
+            // Lấy danh sách Tour của hướng dẫn viên
+            var tours = await _unitOfWork.GetRepository<Tour>()
+                .Entities.Where(t => t.UserId == guideId)
+                .ToListAsync();
+
+            var tourIds = tours.Select(t => t.Id).ToList();
+
+            var excludedStatuses = new[] { BookingStatus.Completed, BookingStatus.Cancelled, BookingStatus.Refunded };
+
+            // Lấy danh sách Booking
+            var bookings = await _unitOfWork.GetRepository<Booking>()
+                .Entities
+                .Where(b => tourIds.Contains(b.Schedule.TourId)
+                            && !excludedStatuses.Contains(b.Status))
+                .Include(b => b.Schedule)
+                .ToListAsync();
+
+            // Nhóm Booking theo ScheduleId + RentalDate
+            var groupedBookings = bookings
+                .GroupBy(b => new { b.ScheduleId, b.RentalDate })
+                .Select(group =>
+                {
+                    var bookingsList = group.ToList();
+                    var allBookingDetailsCompleted = bookingsList
+                        .All(d => excludedStatuses.Contains(d.Status));
+
+                    return new GetBookingGuideModel
+                    {
+                        RentalDate = group.Key.RentalDate.ToString("dd/MM/yyyy"),
+                        TotalTravelers = group.Sum(b => b.TotalTravelers),
+                        MaxTraveler = group.First().Schedule.MaxTraveler,
+                        BookedTraveler = bookingsList.Where(b => !excludedStatuses.Contains(b.Status)).Sum(b => b.TotalTravelers),
+                        Status = allBookingDetailsCompleted ? "Hoàn thành" : "Chưa hoàn thành",
+                        Bookings = bookingsList.Select(b => new GetBookingUsermodel
+                        {
+                            Id = b.Id.ToString(),
+                            TotalTravelers = b.TotalTravelers,
+                            TotalPrice = b.TotalPrice,
+                            Note = b.Note,
+                            RentalDate = b.RentalDate.ToString("dd/MM/yyyy"),
+                            Status = ConvertStatusToString(b.Status),
+                            StartTime = b.Schedule?.StartTime.ToString(@"hh\:mm") ?? "00:00",
+                            EndTime = b.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00"
+                        }).ToList()
+                    };
+                })
+                .ToList();
+
+            // **💡 BƯỚC 1: Tìm kiếm**
+            if (!string.IsNullOrEmpty(rentalDate))
+            {
+                groupedBookings = groupedBookings
+                    .Where(b => b.RentalDate == rentalDate)
+                    .ToList();
+            }
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                groupedBookings = groupedBookings
+                    .Where(b => b.Status.Equals(status, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            if (minTravelers.HasValue)
+            {
+                groupedBookings = groupedBookings
+                    .Where(b => b.TotalTravelers >= minTravelers.Value)
+                    .ToList();
+            }
+
+            if (maxTravelers.HasValue)
+            {
+                groupedBookings = groupedBookings
+                    .Where(b => b.TotalTravelers <= maxTravelers.Value)
+                    .ToList();
+            }
+
+            // **💡 BƯỚC 2: Sắp xếp**
+            groupedBookings = sortBy switch
+            {
+                "RentalDate" => ascending
+                    ? groupedBookings.OrderBy(b => DateTime.ParseExact(b.RentalDate, "dd/MM/yyyy", null)).ToList()
+                    : groupedBookings.OrderByDescending(b => DateTime.ParseExact(b.RentalDate, "dd/MM/yyyy", null)).ToList(),
+
+                "TotalTravelers" => ascending
+                    ? groupedBookings.OrderBy(b => b.TotalTravelers).ToList()
+                    : groupedBookings.OrderByDescending(b => b.TotalTravelers).ToList(),
+
+                "BookedTraveler" => ascending
+                    ? groupedBookings.OrderBy(b => b.BookedTraveler).ToList()
+                    : groupedBookings.OrderByDescending(b => b.BookedTraveler).ToList(),
+
+                _ => groupedBookings
+            };
+
+            return groupedBookings;
+        }
+
+
         public async Task<string> CreateBookingAll(CreateBookingModel model)
         {
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
@@ -71,7 +315,7 @@ namespace Wanvi.Services.Services
 
             // Lấy danh sách booking hợp lệ (cùng Schedule, cùng ngày, trạng thái hợp lệ)
             var existingBookings = await _unitOfWork.GetRepository<Booking>().Entities
-                .Include(p=>p.Payments)
+                .Include(p => p.Payments)
                 .Where(x => x.ScheduleId == model.ScheduleId
                             && x.Status != BookingStatus.Cancelled
                             && x.Status != BookingStatus.Refunded
@@ -198,7 +442,7 @@ namespace Wanvi.Services.Services
             //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
             var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
             //Số tiền tour phải cọc
-            int Total = (int)(model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour * 0.5 )  ;
+            int Total = (int)(model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour * 0.5);
             if (user.Balance < Total)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
@@ -245,6 +489,6 @@ namespace Wanvi.Services.Services
             //string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(payOSRequest);
             return "Tạo đơn hàng thành công";
         }
-       
+
     }
 }

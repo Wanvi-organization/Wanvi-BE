@@ -57,21 +57,21 @@ namespace Wanvi.Services.Services
             var street = await GetStreetFromCoordinatesAsync(latitude, longitude);
             if (string.IsNullOrEmpty(street))
             {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Không thể tìm thấy địa chỉ từ tọa độ.");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, $"Không thể tìm thấy địa chỉ từ tọa độ: {latitude}, {longitude}.");
             }
 
             var city = await _unitOfWork.GetRepository<City>()
                 .FindAsync(c => street.Contains(c.Name));
             if (city == null)
             {
-                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Không tìm thấy thành phố phù hợp.");
+                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, $"Không tìm thấy thành phố phù hợp với tọa độ: {latitude}, {longitude}.");
             }
 
             var district = await _unitOfWork.GetRepository<District>()
                 .FindAsync(d => street.Contains(d.Name) && d.CityId == city.Id);
             if (district == null)
             {
-                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Không tìm thấy quận/huyện phù hợp.");
+                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, $"Không tìm thấy quận/huyện phù hợp với tọa độ: {latitude}, {longitude}.");
             }
 
             var newAddress = new Address

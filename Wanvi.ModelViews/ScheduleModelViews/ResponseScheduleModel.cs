@@ -19,6 +19,7 @@ namespace Wanvi.ModelViews.ScheduleModelViews
         public TimeSpan StartTime { get; set; }
         public TimeSpan EndTime { get; set; }
         public int MaxTraveler { get; set; }
-        public int BookedTraveler { get; set; } = 0;
+        public int BookedTraveler { get; set; }
+        public double MinDeposit { get; set; }
     }
 }

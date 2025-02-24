@@ -7,7 +7,6 @@ using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
 using Wanvi.Core.Utils;
-using Wanvi.ModelViews.ActivityModelViews;
 using Wanvi.ModelViews.TourModelViews;
 using Wanvi.Services.Services.Infrastructure;
 using static Wanvi.Core.Constants.Enum;
@@ -35,10 +34,40 @@ namespace Wanvi.Services.Services
             return _mapper.Map<IEnumerable<ResponseTourModel>>(tours);
         }
 
-        public async Task<IEnumerable<ResponseTourModel>> GetAllByLocalGuideId(string userId)
+        public async Task<IEnumerable<ResponseTourModel>> GetAllByLocalGuideId(Guid userId)
         {
-            var tours = await _unitOfWork.GetRepository<Tour>().FindAllAsync(a => a.UserId.ToString() == userId && !a.DeletedTime.HasValue);
-            return _mapper.Map<IEnumerable<ResponseTourModel>>(tours);
+            var tours = await _unitOfWork.GetRepository<Tour>()
+                .FindAllAsync(a => a.UserId == userId && !a.DeletedTime.HasValue);
+
+            var user = await _unitOfWork.GetRepository<ApplicationUser>().GetByIdAsync(userId);
+            double remainingBalance = user.Balance;
+
+            var filteredTours = new List<Tour>();
+
+            foreach (var tour in tours)
+            {
+                var schedules = tour.Schedules
+                    .OrderBy(s => s.MinDeposit)
+                    .ToList();
+
+                var selectedSchedules = new List<Schedule>();
+
+                foreach (var schedule in schedules)
+                {
+                    if (remainingBalance >= schedule.MinDeposit)
+                    {
+                        selectedSchedules.Add(schedule);
+                        remainingBalance -= schedule.MinDeposit;
+                    }
+                }
+                
+                if (selectedSchedules.Any())
+                {
+                    filteredTours.Add(tour);
+                }
+            }
+
+            return _mapper.Map<IEnumerable<ResponseTourModel>>(filteredTours);
         }
 
         public async Task<ResponseTourModel> GetByIdAsync(string id)
@@ -144,6 +173,7 @@ namespace Wanvi.Services.Services
                     EndTime = endTime,
                     MaxTraveler = schedule.MaxTraveler,
                     BookedTraveler = 0,
+                    MinDeposit = (endTime - startTime).TotalHours * model.HourlyRate * 0.2,
                     TourId = newTour.Id.ToString()
                 });
             }
@@ -261,6 +291,7 @@ namespace Wanvi.Services.Services
                         EndTime = endTime,
                         MaxTraveler = schedule.MaxTraveler,
                         BookedTraveler = 0,
+                        MinDeposit = (double)((endTime - startTime).TotalHours * model.HourlyRate * 0.2),
                         TourId = tour.Id.ToString()
                     });
                 }
