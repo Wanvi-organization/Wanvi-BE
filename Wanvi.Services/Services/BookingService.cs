@@ -157,7 +157,7 @@ namespace Wanvi.Services.Services
                 BookingStatus.DepositHaft => "Đặt cọc 50%",
                 BookingStatus.DepositAll => "Đặt cọc toàn bộ",
                 BookingStatus.DepositedHaft => "Đã đặt cọc một phần",
-                BookingStatus.DepositHaftEnd => "Đặt cọc 50% còn lại",
+                //BookingStatus.DepositHaftEnd => "Đặt cọc 50% còn lại",
                 BookingStatus.Paid => "Đã thanh toán",
                 BookingStatus.Completed => "Hoàn thành",
                 BookingStatus.Cancelled => "Đã hủy",
@@ -206,11 +206,13 @@ namespace Wanvi.Services.Services
 
                     return new GetBookingGuideModel
                     {
+                        
                         RentalDate = group.Key.RentalDate.ToString("dd/MM/yyyy"),
                         TotalTravelers = group.Sum(b => b.TotalTravelers),
                         MaxTraveler = group.First().Schedule.MaxTraveler,
                         BookedTraveler = bookingsList.Where(b => !excludedStatuses.Contains(b.Status)).Sum(b => b.TotalTravelers),
-                        Status = allBookingDetailsCompleted ? "Hoàn thành" : "Chưa hoàn thành",
+                        //Status = allBookingDetailsCompleted ? "Hoàn thành" : "Chưa hoàn thành",
+                        
                         Bookings = bookingsList.Select(b => new GetBookingUsermodel
                         {
                             Id = b.Id.ToString(),
@@ -234,12 +236,12 @@ namespace Wanvi.Services.Services
                     .ToList();
             }
 
-            if (!string.IsNullOrEmpty(status))
-            {
-                groupedBookings = groupedBookings
-                    .Where(b => b.Status.Equals(status, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-            }
+            //if (!string.IsNullOrEmpty(status))
+            //{
+            //    groupedBookings = groupedBookings
+            //        .Where(b => b.Status.Equals(status, StringComparison.OrdinalIgnoreCase))
+            //        .ToList();
+            //}
 
             if (minTravelers.HasValue)
             {
@@ -335,6 +337,9 @@ namespace Wanvi.Services.Services
                 .Where(x => x.ScheduleId == model.ScheduleId
                             && x.Status != BookingStatus.Cancelled
                             && x.Status != BookingStatus.Refunded
+                            && x.Status != BookingStatus.Completed
+                            && x.Status != BookingStatus.DepositAll
+                            && x.Status != BookingStatus.DepositHaft
                             && x.RentalDate.Date == model.RentalDate.Date
                             && !x.DeletedTime.HasValue) // Chỉ lấy booking có ngày đặt trùng với model
                 .ToListAsync();

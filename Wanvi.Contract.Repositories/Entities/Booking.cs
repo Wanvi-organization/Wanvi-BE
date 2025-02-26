@@ -8,11 +8,10 @@ namespace Wanvi.Contract.Repositories.Entities
         DepositHaft = 0,
         DepositAll = 1,
         DepositedHaft = 2,
-        DepositHaftEnd = 3,
-        Paid = 4,
-        Completed = 5,
-        Cancelled = 6,
-        Refunded = 7
+        Paid = 3,
+        Completed = 4,
+        Cancelled = 5,
+        Refunded = 6
     }
 
     public class Booking : BaseEntity
