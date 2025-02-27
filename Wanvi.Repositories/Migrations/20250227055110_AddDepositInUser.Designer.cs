@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Wanvi.Repositories.Context;
 
@@ -11,9 +12,11 @@ using Wanvi.Repositories.Context;
 namespace Wanvi.Repositories.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250227055110_AddDepositInUser")]
+    partial class AddDepositInUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -501,14 +504,8 @@ namespace Wanvi.Repositories.Migrations
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<long>("OrderCode")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTime>("RentalDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<bool>("Request")
-                        .HasColumnType("bit");
 
                     b.Property<string>("ScheduleId")
                         .IsRequired()
@@ -1222,63 +1219,6 @@ namespace Wanvi.Repositories.Migrations
                     b.ToTable("PremiumPackages");
                 });
 
-            modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Request", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("Balance")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Bank")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BankAccount")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BankAccountName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset>("CreatedTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset?>("DeletedTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("LastUpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset>("LastUpdatedTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("OrderCode")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Reason")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Request");
-                });
-
             modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Review", b =>
                 {
                     b.Property<string>("Id")
@@ -1875,17 +1815,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Navigation("Post");
                 });
 
-            modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Request", b =>
-                {
-                    b.HasOne("Wanvi.Contract.Repositories.Entities.ApplicationUser", "User")
-                        .WithMany("Requests")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Review", b =>
                 {
                     b.HasOne("Wanvi.Contract.Repositories.Entities.Tour", "Tour")
@@ -2028,8 +1957,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Navigation("News");
 
                     b.Navigation("Posts");
-
-                    b.Navigation("Requests");
 
                     b.Navigation("Reviews");
 
