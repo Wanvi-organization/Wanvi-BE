@@ -59,7 +59,7 @@ namespace Wanvi.Services.Services
             var buyer = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id.ToString() == booking.CreatedBy && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy người mua!");
 
             //Điều kiện số tiền HDV Đủ cọc không
-            if(!CheckGuideDeposit(booking.Schedule.Tour.UserId, booking))
+            if (!CheckGuideDeposit(booking.Schedule.Tour.UserId, booking))
             {
                 //Đơn bị hủy do ko đủ slot
                 booking.Status = BookingStatus.Cancelled;
@@ -378,7 +378,7 @@ namespace Wanvi.Services.Services
 
             do
             {
-                orderCode = random.NextInt64(11111111, 99999999); // Sinh số ngẫu nhiên 8 chữ số
+                orderCode = random.NextInt64(10000000, 9999999999); // Sinh số ngẫu nhiên 8 chữ số
                 exists = await _unitOfWork.GetRepository<Payment>().Entities
                     .AnyAsync(x => x.OrderCode == orderCode && !x.DeletedTime.HasValue);
             }
@@ -579,7 +579,7 @@ namespace Wanvi.Services.Services
                     }
                     //Cộng vào tiền cọc
                     tourGuide.Deposit += (int)(payment.Amount);
-                    if(booking.Status == BookingStatus.DepositedHaft)
+                    if (booking.Status == BookingStatus.DepositedHaft)
                     {
                         SendMailHaft(booking.User, booking, payment);
                     }
@@ -698,6 +698,7 @@ namespace Wanvi.Services.Services
                             <tr>
                                 <th>Tên tour</th>
                                 <th>Ngày khởi hành</th>
+                                <th>Giờ bắt đầu</th>
                                 <th>Số lượng</th>
                                 <th>Đơn giá</th>
                                 <th>Tổng tiền</th>
@@ -707,15 +708,16 @@ namespace Wanvi.Services.Services
                             <tr>
                                 <td>{booking.Schedule.Tour.Name}</td>
                                 <td>{booking.RentalDate:dd/MM/yyyy}</td>
+                                <td>{booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</td>
                                 <td>{booking.TotalTravelers}</td>
-                                <td>{booking.Schedule.Tour.HourlyRate * countHour:C}</td>
-                                <td>{booking.TotalPrice:C}</td>
+                                <td>{booking.Schedule.Tour.HourlyRate * countHour:N0} đ</td>
+                                <td>{booking.TotalPrice:N0} đ</td>
                             </tr>
                         </tbody>
                     </table>
                     <p><strong>Tổng tiền tour:</strong> {booking.TotalPrice:C}</p>
-                    <p><strong>Đã thanh toán (đầu tiên):</strong> 50% ({payment.Amount:C})</p>
-                    <p><strong>Còn lại thanh toán sau khi hoàn tất tour:</strong> {booking.TotalPrice - payment.Amount:C}</p>
+                    <p><strong>Đã thanh toán (đầu tiên):</strong> 50% ({payment.Amount:N0} đ)</p>
+                    <p><strong>Còn lại thanh toán sau khi hoàn tất tour:</strong> {booking.TotalPrice - payment.Amount:N0} đ</p>
                 </div>
                 <div class='footer'>
                     <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
@@ -817,6 +819,7 @@ namespace Wanvi.Services.Services
                             <tr>
                                 <th>Tên tour</th>
                                 <th>Ngày khởi hành</th>
+                                <th>Giờ bắt đầu</th>
                                 <th>Số lượng</th>
                                 <th>Đơn giá</th>
                                 <th>Tổng tiền</th>
@@ -826,15 +829,16 @@ namespace Wanvi.Services.Services
                             <tr>
                                 <td>{booking.Schedule.Tour.Name}</td>
                                 <td>{booking.RentalDate:dd/MM/yyyy}</td>
+                                <td>{booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</td>
                                 <td>{booking.TotalTravelers}</td>
-                                <td>{booking.Schedule.Tour.HourlyRate * countHour:C}</td>
-                                <td>{booking.TotalPrice:C}</td>
+                                <td>{booking.Schedule.Tour.HourlyRate * countHour:N0} đ</td>
+                                <td>{booking.TotalPrice:N0} đ</td>
                             </tr>
                         </tbody>
                     </table>
-                    <p><strong>Tổng tiền tour:</strong> {booking.TotalPrice:C}</p>
-                    <p><strong>Đã thanh toán (đầu tiên):</strong> 50% ({booking.TotalPrice:C})</p>
-                    <p><strong>Còn lại thanh toán sau khi hoàn tất tour:</strong> {0:C}</p>
+                    <p><strong>Tổng tiền tour:</strong> {booking.TotalPrice:đ}</p>
+                    <p><strong>Đã thanh toán (đầu tiên):</strong> 50% ({booking.TotalPrice:N0} đ)</p>
+                    <p><strong>Còn lại thanh toán sau khi hoàn tất tour:</strong> {0:N0} đ</p>
                 </div>
                 <div class='footer'>
                     <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>

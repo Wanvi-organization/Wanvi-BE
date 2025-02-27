@@ -673,7 +673,7 @@ namespace Wanvi.Services.Services
 
             do
             {
-                orderCode = random.NextInt64(11111111, 99999999); // Sinh số ngẫu nhiên 8 chữ số
+                orderCode = random.NextInt64(10000000, 9999999999); // Sinh số ngẫu nhiên 8 chữ số
                 exists = await _unitOfWork.GetRepository<Booking>().Entities
                     .AnyAsync(x => x.OrderCode == orderCode && !x.DeletedTime.HasValue);
             }
