@@ -7,9 +7,9 @@ using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
 using Wanvi.Core.Utils;
+using Wanvi.ModelViews.ScheduleModelViews;
 using Wanvi.ModelViews.TourModelViews;
 using Wanvi.Services.Services.Infrastructure;
-using static Wanvi.Core.Constants.Enum;
 
 namespace Wanvi.Services.Services
 {
@@ -60,15 +60,94 @@ namespace Wanvi.Services.Services
                         remainingBalance -= schedule.MinDeposit;
                     }
                 }
-                
+
                 if (selectedSchedules.Any())
                 {
                     filteredTours.Add(tour);
                 }
             }
 
-            return _mapper.Map<IEnumerable<ResponseTourModel>>(filteredTours);
+            var responseTours = new List<ResponseTourModel>();
+            foreach (var tour in filteredTours)
+            {
+                var responseTour = _mapper.Map<ResponseTourModel>(tour);
+                var availableSchedules = new List<ResponseScheduleModel>();
+
+                foreach (var schedule in tour.Schedules)
+                {
+                    var existingBookings = await _unitOfWork.GetRepository<Booking>().Entities
+                        .Include(p => p.Payments)
+                        .Where(x => x.ScheduleId == schedule.Id &&
+                                    x.Status != BookingStatus.Cancelled &&
+                                    x.Status != BookingStatus.Refunded &&
+                                    x.Status != BookingStatus.Completed &&
+                                    x.Status != BookingStatus.DepositAll &&
+                                    x.Status != BookingStatus.DepositHaft &&
+                                    x.RentalDate.Date == DateTime.UtcNow.Date &&
+                                    !x.DeletedTime.HasValue)
+                        .ToListAsync();
+
+                    int totalBooked = existingBookings.Sum(b => b.TotalTravelers);
+
+                    int remainingTraveler = schedule.MaxTraveler - totalBooked;
+
+                    if (remainingTraveler > 0)
+                    {
+                        var responseSchedule = _mapper.Map<ResponseScheduleModel>(schedule);
+                        responseSchedule.RemainingTraveler = remainingTraveler;
+                        availableSchedules.Add(responseSchedule);
+                    }
+                }
+
+                if (availableSchedules.Any())
+                {
+                    responseTour.Schedules = availableSchedules;
+                    responseTours.Add(responseTour);
+                }
+            }
+
+            return responseTours;
         }
+
+        //public async Task<IEnumerable<ResponseTourModel>> GetAllByLocalGuideId(Guid userId)
+        //{
+        //    var tours = await _unitOfWork.GetRepository<Tour>()
+        //        .FindAllAsync(a => a.UserId == userId && !a.DeletedTime.HasValue);
+
+        //    var user = await _unitOfWork.GetRepository<ApplicationUser>().GetByIdAsync(userId);
+        //    double remainingBalance = user.Balance;
+
+        //    var filteredTours = new List<Tour>();
+
+        //    foreach (var tour in tours)
+        //    {
+        //        var schedules = tour.Schedules
+        //            .OrderBy(s => s.MinDeposit)
+        //            .ToList();
+
+        //        var selectedSchedules = new List<Schedule>();
+
+        //        foreach (var schedule in schedules)
+        //        {
+        //            if (remainingBalance >= schedule.MinDeposit)
+        //            {
+        //                selectedSchedules.Add(schedule);
+        //                remainingBalance -= schedule.MinDeposit;
+        //            }
+        //        }
+
+        //        if (selectedSchedules.Any())
+        //        {
+        //            filteredTours.Add(tour);
+        //        }
+        //    }
+
+        //    //var existingBookings = await _unitOfWork.GetRepository<Booking>().Entities
+        //    //    .Include(b => b.Payments)
+        //    //    .Where(p => p.ScheduleId == filteredTours.;
+
+        //    return _mapper.Map<IEnumerable<ResponseTourModel>>(filteredTours);
+        //}
 
         public async Task<ResponseTourModel> GetByIdAsync(string id)
         {
@@ -168,7 +247,7 @@ namespace Wanvi.Services.Services
 
                 newTour.Schedules.Add(new Schedule
                 {
-                    Day = (Core.Constants.Enum.DayOfWeek)schedule.Day,
+                    Day = (Contract.Repositories.Entities.DayOfWeek)schedule.Day,
                     StartTime = startTime,
                     EndTime = endTime,
                     MaxTraveler = schedule.MaxTraveler,
@@ -183,7 +262,7 @@ namespace Wanvi.Services.Services
                 newTour.Medias.Add(new Media
                 {
                     Url = media.Url,
-                    Type = (MediaType)media.Type,
+                    Type = (Contract.Repositories.Entities.MediaType)media.Type,
                     AltText = media.AltText,
                     TourId = newTour.Id.ToString()
                 });
@@ -286,7 +365,7 @@ namespace Wanvi.Services.Services
 
                     tour.Schedules.Add(new Schedule
                     {
-                        Day = (Core.Constants.Enum.DayOfWeek)schedule.Day,
+                        Day = (Contract.Repositories.Entities.DayOfWeek)schedule.Day,
                         StartTime = startTime,
                         EndTime = endTime,
                         MaxTraveler = schedule.MaxTraveler,

@@ -1,13 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Wanvi.Contract.Repositories.Base;
-using static Wanvi.Core.Constants.Enum;
+﻿using Wanvi.Contract.Repositories.Base;
 
 namespace Wanvi.Contract.Repositories.Entities
 {
+    public enum RequestStatus
+    {
+        Pending,
+        Confirmed,
+        Cancelled,
+    }
+
     public class Request : BaseEntity
     {
         public string? BankAccount { get; set; }

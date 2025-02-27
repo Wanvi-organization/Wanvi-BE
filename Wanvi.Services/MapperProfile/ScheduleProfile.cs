@@ -4,9 +4,9 @@ using Wanvi.ModelViews.ScheduleModelViews;
 
 namespace Wanvi.Services.MapperProfile
 {
-    public class ScheduleMProfile : Profile
+    public class ScheduleProfile : Profile
     {
-        public ScheduleMProfile()
+        public ScheduleProfile()
         {
             CreateMap<Schedule, ResponseScheduleModel>()
                 .ForMember(dest => dest.Day, opt => opt.MapFrom(src => (ResponseScheduleModel.DayOfWeek)src.Day))
