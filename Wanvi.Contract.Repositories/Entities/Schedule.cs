@@ -2,9 +2,20 @@
 
 namespace Wanvi.Contract.Repositories.Entities
 {
+    public enum DayOfWeek
+    {
+        Monday,
+        Tuesday,
+        Wednesday,
+        Thursday,
+        Friday,
+        Saturday,
+        Sunday
+    }
+
     public class Schedule : BaseEntity
     {
-        public Core.Constants.Enum.DayOfWeek Day { get; set; }
+        public DayOfWeek Day { get; set; }
         public TimeSpan StartTime { get; set; }
         public TimeSpan EndTime { get; set; }
         public int MaxTraveler { get; set; }
