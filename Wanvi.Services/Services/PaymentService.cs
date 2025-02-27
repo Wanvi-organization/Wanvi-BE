@@ -16,6 +16,7 @@ using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
+using Wanvi.Core.Utils;
 using Wanvi.ModelViews.BookingModelViews;
 using Wanvi.ModelViews.PaymentModelViews;
 using Wanvi.Services.Services.Infrastructure;
@@ -32,8 +33,9 @@ namespace Wanvi.Services.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<PaymentService> _logger;
         private readonly IHttpContextAccessor _contextAccessor;
+        private readonly IEmailService _emailService;
 
-        public PaymentService(HttpClient httpClient, IConfiguration configuration, IUnitOfWork unitOfWork, ILogger<PaymentService> logger, IHttpContextAccessor contextAccessor)
+        public PaymentService(HttpClient httpClient, IConfiguration configuration, IUnitOfWork unitOfWork, ILogger<PaymentService> logger, IHttpContextAccessor contextAccessor, IEmailService emailService)
         {
             _httpClient = httpClient;
             _payOSApiUrl = configuration["PayOS:ApiUrl"];
@@ -43,6 +45,7 @@ namespace Wanvi.Services.Services
             _unitOfWork = unitOfWork;
             _logger = logger;
             _contextAccessor = contextAccessor;
+            _emailService = emailService;
         }
 
         public async Task<string> CreatePayOSPaymentAllLink(CreatePayOSPaymentRequest request)
@@ -56,7 +59,7 @@ namespace Wanvi.Services.Services
             var buyer = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id.ToString() == booking.CreatedBy && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy người mua!");
 
             //Điều kiện số tiền HDV Đủ cọc không
-            if(CheckGuideDeposit(booking.Schedule.Tour.UserId, booking))
+            if(!CheckGuideDeposit(booking.Schedule.Tour.UserId, booking))
             {
                 //Đơn bị hủy do ko đủ slot
                 booking.Status = BookingStatus.Cancelled;
@@ -201,7 +204,7 @@ namespace Wanvi.Services.Services
             var buyer = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id.ToString() == booking.CreatedBy && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy người mua!");
 
             //Điều kiện số tiền HDV Đủ cọc không
-            if (CheckGuideDeposit(booking.Schedule.Tour.UserId, booking))
+            if (!CheckGuideDeposit(booking.Schedule.Tour.UserId, booking))
             {
                 //Đơn bị hủy do ko đủ slot
                 booking.Status = BookingStatus.Cancelled;
@@ -576,6 +579,15 @@ namespace Wanvi.Services.Services
                     }
                     //Cộng vào tiền cọc
                     tourGuide.Deposit += (int)(payment.Amount);
+                    if(booking.Status == BookingStatus.DepositedHaft)
+                    {
+                        SendMailHaft(booking.User, booking, payment);
+                    }
+                    else
+                    {
+                        SendMailAll(booking.User, booking, payment);
+                    }
+
                     await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
                     break;
 
@@ -595,6 +607,243 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
         }
 
+        private async Task SendMailHaft(ApplicationUser user, Booking booking, Payment payment)
+        {
+            int countHour = (booking.Schedule.EndTime.Hours - booking.Schedule.StartTime.Hours);
+
+            await _emailService.SendEmailAsync(
+                user.Email,
+                "Hóa Đơn Thanh Toán Thành Công",
+                $@"
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    margin: 0;
+                    padding: 0;
+                }}
+                .container {{
+                    width: 100%;
+                    max-width: 600px;
+                    margin: 20px auto;
+                    background: #ffffff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+                }}
+                h2, h3 {{
+                    color: #333;
+                }}
+                p {{
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #555;
+                }}
+                .section {{
+                    margin-bottom: 20px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #ddd;
+                }}
+                .footer {{
+                    margin-top: 20px;
+                    font-size: 14px;
+                    color: #777;
+                    text-align: center;
+                }}
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                }}
+                table, th, td {{
+                    border: 1px solid #ddd;
+                }}
+                th, td {{
+                    padding: 10px;
+                    text-align: left;
+                }}
+                th {{
+                    background-color: #f8f8f8;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <h2>HÓA ĐƠN THANH TOÁN THÀNH CÔNG</h2>
+                <p><strong>Công ty Cổ phần WANVI</strong></p>
+                <p>Số ĐKKD: XXXXXXXX</p>
+                <p>Địa chỉ: [Địa chỉ công ty]</p>
+                <p>Hotline: [Số hotline]</p>
+                <p>Email: wanvi.wandervietnam@gmail.com</p>
+
+                <div class='section'>
+                    <h3>THÔNG TIN HÓA ĐƠN</h3>
+                    <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                    <p><strong>Ngày giao dịch:</strong> {DateTime.Now.Date:dd/MM/yyyy}</p>
+                    <p><strong>Hình thức thanh toán:</strong> Banking</p>
+                </div>
+
+                <div class='section'>
+                    <h3>THÔNG TIN KHÁCH HÀNG</h3>
+                    <p><strong>Họ và tên:</strong> {user.FullName}</p>
+                    <p><strong>Email:</strong> {user.Email}</p>
+                    <p><strong>Số điện thoại:</strong> {user.PhoneNumber}</p>
+                </div>
+
+                <div class='section'>
+                    <h3>CHI TIẾT ĐƠN HÀNG</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tên tour</th>
+                                <th>Ngày khởi hành</th>
+                                <th>Số lượng</th>
+                                <th>Đơn giá</th>
+                                <th>Tổng tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>{booking.Schedule.Tour.Name}</td>
+                                <td>{booking.RentalDate:dd/MM/yyyy}</td>
+                                <td>{booking.TotalTravelers}</td>
+                                <td>{booking.Schedule.Tour.HourlyRate * countHour:C}</td>
+                                <td>{booking.TotalPrice:C}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Tổng tiền tour:</strong> {booking.TotalPrice:C}</p>
+                    <p><strong>Đã thanh toán (đầu tiên):</strong> 50% ({payment.Amount:C})</p>
+                    <p><strong>Còn lại thanh toán sau khi hoàn tất tour:</strong> {booking.TotalPrice - payment.Amount:C}</p>
+                </div>
+                <div class='footer'>
+                    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                </div>
+            </div>
+        </body>
+        </html>"
+            );
+
+        }
+        private async Task SendMailAll(ApplicationUser user, Booking booking, Payment payment)
+        {
+            int countHour = (booking.Schedule.EndTime.Hours - booking.Schedule.StartTime.Hours);
+
+            await _emailService.SendEmailAsync(
+      user.Email,
+      "Hóa Đơn Thanh Toán Thành Công",
+      $@"
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    margin: 0;
+                    padding: 0;
+                }}
+                .container {{
+                    width: 100%;
+                    max-width: 600px;
+                    margin: 20px auto;
+                    background: #ffffff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+                }}
+                h2, h3 {{
+                    color: #333;
+                }}
+                p {{
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #555;
+                }}
+                .section {{
+                    margin-bottom: 20px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #ddd;
+                }}
+                .footer {{
+                    margin-top: 20px;
+                    font-size: 14px;
+                    color: #777;
+                    text-align: center;
+                }}
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                }}
+                table, th, td {{
+                    border: 1px solid #ddd;
+                }}
+                th, td {{
+                    padding: 10px;
+                    text-align: left;
+                }}
+                th {{
+                    background-color: #f8f8f8;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <h2>HÓA ĐƠN THANH TOÁN THÀNH CÔNG</h2>
+                <p><strong>Công ty Cổ phần WANVI</strong></p>
+                <p>Số ĐKKD: XXXXXXXX</p>
+                <p>Địa chỉ: [Địa chỉ công ty]</p>
+                <p>Hotline: [Số hotline]</p>
+                <p>Email: wanvi.wandervietnam@gmail.com</p>
+
+                <div class='section'>
+                    <h3>THÔNG TIN HÓA ĐƠN</h3>
+                    <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                    <p><strong>Ngày giao dịch:</strong> {DateTime.Now.Date:dd/MM/yyyy}</p>
+                    <p><strong>Hình thức thanh toán:</strong> Banking</p>
+                </div>
+
+                <div class='section'>
+                    <h3>THÔNG TIN KHÁCH HÀNG</h3>
+                    <p><strong>Họ và tên:</strong> {user.FullName}</p>
+                    <p><strong>Email:</strong> {user.Email}</p>
+                    <p><strong>Số điện thoại:</strong> {user.PhoneNumber}</p>
+                </div>
+
+                <div class='section'>
+                    <h3>CHI TIẾT ĐƠN HÀNG</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tên tour</th>
+                                <th>Ngày khởi hành</th>
+                                <th>Số lượng</th>
+                                <th>Đơn giá</th>
+                                <th>Tổng tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>{booking.Schedule.Tour.Name}</td>
+                                <td>{booking.RentalDate:dd/MM/yyyy}</td>
+                                <td>{booking.TotalTravelers}</td>
+                                <td>{booking.Schedule.Tour.HourlyRate * countHour:C}</td>
+                                <td>{booking.TotalPrice:C}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Tổng tiền tour:</strong> {booking.TotalPrice:C}</p>
+                    <p><strong>Đã thanh toán (đầu tiên):</strong> 50% ({booking.TotalPrice:C})</p>
+                    <p><strong>Còn lại thanh toán sau khi hoàn tất tour:</strong> {0:C}</p>
+                </div>
+                <div class='footer'>
+                    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                </div>
+            </div>
+        </body>
+        </html>"
+  );
+        }
 
     }
 }
