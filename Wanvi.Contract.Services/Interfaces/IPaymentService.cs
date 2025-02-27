@@ -12,7 +12,7 @@ namespace Wanvi.Contract.Services.Interfaces
     {
         Task<string> CreatePayOSPaymentAllLink(CreatePayOSPaymentRequest request);
         Task<string> CreatePayOSPaymentHaftLink(CreatePayOSPaymentRequest request);
-        bool VerifyPayOSSignature(PayOSWebhookRequest request, string signature);
+        //bool VerifyPayOSSignature(PayOSWebhookRequest request, string signature);
         Task PayOSCallback(PayOSWebhookRequest request);
         Task<string> CreateBookingHaftEnd(CreateBookingEndModel model);
     }

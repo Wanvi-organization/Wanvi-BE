@@ -12,10 +12,9 @@ namespace Wanvi.Contract.Repositories.Entities
     public enum PaymentStatus
     {
         Unpaid = 0,
-        Deposited = 1,
-        Paid = 2,
-        Refunded = 3,
-        Canceled = 4
+        Paid = 1,
+        Refunded = 2,
+        Canceled = 3
     }
 
     public class Payment : BaseEntity

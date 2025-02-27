@@ -8,20 +8,21 @@ namespace Wanvi.Contract.Repositories.Entities
         DepositHaft = 0,
         DepositAll = 1,
         DepositedHaft = 2,
-        DepositHaftEnd = 3,
-        Paid = 4,
-        Completed = 5,
-        Cancelled = 6,
-        Refunded = 7
+        Paid = 3,
+        Completed = 4,
+        Cancelled = 5,
+        Refunded = 6
     }
 
     public class Booking : BaseEntity
     {
         public BookingStatus Status { get; set; }
         public int TotalTravelers { get; set; }
+        public long OrderCode { get; set; }
         public double TotalPrice { get; set; }
         public string? Note { get; set; }
         public DateTime RentalDate { get; set; }
+        public bool Request {  get; set; }
         public string ScheduleId { get; set; }
         public virtual Schedule Schedule { get; set; }
         public Guid UserId { get; set; }

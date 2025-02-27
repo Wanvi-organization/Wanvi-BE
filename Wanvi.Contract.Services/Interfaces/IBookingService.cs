@@ -24,5 +24,8 @@ namespace Wanvi.Contract.Services.Interfaces
             string? sortBy = null,
             bool isAscending = false,
             string? status = null);
+        Task<string> WithdrawMoneyFromBooking(WithdrawMoneyFromBookingModel model);
+        Task<string> ChangeBookingToUser(ChangeBookingToUserModel model);
         }
+
 }

@@ -70,7 +70,9 @@ namespace Wanvi.API.Controllers
                  data: res
              ));
         }
-
+        /// <summary>
+        /// Tạo booking 100%
+        /// </summary>
         [HttpPost("create_booking")]
         public async Task<IActionResult> CreateBooingAll(CreateBookingModel request)
         {
@@ -81,10 +83,39 @@ namespace Wanvi.API.Controllers
                  data: res
              ));
         }
+        /// <summary>
+        /// Tạo booking cọc 50%
+        /// </summary>
         [HttpPost("create_booking_haft")]
         public async Task<IActionResult> CreateBookingHaft(CreateBookingModel request)
         {
             string res = await _bookingService.CreateBookingHaft(request);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        /// <summary>
+        /// Chuyển tiền từ cọc sang cho HDV
+        /// </summary>
+        [HttpPut("change_booking_to_user")]
+        public async Task<IActionResult> ChangeBookingToUser(ChangeBookingToUserModel request)
+        {
+            string res = await _bookingService.ChangeBookingToUser(request);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        /// <summary>
+        /// Gửi yêu cầu rút tiền về ngân hàng cho HDV
+        /// </summary>
+        [HttpPost("Withdraw_Money_From_Booking")]
+        public async Task<IActionResult> WithdrawMoneyFromBooking(WithdrawMoneyFromBookingModel request)
+        {
+            string res = await _bookingService.WithdrawMoneyFromBooking(request);
             return Ok(new BaseResponseModel<string>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,

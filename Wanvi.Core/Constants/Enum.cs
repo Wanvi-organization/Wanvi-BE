@@ -17,6 +17,13 @@ namespace Wanvi.Core.Constants
             Refunded
         }
 
+        public enum RequestStatus
+        {
+            Pending,
+            Confirmed,          
+            Cancelled,     
+        }
+
         public enum PaymentMethod
         {
             EWallet,

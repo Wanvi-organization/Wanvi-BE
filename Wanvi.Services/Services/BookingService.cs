@@ -26,13 +26,16 @@ namespace Wanvi.Services.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly IPaymentService _paymentService;
-        public BookingService(IMapper mapper, UserManager<ApplicationUser> userManager, IUnitOfWork unitOfWork, IHttpContextAccessor contextAccessor, IPaymentService paymentService)
+        private readonly IEmailService _emailService;
+
+        public BookingService(IMapper mapper, UserManager<ApplicationUser> userManager, IUnitOfWork unitOfWork, IHttpContextAccessor contextAccessor, IPaymentService paymentService, IEmailService emailService)
         {
             _mapper = mapper;
             _userManager = userManager;
             _unitOfWork = unitOfWork;
             _contextAccessor = contextAccessor;
             _paymentService = paymentService;
+            _emailService = emailService;
         }
 
         public async Task<List<GetBookingUsermodel>> GetBookingAdmin(
@@ -91,7 +94,6 @@ namespace Wanvi.Services.Services
 
             return bookingModels;
         }
-
 
         public async Task<List<GetBookingUsermodel>> GetBookingUser(
             string? searchNote = null,
@@ -158,7 +160,7 @@ namespace Wanvi.Services.Services
                 BookingStatus.DepositHaft => "Đặt cọc 50%",
                 BookingStatus.DepositAll => "Đặt cọc toàn bộ",
                 BookingStatus.DepositedHaft => "Đã đặt cọc một phần",
-                BookingStatus.DepositHaftEnd => "Đặt cọc 50% còn lại",
+                //BookingStatus.DepositHaftEnd => "Đặt cọc 50% còn lại",
                 BookingStatus.Paid => "Đã thanh toán",
                 BookingStatus.Completed => "Hoàn thành",
                 BookingStatus.Cancelled => "Đã hủy",
@@ -207,11 +209,13 @@ namespace Wanvi.Services.Services
 
                     return new GetBookingGuideModel
                     {
+
                         RentalDate = group.Key.RentalDate.ToString("dd/MM/yyyy"),
                         TotalTravelers = group.Sum(b => b.TotalTravelers),
                         MaxTraveler = group.First().Schedule.MaxTraveler,
                         BookedTraveler = bookingsList.Where(b => !excludedStatuses.Contains(b.Status)).Sum(b => b.TotalTravelers),
-                        Status = allBookingDetailsCompleted ? "Hoàn thành" : "Chưa hoàn thành",
+                        //Status = allBookingDetailsCompleted ? "Hoàn thành" : "Chưa hoàn thành",
+
                         Bookings = bookingsList.Select(b => new GetBookingUsermodel
                         {
                             Id = b.Id.ToString(),
@@ -235,12 +239,12 @@ namespace Wanvi.Services.Services
                     .ToList();
             }
 
-            if (!string.IsNullOrEmpty(status))
-            {
-                groupedBookings = groupedBookings
-                    .Where(b => b.Status.Equals(status, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-            }
+            //if (!string.IsNullOrEmpty(status))
+            //{
+            //    groupedBookings = groupedBookings
+            //        .Where(b => b.Status.Equals(status, StringComparison.OrdinalIgnoreCase))
+            //        .ToList();
+            //}
 
             if (minTravelers.HasValue)
             {
@@ -297,6 +301,23 @@ namespace Wanvi.Services.Services
             }
             var schedule = await _unitOfWork.GetRepository<Schedule>().Entities.FirstOrDefaultAsync(x => x.Id == model.ScheduleId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy lịch");
 
+            // Danh sách tên thứ trong tuần theo ENUM của bạn (Thứ 2 = 0)
+            string[] daysInVietnamese = { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật" };
+
+            // Lấy thứ trong tuần của ngày đặt
+            int rentalDayIndex = ((int)model.RentalDate.DayOfWeek + 6) % 7; // Chuyển đổi để Thứ 2 = 0
+            string rentalDay = daysInVietnamese[rentalDayIndex];
+
+            // Lấy thứ trong tuần của Schedule
+            string scheduleDay = daysInVietnamese[(int)schedule.Day];
+
+            // Kiểm tra ngày đặt có đúng với lịch trình không
+            if (rentalDayIndex != (int)schedule.Day)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
+                    $"Ngày đặt: ({rentalDay}) không phù hợp với lịch trình của hướng dẫn viên: ({scheduleDay})!");
+            }
+
             //Số giờ của dịch vụ
             int countHour = (schedule.EndTime.Hours - schedule.StartTime.Hours);
             if (countHour < 0)
@@ -319,6 +340,9 @@ namespace Wanvi.Services.Services
                 .Where(x => x.ScheduleId == model.ScheduleId
                             && x.Status != BookingStatus.Cancelled
                             && x.Status != BookingStatus.Refunded
+                            && x.Status != BookingStatus.Completed
+                            && x.Status != BookingStatus.DepositAll
+                            && x.Status != BookingStatus.DepositHaft
                             && x.RentalDate.Date == model.RentalDate.Date
                             && !x.DeletedTime.HasValue) // Chỉ lấy booking có ngày đặt trùng với model
                 .ToListAsync();
@@ -338,22 +362,24 @@ namespace Wanvi.Services.Services
             //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
             var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
             int Total = (int)(model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour);
-            if (user.Balance < Total)
-            {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
+            //if (user.Balance < Total)
+            //{
+            //    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
 
-            }
+            //}
 
             var booking = new Booking
             {
                 Id = Guid.NewGuid().ToString("N"),
                 ScheduleId = model.ScheduleId,
                 Note = model.Note,
+                OrderCode = await GenerateUniqueOrderCodeAsync(),
                 CreatedBy = userId,
-                UserId = model.UserId,
+                UserId = cb,
                 CreatedTime = DateTime.UtcNow,
                 LastUpdatedTime = DateTime.UtcNow,
                 LastUpdatedBy = userId,
+                RentalDate = model.RentalDate,
                 TotalPrice = model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour,
                 TotalTravelers = model.NumberOfParticipants,
                 Status = BookingStatus.DepositAll,
@@ -412,6 +438,24 @@ namespace Wanvi.Services.Services
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, $"Số người đăng kí lớn hơn số người mặc định({schedule.MaxTraveler} người)!");
             }
+
+            // Danh sách tên thứ trong tuần theo ENUM của bạn (Thứ 2 = 0)
+            string[] daysInVietnamese = { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật" };
+
+            // Lấy thứ trong tuần của ngày đặt
+            int rentalDayIndex = ((int)model.RentalDate.DayOfWeek + 6) % 7; // Chuyển đổi để Thứ 2 = 0
+            string rentalDay = daysInVietnamese[rentalDayIndex];
+
+            // Lấy thứ trong tuần của Schedule
+            string scheduleDay = daysInVietnamese[(int)schedule.Day];
+
+            // Kiểm tra ngày đặt có đúng với lịch trình không
+            if (rentalDayIndex != (int)schedule.Day)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
+                    $"Ngày đặt: ({rentalDay}) không phù hợp với lịch trình của hướng dẫn viên: ({scheduleDay})!");
+            }
+
             // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 2 ngày
             if (model.RentalDate.Date < DateTime.Now.AddDays(2).Date)
             {
@@ -443,11 +487,11 @@ namespace Wanvi.Services.Services
             var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
             //Số tiền tour phải cọc
             int Total = (int)(model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour * 0.5);
-            if (user.Balance < Total)
-            {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
+            //if (user.Balance < Total)
+            //{
+            //    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
 
-            }
+            //}
 
             var booking = new Booking
             {
@@ -455,7 +499,9 @@ namespace Wanvi.Services.Services
                 ScheduleId = model.ScheduleId,
                 Note = model.Note,
                 CreatedBy = userId,
-                UserId = model.UserId,
+                UserId = cb,
+                OrderCode = await GenerateUniqueOrderCodeAsync(),
+                RentalDate = model.RentalDate,
                 CreatedTime = DateTime.UtcNow,
                 LastUpdatedTime = DateTime.UtcNow,
                 LastUpdatedBy = userId,
@@ -488,6 +534,152 @@ namespace Wanvi.Services.Services
             // Call PaymentService to generate payment link
             //string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(payOSRequest);
             return "Tạo đơn hàng thành công";
+        }
+
+        public async Task<string> ChangeBookingToUser(ChangeBookingToUserModel model)
+        {
+            var existingBookings = await _unitOfWork.GetRepository<Booking>().Entities
+                .FirstOrDefaultAsync(x => x.Id == model.BookingId
+                            && x.Status == BookingStatus.Completed
+                            && x.Request == false
+                            && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
+            //Cập nhật đơn hàng
+            existingBookings.Status = BookingStatus.Refunded;
+            existingBookings.Request = true;
+
+            //Tìm HDV
+            var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == existingBookings.Schedule.Tour.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
+            //Cập nhật tiền của HDV
+            tourGuide.Balance += existingBookings.TotalTravelers;//Chuyển vào tiền lấy làm cọc
+            tourGuide.Deposit -= existingBookings.TotalTravelers;//trừ tiền đã chuyển vào cọc
+
+            Request request = new Request()
+            {
+                Balance = tourGuide.Balance,
+                CreatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.UtcNow,
+                LastUpdatedBy = tourGuide.Id.ToString(),
+                CreatedBy = tourGuide.Id.ToString(),
+                OrderCode = existingBookings.OrderCode,
+                Status = Core.Constants.Enum.RequestStatus.Confirmed,
+                Note = model.Note,
+                UserId = tourGuide.Id,
+                //Bank = tourGuide.Bank,
+                //BankAccount = tourGuide.BankAccount,
+                //BankAccountName = tourGuide.BankAccountName,               
+            };
+            //add request
+            await _unitOfWork.GetRepository<Request>().InsertAsync(request);
+
+            await _unitOfWork.SaveAsync();
+            return "Chuyển tiền thành công!";
+        }
+
+        public async Task<string> WithdrawMoneyFromBooking(WithdrawMoneyFromBookingModel model)
+        {
+            var existingBookings = await _unitOfWork.GetRepository<Booking>().Entities
+            .FirstOrDefaultAsync(x => x.Id == model.BookingId
+                && x.Status == BookingStatus.Completed
+                && x.Request == false
+                && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
+            //Cập nhật đơn hàng
+            existingBookings.Status = BookingStatus.Refunded;
+            existingBookings.Request = true;
+            //Tìm HDV
+            var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == existingBookings.Schedule.Tour.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
+            ////Cập nhật tiền của HDV
+            //tourGuide.Balance += existingBookings.TotalTravelers;//Chuyển vào tiền lấy làm cọc
+            //tourGuide.Deposit -= existingBookings.TotalTravelers;//trừ tiền đã chuyển vào cọc
+
+            Request request = new Request()
+            {
+                Balance = tourGuide.Balance,
+                CreatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.UtcNow,
+                LastUpdatedBy = tourGuide.Id.ToString(),
+                CreatedBy = tourGuide.Id.ToString(),
+                OrderCode = existingBookings.OrderCode,
+                Status = Core.Constants.Enum.RequestStatus.Pending,
+                Note = model.Note,
+                UserId = tourGuide.Id,
+                Bank = tourGuide.Bank,
+                BankAccount = tourGuide.BankAccount,
+                BankAccountName = tourGuide.BankAccountName,
+            };
+            //add request
+            await _unitOfWork.GetRepository<Request>().InsertAsync(request);
+
+            await _emailService.SendEmailAsync(
+                tourGuide.Email,
+                "Yêu cầu rút tiền từ đơn hàng",
+                $@"
+                <html>
+                <head>
+                    <style>
+                        body {{
+                            font-family: Arial, sans-serif;
+                            background-color: #f4f4f4;
+                            margin: 0;
+                            padding: 0;
+                        }}
+                        .container {{
+                            width: 100%;
+                            max-width: 600px;
+                            margin: 20px auto;
+                            background: #ffffff;
+                            padding: 20px;
+                            border-radius: 8px;
+                            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+                        }}
+                        h2 {{
+                            color: #333;
+                        }}
+                        p {{
+                            font-size: 16px;
+                            line-height: 1.6;
+                            color: #555;
+                        }}
+                        .footer {{
+                            margin-top: 20px;
+                            font-size: 14px;
+                            color: #777;
+                            text-align: center;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <h2>Xin chào {tourGuide.FullName},</h2>
+                        <p>Chúng tôi đã nhận được yêu cầu rút tiền từ đơn hàng của bạn.</p>
+                        <p>Việc hoàn tiền sẽ được xử lý theo quy định của chính sách và có thể mất một khoảng thời gian nhất định.</p>
+                        <p>Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với bộ phận hỗ trợ khách hàng.</p>
+                        <div class='footer'>
+                            <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                        </div>
+                    </div>
+                </body>
+                </html>"
+            );
+
+            await _unitOfWork.SaveAsync();
+            return "Gửi yêu cầu thành công!";
+        }
+
+        private async Task<long> GenerateUniqueOrderCodeAsync()
+        {
+            Random random = new Random();
+            long orderCode;
+            bool exists;
+
+            do
+            {
+                orderCode = random.NextInt64(11111111, 99999999); // Sinh số ngẫu nhiên 8 chữ số
+                exists = await _unitOfWork.GetRepository<Booking>().Entities
+                    .AnyAsync(x => x.OrderCode == orderCode && !x.DeletedTime.HasValue);
+            }
+            while (exists);
+
+            return orderCode;
         }
 
     }
