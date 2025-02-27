@@ -3,15 +3,13 @@ using Wanvi.Contract.Repositories.Base;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
-using Wanvi.ModelViews.ActivityModelViews;
 using Wanvi.ModelViews.UserModelViews;
-using Wanvi.Services.Services;
 
 namespace WanviBE.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UserController : Controller
+    public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
 

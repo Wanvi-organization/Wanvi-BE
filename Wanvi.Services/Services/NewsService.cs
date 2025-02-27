@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
@@ -26,27 +27,51 @@ namespace Wanvi.Services.Services
 
         public async Task<IEnumerable<ResponseNewsModel>> GetAllAsync()
         {
-            var news = await _unitOfWork.GetRepository<News>().FindAllAsync(a => !a.DeletedTime.HasValue);
+            var newsList = await _unitOfWork.GetRepository<News>().FindAllAsync(a => !a.DeletedTime.HasValue);
 
-            if (!news.Any())
+            if (!newsList.Any())
             {
                 throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Tin tức không tồn tại.");
             }
 
-            return _mapper.Map<IEnumerable<ResponseNewsModel>>(news);
+            foreach (var news in newsList)
+            {
+                news.NewsDetails = news.NewsDetails.OrderBy(nd => nd.SortOrder).ToList();
+            }
+
+            return _mapper.Map<IEnumerable<ResponseNewsModel>>(newsList);
+        }
+
+        public async Task<IEnumerable<ResponseNewsModel>> GetAllByCategoryIdAsync(string id)
+        {
+            var newsList = await _unitOfWork.GetRepository<News>().FindAllAsync(n => n.CategoryId == id.Trim() && !n.DeletedTime.HasValue);
+
+            if (!newsList.Any())
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không có tin tức nào thuộc danh mục này.");
+            }
+
+            foreach (var news in newsList)
+            {
+                news.NewsDetails = news.NewsDetails.OrderBy(nd => nd.SortOrder).ToList();
+            }
+
+            return _mapper.Map<IEnumerable<ResponseNewsModel>>(newsList);
         }
 
         public async Task<ResponseNewsModel> GetByIdAsync(string id)
         {
-            var activity = await _unitOfWork.GetRepository<Activity>().GetByIdAsync(id.Trim())
-                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động không tồn tại.");
+            var news = await _unitOfWork.GetRepository<News>().GetByIdAsync(id.Trim())
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tin tức không tồn tại.");
 
-            if (activity.DeletedTime.HasValue)
+            if (news.DeletedTime.HasValue)
             {
-                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động đã bị xóa.");
+                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tin tức đã bị xóa.");
             }
 
-            return _mapper.Map<ResponseNewsModel>(activity);
+            news.NewsDetails = news.NewsDetails.OrderBy(nd => nd.SortOrder).ToList();
+
+            return _mapper.Map<ResponseNewsModel>(news);
         }
 
         public async Task CreateAsync(CreateNewsModel model)
@@ -58,6 +83,12 @@ namespace Wanvi.Services.Services
             if (sortOrders.Distinct().Count() != sortOrders.Count)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Thứ tự sắp xếp không được trùng lặp.");
+            }
+
+            var categoryExists = await _unitOfWork.GetRepository<Category>().Entities.AnyAsync(c => c.Id == model.CategoryId);
+            if (!categoryExists)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Danh mục không tồn tại.");
             }
 
             var newNews = new News
@@ -87,63 +118,106 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
         }
 
-        //public async Task UpdateAsync(string id, UpdateActivityModel model)
-        //{
-        //    string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
-        //    model.TrimAllStrings();
+        public async Task UpdateAsync(string id, UpdateNewsModel model)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            model.TrimAllStrings();
 
-        //    var activity = await _unitOfWork.GetRepository<Activity>().GetByIdAsync(id.Trim())
-        //        ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động không tồn tại.");
+            var news = await _unitOfWork.GetRepository<News>().GetByIdAsync(id.Trim())
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tin tức không tồn tại.");
 
-        //    if (activity.DeletedTime.HasValue)
-        //    {
-        //        throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động đã bị xóa.");
-        //    }
+            if (news.DeletedTime.HasValue)
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tin tức đã bị xóa.");
+            }
 
-        //    if (model.Name != null && string.IsNullOrWhiteSpace(model.Name))
-        //    {
-        //        throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Tên hoạt động không hợp lệ.");
-        //    }
+            if (model.Title != null && string.IsNullOrWhiteSpace(model.Title))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Tiêu đề tin tức không hợp lệ.");
+            }
 
-        //    if (model.Description != null && string.IsNullOrWhiteSpace(model.Description))
-        //    {
-        //        throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Mô tả hoạt động không hợp lệ.");
-        //    }
+            if (model.Summary != null && string.IsNullOrWhiteSpace(model.Summary))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Tóm tắt tin tức không hợp lệ.");
+            }
 
-        //    _mapper.Map(model, activity);
-        //    activity.LastUpdatedTime = CoreHelper.SystemTimeNow;
-        //    activity.LastUpdatedBy = userId;
+            if (model.CategoryId != null)
+            {
+                var categoryExists = await _unitOfWork.GetRepository<Category>().Entities.AnyAsync(c => c.Id == model.CategoryId.Trim());
+                if (!categoryExists)
+                {
+                    throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Danh mục không tồn tại.");
+                }
+            }
 
-        //    await _unitOfWork.GetRepository<Activity>().UpdateAsync(activity);
-        //    await _unitOfWork.SaveAsync();
-        //}
+            if (model.NewsDetails != null)
+            {
+                var existingDetails = news.NewsDetails.ToList();
+                var newSortOrders = model.NewsDetails.Select(d => d.SortOrder).ToList();
+                var existingSortOrders = existingDetails.Select(d => d.SortOrder).ToList();
 
-        //public async Task DeleteAsync(string id)
-        //{
-        //    string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+                if (newSortOrders.Distinct().Count() != newSortOrders.Count)
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Thứ tự sắp xếp không được trùng lặp trong dữ liệu gửi lên.");
+                }
 
-        //    var activity = await _unitOfWork.GetRepository<Activity>().GetByIdAsync(id.Trim())
-        //        ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động không tồn tại.");
+                if (newSortOrders.Any(sortOrder => existingSortOrders.Contains((int)sortOrder)))
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Thứ tự sắp xếp không được trùng lặp với dữ liệu cũ.");
+                }
 
-        //    if (activity.DeletedTime.HasValue)
-        //    {
-        //        throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Hoạt động đã bị xóa.");
-        //    }
+                foreach (var newsDetailModel in model.NewsDetails)
+                {
+                    var existingDetail = existingDetails.FirstOrDefault(nd => nd.SortOrder == newsDetailModel.SortOrder);
 
-        //    var isExistAnyTours = _unitOfWork.GetRepository<Tour>().Entities.Any(p => p.TourActivities.Any(t => t.ActivityId == id) && !p.DeletedTime.HasValue);
+                    if (existingDetail != null)
+                    {
+                        existingDetail.Url = newsDetailModel.Url;
+                        existingDetail.Content = newsDetailModel.Content;
+                    }
+                    else
+                    {
+                        var newDetail = new NewsDetail
+                        {
+                            NewsId = news.Id.ToString(),
+                            Url = newsDetailModel.Url,
+                            Content = newsDetailModel.Content,
+                            SortOrder = (int)newsDetailModel.SortOrder
+                        };
+                        _unitOfWork.GetRepository<NewsDetail>().Insert(newDetail);
+                        news.NewsDetails.Add(newDetail);
+                    }
+                }
+            }
 
-        //    if (isExistAnyTours)
-        //    {
-        //        throw new ErrorException(StatusCodes.Status409Conflict, ResponseCodeConstants.FAILED, "Không thể xóa vì vẫn còn tour chứa hoạt động này.");
-        //    }
+            _mapper.Map(model, news);
 
-        //    activity.LastUpdatedTime = CoreHelper.SystemTimeNow;
-        //    activity.LastUpdatedBy = userId;
-        //    activity.DeletedTime = CoreHelper.SystemTimeNow;
-        //    activity.DeletedBy = userId;
+            news.LastUpdatedTime = CoreHelper.SystemTimeNow;
+            news.LastUpdatedBy = userId;
 
-        //    await _unitOfWork.GetRepository<Activity>().UpdateAsync(activity);
-        //    await _unitOfWork.SaveAsync();
-        //}
+            await _unitOfWork.GetRepository<News>().UpdateAsync(news);
+            await _unitOfWork.SaveAsync();
+        }
+
+        public async Task DeleteAsync(string id)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+
+            var news = await _unitOfWork.GetRepository<News>().GetByIdAsync(id.Trim())
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tin tức không tồn tại.");
+
+            if (news.DeletedTime.HasValue)
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tin tức đã bị xóa.");
+            }
+
+            news.LastUpdatedTime = CoreHelper.SystemTimeNow;
+            news.LastUpdatedBy = userId;
+            news.DeletedTime = CoreHelper.SystemTimeNow;
+            news.DeletedBy = userId;
+
+            await _unitOfWork.GetRepository<News>().UpdateAsync(news);
+            await _unitOfWork.SaveAsync();
+        }
     }
 }

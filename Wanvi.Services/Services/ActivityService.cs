@@ -31,7 +31,7 @@ namespace Wanvi.Services.Services
 
             if (!activities.Any())
             {
-                throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Hoạt động không tồn tại.");
+                throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không có hoạt động nào.");
             }
 
             return _mapper.Map<IEnumerable<ResponseActivityModel>>(activities);
@@ -89,12 +89,12 @@ namespace Wanvi.Services.Services
 
             if (model.Name != null && string.IsNullOrWhiteSpace(model.Name))
             {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Tên hoạt động không hợp lệ.");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Tên hoạt động không hợp lệ.");
             }
 
             if (model.Description != null && string.IsNullOrWhiteSpace(model.Description))
             {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Mô tả hoạt động không hợp lệ.");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Mô tả hoạt động không hợp lệ.");
             }
 
             _mapper.Map(model, activity);
