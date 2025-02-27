@@ -58,6 +58,9 @@ namespace Wanvi.Services.Services
             //Điều kiện số tiền HDV Đủ cọc không
             if(CheckGuideDeposit(booking.Schedule.Tour.UserId, booking))
             {
+                //Đơn bị hủy do ko đủ slot
+                booking.Status = BookingStatus.Cancelled;
+                await _unitOfWork.SaveAsync();
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tour hiện tại không còn đủ chỗ để đặt!");
             }
 
@@ -83,6 +86,9 @@ namespace Wanvi.Services.Services
 
             if (booking.TotalTravelers > availableSlots)
             {
+                //Đơn bị hủy do ko đủ slot
+                booking.Status = BookingStatus.Cancelled;
+                await _unitOfWork.SaveAsync();
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
                     $"Số người đăng ký ({booking.TotalTravelers}) vượt quá số slot trống ({availableSlots}) trong ngày {booking.RentalDate:dd/MM/yyyy}!");
             }
@@ -160,24 +166,24 @@ namespace Wanvi.Services.Services
 
             var user = _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefault(x => x.Id == guideId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy hướng dãn viên!");
 
-            // Tổng tiền khả dụng của HDV (đã thanh toán thành công)
-            double totalBalanceBooking = _unitOfWork.GetRepository<Booking>().Entities
-                .Where(p => p.Schedule.Tour.UserId == guideId && !p.DeletedTime.HasValue)
-                .Where(p => p.Status == BookingStatus.Completed)
-                .Sum(p => p.TotalPrice);
+            //// Tổng tiền khả dụng của HDV (đã thanh toán thành công)
+            //double totalBalanceBooking = _unitOfWork.GetRepository<Booking>().Entities
+            //    .Where(p => p.Schedule.Tour.UserId == guideId && !p.DeletedTime.HasValue)
+            //    .Where(p => p.Status == BookingStatus.Completed)
+            //    .Sum(p => p.TotalPrice);
 
             //Tổng số tiền 
             double totalBalance = /*totalBalanceBooking +*/ user.Balance;
 
-            // Trừ đi tiền đã nhận từ user (DepositedHaft = 50%, Paid = 100%)
-            double deductedAmount = _unitOfWork.GetRepository<Booking>().Entities
-                .Where(b => b.Schedule.Tour.UserId == guideId && !b.DeletedTime.HasValue)
-                .Where(b => b.Status == BookingStatus.DepositedHaft
-                        || b.Status == BookingStatus.Paid
-                        || b.Status == BookingStatus.Completed)
-                .Sum(b => b.Status == BookingStatus.DepositedHaft ? b.TotalPrice * 0.5 : b.TotalPrice * 1.0);
+            //// Trừ đi tiền đã nhận từ user (DepositedHaft = 50%, Paid = 100%)
+            //double deductedAmount = _unitOfWork.GetRepository<Booking>().Entities
+            //    .Where(b => b.Schedule.Tour.UserId == guideId && !b.DeletedTime.HasValue)
+            //    .Where(b => b.Status == BookingStatus.DepositedHaft
+            //            || b.Status == BookingStatus.Paid
+            //            || b.Status == BookingStatus.Completed)
+            //    .Sum(b => b.Status == BookingStatus.DepositedHaft ? b.TotalPrice * 0.5 : b.TotalPrice * 1.0);
 
-            double availableBalance = totalBalance - deductedAmount;
+            double availableBalance = totalBalance /*- deductedAmount*/;
 
             // Kiểm tra xem HDV có đủ tiền cọc không
             return availableBalance >= totalRequiredDeposit;
@@ -197,6 +203,9 @@ namespace Wanvi.Services.Services
             //Điều kiện số tiền HDV Đủ cọc không
             if (CheckGuideDeposit(booking.Schedule.Tour.UserId, booking))
             {
+                //Đơn bị hủy do ko đủ slot
+                booking.Status = BookingStatus.Cancelled;
+                await _unitOfWork.SaveAsync();
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tour hiện tại không còn đủ chỗ để đặt!");
             }
 
@@ -222,6 +231,9 @@ namespace Wanvi.Services.Services
 
             if (booking.TotalTravelers > availableSlots)
             {
+                //Đơn bị hủy do ko đủ slot
+                booking.Status = BookingStatus.Cancelled;
+                await _unitOfWork.SaveAsync();
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
                     $"Số người đăng ký ({booking.TotalTravelers}) vượt quá số slot trống ({availableSlots}) trong ngày {booking.RentalDate:dd/MM/yyyy}!");
             }
@@ -293,11 +305,11 @@ namespace Wanvi.Services.Services
             //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
             var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
             //Số tiền tour phải trả còn lại
-            int Total = (int)(existingBookings.TotalPrice * 0.5);
-            if (user.Balance < Total)
-            {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
-            }
+            //int Total = (int)(existingBookings.TotalPrice * 0.5);
+            //if (user.Balance < Total)
+            //{
+            //    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
+            //}
 
             //existingBookings.Status = BookingStatus.DepositHaftEnd;
             //await _unitOfWork.GetRepository<Booking>().UpdateAsync(existingBookings);
@@ -483,7 +495,7 @@ namespace Wanvi.Services.Services
             // Kiểm tra request có data hay không
             if (request?.data == null)
             {
-                Console.WriteLine("📌 Webhook request không có data, bỏ qua xử lý.");
+                Console.WriteLine("Webhook request không có data, bỏ qua xử lý.");
                 return; // Trả về luôn, không ném lỗi để tránh PayOS báo lỗi webhook
             }
 
@@ -525,7 +537,7 @@ namespace Wanvi.Services.Services
 
                     if (booking == null)
                     {
-                        Console.WriteLine("📌 Không tìm thấy đơn hàng liên quan.");
+                        Console.WriteLine("Không tìm thấy đơn hàng liên quan.");
                         return;
                     }
 
@@ -550,7 +562,7 @@ namespace Wanvi.Services.Services
 
                     if (schedule == null)
                     {
-                        Console.WriteLine("📌 Không tìm thấy lịch.");
+                        Console.WriteLine("Không tìm thấy lịch.");
                         return;
                     }
 
@@ -559,11 +571,11 @@ namespace Wanvi.Services.Services
 
                     if (tourGuide == null)
                     {
-                        Console.WriteLine("📌 Không tìm thấy hướng dẫn viên.");
+                        Console.WriteLine("Không tìm thấy hướng dẫn viên.");
                         return;
                     }
-
-                    tourGuide.Balance += (int)(payment.Amount);
+                    //Cộng vào tiền cọc
+                    tourGuide.Deposit += (int)(payment.Amount);
                     await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
                     break;
 
@@ -576,7 +588,7 @@ namespace Wanvi.Services.Services
                     break;
 
                 default:
-                    Console.WriteLine($"📌 Trạng thái không xác định: {request.data.code}, bỏ qua xử lý.");
+                    Console.WriteLine($"Trạng thái không xác định: {request.data.code}, bỏ qua xử lý.");
                     return;
             }
 

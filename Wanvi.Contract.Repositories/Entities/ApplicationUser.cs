@@ -13,6 +13,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public string? BankAccountName { get; set; }
         public string? Bank { get; set; }
         public int Balance { get; set; } = 0;
+        public int Deposit { get; set; } = 0;
         public int Point { get; set; } = 0;
         public string? Address { get; set; }
         public double? Latitude { get; set; }
@@ -37,6 +38,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public virtual ICollection<ApplicationUserRole> UserRoles { get; set; } = new List<ApplicationUserRole>();
         public virtual ICollection<News> News { get; set; }
         public virtual ICollection<Post> Posts { get; set; }
+        public virtual ICollection<Request> Requests { get; set; }
         public virtual ICollection<Comment> Comments { get; set; }
         public virtual ICollection<Review> Reviews { get; set; }
         public virtual ICollection<Subscription> Subscriptions { get; set; }
