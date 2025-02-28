@@ -389,7 +389,6 @@ namespace Wanvi.Services.Services
 
             var bookingDetail = new BookingDetail
             {
-                Age = model.Age,
                 BookingId = booking.Id,
                 CreatedBy = userId,
                 Email = model.Email,
