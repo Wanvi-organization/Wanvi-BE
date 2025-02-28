@@ -513,7 +513,6 @@ namespace Wanvi.Services.Services
 
             var bookingDetail = new BookingDetail
             {
-                Age = model.Age,
                 BookingId = booking.Id,
                 CreatedBy = userId,
                 Email = model.Email,
@@ -560,7 +559,7 @@ namespace Wanvi.Services.Services
                 LastUpdatedBy = tourGuide.Id.ToString(),
                 CreatedBy = tourGuide.Id.ToString(),
                 OrderCode = existingBookings.OrderCode,
-                Status = RequestStatus.Confirmed,
+                Status = Core.Constants.Enum.RequestStatus.Confirmed,
                 Note = model.Note,
                 UserId = tourGuide.Id,
                 //Bank = tourGuide.Bank,
@@ -598,7 +597,7 @@ namespace Wanvi.Services.Services
                 LastUpdatedBy = tourGuide.Id.ToString(),
                 CreatedBy = tourGuide.Id.ToString(),
                 OrderCode = existingBookings.OrderCode,
-                Status = RequestStatus.Pending,
+                Status = Core.Constants.Enum.RequestStatus.Pending,
                 Note = model.Note,
                 UserId = tourGuide.Id,
                 Bank = tourGuide.Bank,
