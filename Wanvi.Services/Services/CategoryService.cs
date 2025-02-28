@@ -125,7 +125,7 @@ namespace Wanvi.Services.Services
 
             if (isExistAnyNews)
             {
-                throw new ErrorException(StatusCodes.Status409Conflict, ResponseCodeConstants.FAILED, "Không thể xóa vì vẫn còn bản tin thuộc danh mục này.");
+                throw new ErrorException(StatusCodes.Status409Conflict, ResponseCodeConstants.FAILED, "Không thể xóa vì vẫn còn tin tức thuộc danh mục này.");
             }
 
             category.LastUpdatedTime = CoreHelper.SystemTimeNow;

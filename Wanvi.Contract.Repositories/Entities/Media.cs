@@ -1,8 +1,13 @@
 ﻿using Wanvi.Core.Bases;
-using static Wanvi.Core.Constants.Enum;
 
 namespace Wanvi.Contract.Repositories.Entities
 {
+    public enum MediaType
+    {
+        Image,
+        Video
+    }
+
     public class Media : BaseEntity
     {
         public string Url { get; set; }
