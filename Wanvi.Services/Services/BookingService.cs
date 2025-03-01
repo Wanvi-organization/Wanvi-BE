@@ -680,5 +680,97 @@ namespace Wanvi.Services.Services
             return orderCode;
         }
 
+        public async Task<(double refundAmount, double guideAmount, double wanviCommission)> CancelByCustomerAsync(string bookingId, string reason)
+        {
+            var booking = await _unitOfWork.GetRepository<Booking>().GetByIdAsync(bookingId);
+            if (booking == null) throw new Exception("Booking not found.");
+
+            var daysBeforeStart = (booking.RentalDate - DateTime.UtcNow).TotalDays;
+            double refundAmount = 0, guideAmount = 0, wanviCommission = 0;
+
+            var payment = booking.Payments.FirstOrDefault(p => p.Status == PaymentStatus.Paid);
+            if (payment == null) throw new Exception("No valid payment found.");
+
+            double depositAmount = payment.Amount * 0.5;
+
+            if (daysBeforeStart > 7)
+            {
+                refundAmount = depositAmount;
+            }
+            else if (daysBeforeStart >= 3)
+            {
+                refundAmount = depositAmount * 0.5;
+                wanviCommission = refundAmount * 0.2;
+                guideAmount = refundAmount * 0.8;
+            }
+            else if (daysBeforeStart >= 2 / 24.0)
+            {
+                refundAmount = 0;
+                wanviCommission = depositAmount * 0.2;
+                guideAmount = depositAmount * 0.8;
+            }
+            else
+            {
+                refundAmount = 0;
+                wanviCommission = depositAmount * 0.1;
+                guideAmount = depositAmount * 0.9;
+            }
+
+            booking.Status = BookingStatus.Cancelled;
+            payment.Status = PaymentStatus.Refunded;
+
+            await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+            await _unitOfWork.GetRepository<Payment>().UpdateAsync(payment);
+
+            //if (refundAmount > 0) await _walletService.AddBalanceAsync(booking.UserId, refundAmount);
+            //if (guideAmount > 0) await _walletService.AddBalanceAsync(booking.Schedule.GuideId, guideAmount);
+            //if (wanviCommission > 0) await _walletService.AddBalanceAsync("WANVI", wanviCommission);
+
+            return (refundAmount, guideAmount, wanviCommission);
+        }
+
+        public async Task<(double refundAmount, double wanviCommission)> CancelByGuideAsync(string bookingId, string reason)
+        {
+            var booking = await _unitOfWork.GetRepository<Booking>().GetByIdAsync(bookingId);
+            if (booking == null) throw new Exception("Booking not found.");
+
+            var daysBeforeStart = (booking.RentalDate - DateTime.UtcNow).TotalDays;
+            double refundAmount = 0, wanviCommission = 0;
+
+            var payment = booking.Payments.FirstOrDefault(p => p.Status == PaymentStatus.Paid);
+            if (payment == null) throw new Exception("No valid payment found.");
+
+            double depositAmount = payment.Amount * 0.5;
+
+            if (daysBeforeStart > 7)
+            {
+                refundAmount = depositAmount * 1.1;
+            }
+            else if (daysBeforeStart >= 3)
+            {
+                refundAmount = depositAmount * 1.2;
+            }
+            else if (daysBeforeStart >= 2 / 24.0)
+            {
+                refundAmount = depositAmount * 1.4;
+                wanviCommission = depositAmount * 0.2;
+            }
+            else
+            {
+                //refundAmount = depositAmount * new Random().Next(1.2, 1.8);
+                //wanviCommission = depositAmount * new Random().Next(0.5, 1.0);
+            }
+
+            booking.Status = BookingStatus.Cancelled;
+            payment.Status = PaymentStatus.Refunded;
+
+            await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+            await _unitOfWork.GetRepository<Payment>().UpdateAsync(payment);
+
+            //if (refundAmount > 0) await _walletService.AddBalanceAsync(booking.UserId, refundAmount);
+            //if (wanviCommission > 0) await _walletService.AddBalanceAsync("WANVI", wanviCommission);
+
+            return (refundAmount, wanviCommission);
+        }
     }
 }

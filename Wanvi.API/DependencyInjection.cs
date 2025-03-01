@@ -51,8 +51,8 @@ namespace WanviBE.API
                     SecretKey = configuration.GetValue<string>("JwtSettings:SecretKey"),
                     Issuer = configuration.GetValue<string>("JwtSettings:Issuer"),
                     Audience = configuration.GetValue<string>("JwtSettings:Audience"),
-                    AccessTokenExpirationMinutes = configuration.GetValue<int>("JwtSettings:AccessTokenExpirationMinutes"),
-                    RefreshTokenExpirationDays = configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays")
+                    //AccessTokenExpirationMinutes = configuration.GetValue<int>("JwtSettings:AccessTokenExpirationMinutes"),
+                    //RefreshTokenExpirationDays = configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays")
                 };
                 jwtSettings.IsValid();
                 return jwtSettings;
@@ -130,7 +130,8 @@ namespace WanviBE.API
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwtSettings1["Issuer"],
                     ValidAudience = jwtSettings1["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings1["SecretKey"]))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings1["SecretKey"])),
+                    ClockSkew = TimeSpan.Zero  // ✅ Không cho phép gia hạn 5 phút
 
                 };
                 e.SaveToken = true;

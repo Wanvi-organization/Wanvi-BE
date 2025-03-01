@@ -24,15 +24,15 @@
                 throw new ArgumentException("Audience cannot be null or empty.");
             }
 
-            if (AccessTokenExpirationMinutes <= 0)
-            {
-                throw new ArgumentException("AccessTokenExpirationMinutes must be greater than 0.");
-            }
+            //if (AccessTokenExpirationMinutes <= 0)
+            //{
+            //    throw new ArgumentException("AccessTokenExpirationMinutes must be greater than 0.");
+            //}
 
-            if (RefreshTokenExpirationDays <= 0)
-            {
-                throw new ArgumentException("RefreshTokenExpirationDays must be greater than 0.");
-            }
+            //if (RefreshTokenExpirationDays <= 0)
+            //{
+            //    throw new ArgumentException("RefreshTokenExpirationDays must be greater than 0.");
+            //}
 
             return true;
         }

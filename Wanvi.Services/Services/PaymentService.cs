@@ -307,15 +307,6 @@ namespace Wanvi.Services.Services
                                     && (x.Status == BookingStatus.DepositedHaft /*|| x.Status == BookingStatus.DepositHaftEnd*/));
             //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
             var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
-            //Số tiền tour phải trả còn lại
-            //int Total = (int)(existingBookings.TotalPrice * 0.5);
-            //if (user.Balance < Total)
-            //{
-            //    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số tiền của quý khách không đủ thực hiện giao dịch này!");
-            //}
-
-            //existingBookings.Status = BookingStatus.DepositHaftEnd;
-            //await _unitOfWork.GetRepository<Booking>().UpdateAsync(existingBookings);
 
             // 2. Tạo PayOSPaymentRequest từ thông tin booking
             var payOSRequest = new PayOSPaymentRequest

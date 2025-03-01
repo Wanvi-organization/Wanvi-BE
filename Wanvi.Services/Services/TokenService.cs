@@ -70,7 +70,7 @@ namespace Wanvi.Services.Services
                 claims: claims,
                 issuer: _configuration.GetSection("JwtSettings:Issuer").Value,
                 audience: _configuration.GetSection("JwtSettings:Audience").Value,
-                expires: now.AddSeconds(10),
+                expires: DateTime.UtcNow.AddSeconds(10),
                 signingCredentials: creds
             );
             var accessTokenString = new JwtSecurityTokenHandler().WriteToken(accessToken);
@@ -80,7 +80,7 @@ namespace Wanvi.Services.Services
                 claims: claims,
             issuer: _configuration.GetSection("JwtSettings:Issuer").Value,
             audience: _configuration.GetSection("JwtSettings:Audience").Value,
-            expires: now.AddMinutes(5),
+            expires: DateTime.UtcNow.AddMinutes(5),
                 signingCredentials: creds
             );
             var refreshTokenString = new JwtSecurityTokenHandler().WriteToken(refreshToken);
