@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using Wanvi.API.Middleware;
 using Wanvi.Repositories.Context;
 using WanviBE.API;
 using WanviBE.API.Middleware;
@@ -37,7 +38,7 @@ var app = builder.Build();
 
 //setting Middleware
 app.UseMiddleware<ExceptionMiddleware>();
-//app.UseMiddleware<PermissionMiddleware>();
+app.UseMiddleware<PermissionMiddleware>();
 app.UseMiddleware<LoggingMiddleware>();
 
 // Configure the HTTP request pipeline.

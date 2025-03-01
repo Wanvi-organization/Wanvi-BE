@@ -83,7 +83,7 @@ namespace Wanvi.Services.Services
                                     x.Status != BookingStatus.Completed &&
                                     x.Status != BookingStatus.DepositAll &&
                                     x.Status != BookingStatus.DepositHaft &&
-                                    x.RentalDate.Date == DateTime.UtcNow.Date &&
+                                    x.RentalDate.Date == DateTime.Now.Date &&
                                     !x.DeletedTime.HasValue)
                         .ToListAsync();
 

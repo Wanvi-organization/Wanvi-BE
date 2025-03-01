@@ -99,7 +99,7 @@ namespace Wanvi.API.Controllers
         /// <summary>
         /// Chuyển tiền từ cọc sang cho HDV
         /// </summary>
-        [HttpPut("change_booking_to_user")]
+        [HttpPatch("change_booking_to_user")]
         public async Task<IActionResult> ChangeBookingToUser(ChangeBookingToUserModel request)
         {
             string res = await _bookingService.ChangeBookingToUser(request);

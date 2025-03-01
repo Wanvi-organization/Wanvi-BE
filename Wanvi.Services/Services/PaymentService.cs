@@ -109,7 +109,7 @@ namespace Wanvi.Services.Services
                 /*items = GetBookingItems(booking.Id), */// Hàm này sẽ lấy danh sách sản phẩm từ booking (xem bên dưới)
                 cancelUrl = "https://wanvi-landing-page.vercel.app/", // Thay thế bằng URL của bạn
                 returnUrl = "https://wanvi-landing-page.vercel.app/",  // Thay thế bằng URL của bạn
-                expiredAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 1800,
+                expiredAt = DateTimeOffset.Now.ToUnixTimeSeconds() + 1800,
 
                 // ... các trường khác 
             };
@@ -133,8 +133,8 @@ namespace Wanvi.Services.Services
                 BuyerName = payOSRequest.buyerName,
                 CreatedBy = buyer.Id.ToString(),
                 LastUpdatedBy = buyer.Id.ToString(),
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
                 BookingId = booking.Id,
                 //... các thông tin khác (nếu cần)...
             };
@@ -254,7 +254,7 @@ namespace Wanvi.Services.Services
                 /*items = GetBookingItems(booking.Id), */// Hàm này sẽ lấy danh sách sản phẩm từ booking (xem bên dưới)
                 cancelUrl = "https://wanvi-landing-page.vercel.app/", // Thay thế bằng URL của bạn
                 returnUrl = "https://wanvi-landing-page.vercel.app/",  // Thay thế bằng URL của bạn
-                expiredAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 1800,
+                expiredAt = DateTimeOffset.Now.ToUnixTimeSeconds() + 1800,
 
                 // ... các trường khác 
             };
@@ -278,8 +278,8 @@ namespace Wanvi.Services.Services
                 BuyerName = payOSRequest.buyerName,
                 CreatedBy = buyer.Id.ToString(),
                 LastUpdatedBy = buyer.Id.ToString(),
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
                 BookingId = booking.Id,
                 //... các thông tin khác (nếu cần)...
             };
@@ -330,7 +330,7 @@ namespace Wanvi.Services.Services
                 /*items = GetBookingItems(booking.Id), */// Hàm này sẽ lấy danh sách sản phẩm từ booking (xem bên dưới)
                 cancelUrl = "https://wanvi-landing-page.vercel.app/", // Thay thế bằng URL của bạn
                 returnUrl = "https://wanvi-landing-page.vercel.app/",  // Thay thế bằng URL của bạn
-                expiredAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 1800,
+                expiredAt = DateTimeOffset.Now.ToUnixTimeSeconds() + 1800,
 
                 // ... các trường khác 
             };
@@ -354,8 +354,8 @@ namespace Wanvi.Services.Services
                 BuyerName = payOSRequest.buyerName,
                 CreatedBy = user.Id.ToString(),
                 LastUpdatedBy = user.Id.ToString(),
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
                 BookingId = existingBookings.Id,
                 //... các thông tin khác (nếu cần)...
             };

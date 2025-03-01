@@ -329,7 +329,7 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, $"Số người đăng kí lớn hơn số người mặc định({schedule.MaxTraveler} người)!");
             }
             // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 2 ngày
-            if (model.RentalDate.ToUniversalTime().Date < DateTime.UtcNow.AddDays(2).Date)
+            if (model.RentalDate.ToUniversalTime().Date < DateTime.Now.AddDays(2).Date)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đặt tour trước 2 ngày!");
             }
@@ -376,8 +376,8 @@ namespace Wanvi.Services.Services
                 OrderCode = await GenerateUniqueOrderCodeAsync(),
                 CreatedBy = userId,
                 UserId = cb,
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = userId,
                 RentalDate = model.RentalDate,
                 TotalPrice = model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour,
@@ -393,7 +393,7 @@ namespace Wanvi.Services.Services
                 CreatedBy = userId,
                 Email = model.Email,
                 CreatedTime = DateTime.Now,
-                LastUpdatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = userId,
                 PassportNumber = user.IdentificationNumber,
                 IdentityCard = user.IdentificationNumber,
@@ -501,8 +501,8 @@ namespace Wanvi.Services.Services
                 UserId = cb,
                 OrderCode = await GenerateUniqueOrderCodeAsync(),
                 RentalDate = model.RentalDate,
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = userId,
                 TotalPrice = model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour,
                 TotalTravelers = model.NumberOfParticipants,
@@ -517,7 +517,7 @@ namespace Wanvi.Services.Services
                 CreatedBy = userId,
                 Email = model.Email,
                 CreatedTime = DateTime.Now,
-                LastUpdatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = userId,
                 PassportNumber = user.IdentificationNumber,
                 IdentityCard = user.IdentificationNumber,
@@ -548,19 +548,19 @@ namespace Wanvi.Services.Services
             //Tìm HDV
             var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == existingBookings.Schedule.Tour.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
             //Cập nhật tiền của HDV
-            tourGuide.Balance += existingBookings.TotalTravelers;//Chuyển vào tiền lấy làm cọc
+            tourGuide.Balance += (int)(existingBookings.TotalTravelers * 0.8);//Chuyển vào tiền lấy làm cọc
             tourGuide.Deposit -= existingBookings.TotalTravelers;//trừ tiền đã chuyển vào cọc
 
             Request request = new Request()
             {
                 Balance = tourGuide.Balance,
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = tourGuide.Id.ToString(),
                 CreatedBy = tourGuide.Id.ToString(),
                 OrderCode = existingBookings.OrderCode,
                 Status = RequestStatus.Confirmed,
-                Note = model.Note,
+                Note = $"Bạn nhận {existingBookings.TotalTravelers * 0.8 :N0} đ là 80% tiền hóa đơn vì {existingBookings.TotalTravelers * 0.2:N0} đ là tiền khấu trừ hoa hồng!",
                 UserId = tourGuide.Id,
                 //Bank = tourGuide.Bank,
                 //BankAccount = tourGuide.BankAccount,
@@ -592,8 +592,8 @@ namespace Wanvi.Services.Services
             Request request = new Request()
             {
                 Balance = tourGuide.Balance,
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = tourGuide.Id.ToString(),
                 CreatedBy = tourGuide.Id.ToString(),
                 OrderCode = existingBookings.OrderCode,
