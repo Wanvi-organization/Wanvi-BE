@@ -14,8 +14,8 @@ namespace Wanvi.ModelViews.ScheduleModelViews
             Saturday,
             Sunday
         }
-
-        public DayOfWeek Day { get; set; }
+        public string Id { get; set; }
+        public string Day { get; set; }
         public TimeSpan StartTime { get; set; }
         public TimeSpan EndTime { get; set; }
         public int MaxTraveler { get; set; }
