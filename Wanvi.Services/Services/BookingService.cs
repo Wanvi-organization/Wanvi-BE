@@ -328,10 +328,10 @@ namespace Wanvi.Services.Services
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, $"Số người đăng kí lớn hơn số người mặc định({schedule.MaxTraveler} người)!");
             }
-            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 2 ngày
-            if (model.RentalDate.ToUniversalTime().Date < DateTime.Now.AddDays(2).Date)
+            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 8 ngày
+            if (model.RentalDate.ToUniversalTime().Date < DateTime.Now.AddDays(8).Date)
             {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đặt tour trước 2 ngày!");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đặt tour trước 8 ngày!");
             }
 
             // Lấy danh sách booking hợp lệ (cùng Schedule, cùng ngày, trạng thái hợp lệ)
@@ -455,10 +455,10 @@ namespace Wanvi.Services.Services
                     $"Ngày đặt: ({rentalDay}) không phù hợp với lịch trình của hướng dẫn viên: ({scheduleDay})!");
             }
 
-            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 2 ngày
-            if (model.RentalDate.Date < DateTime.Now.AddDays(2).Date)
+            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 8 ngày
+            if (model.RentalDate.Date < DateTime.Now.AddDays(8).Date)
             {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đạt tour trước 2 ngày!");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đạt tour trước 8 ngày!");
             }
 
             // Lấy danh sách booking hợp lệ (cùng Schedule, cùng ngày, trạng thái hợp lệ)
@@ -560,7 +560,7 @@ namespace Wanvi.Services.Services
                 CreatedBy = tourGuide.Id.ToString(),
                 OrderCode = existingBookings.OrderCode,
                 Status = RequestStatus.Confirmed,
-                Note = $"Bạn nhận {existingBookings.TotalTravelers * 0.8 :N0} đ là 80% tiền hóa đơn vì {existingBookings.TotalTravelers * 0.2:N0} đ là tiền khấu trừ hoa hồng!",
+                Note = $"Bạn nhận {existingBookings.TotalTravelers * 0.8:N0} đ là 80% tiền hóa đơn vì {existingBookings.TotalTravelers * 0.2:N0} đ là tiền khấu trừ hoa hồng!",
                 UserId = tourGuide.Id,
                 //Bank = tourGuide.Bank,
                 //BankAccount = tourGuide.BankAccount,
@@ -680,97 +680,96 @@ namespace Wanvi.Services.Services
             return orderCode;
         }
 
-        public async Task<(double refundAmount, double guideAmount, double wanviCommission)> CancelByCustomerAsync(string bookingId, string reason)
+        public async Task<string> CancelBookingForCustomer(CancelBookingForCustomerModel model)
         {
-            var booking = await _unitOfWork.GetRepository<Booking>().GetByIdAsync(bookingId);
-            if (booking == null) throw new Exception("Booking not found.");
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == model.bookingId && !x.DeletedTime.HasValue) ??
+            throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
+
+            var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.Schedule.Tour.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
+
+            var customer = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy khách hàng!");
 
             var daysBeforeStart = (booking.RentalDate - DateTime.UtcNow).TotalDays;
-            double refundAmount = 0, guideAmount = 0, wanviCommission = 0;
-
-            var payment = booking.Payments.FirstOrDefault(p => p.Status == PaymentStatus.Paid);
-            if (payment == null) throw new Exception("No valid payment found.");
-
-            double depositAmount = payment.Amount * 0.5;
+            double customerAmount = 0;
+            double tourGuideAmount = 0;
+            double multiplier = booking.Status == BookingStatus.DepositedHaft ? 0.5 : 1.0;
 
             if (daysBeforeStart > 7)
             {
-                refundAmount = depositAmount;
+                customerAmount = booking.TotalPrice * 0.1 * multiplier;
             }
             else if (daysBeforeStart >= 3)
             {
-                refundAmount = depositAmount * 0.5;
-                wanviCommission = refundAmount * 0.2;
-                guideAmount = refundAmount * 0.8;
+                customerAmount = booking.TotalPrice * 0.6 * multiplier;
+                tourGuideAmount = booking.TotalPrice * 0.2 * multiplier;
             }
-            else if (daysBeforeStart >= 2 / 24.0)
+            else if (daysBeforeStart >= 2)
             {
-                refundAmount = 0;
-                wanviCommission = depositAmount * 0.2;
-                guideAmount = depositAmount * 0.8;
+                tourGuideAmount = booking.TotalPrice * 0.7 * multiplier;
             }
             else
             {
-                refundAmount = 0;
-                wanviCommission = depositAmount * 0.1;
-                guideAmount = depositAmount * 0.9;
+                tourGuideAmount = booking.TotalPrice * 0.8 * multiplier;
             }
-
+            //Hoàn tiền cho khách hàng
+            if (customerAmount > 0) customer.Balance += (int)customerAmount;
+            //Hoàn tiền cho HDV
+            if (tourGuideAmount > 0) tourGuide.Balance += (int)tourGuideAmount;
+            //Đổi trạng thái của đơn
             booking.Status = BookingStatus.Cancelled;
-            payment.Status = PaymentStatus.Refunded;
-
             await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
-            await _unitOfWork.GetRepository<Payment>().UpdateAsync(payment);
-
-            //if (refundAmount > 0) await _walletService.AddBalanceAsync(booking.UserId, refundAmount);
-            //if (guideAmount > 0) await _walletService.AddBalanceAsync(booking.Schedule.GuideId, guideAmount);
-            //if (wanviCommission > 0) await _walletService.AddBalanceAsync("WANVI", wanviCommission);
-
-            return (refundAmount, guideAmount, wanviCommission);
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(customer);
+            await _unitOfWork.SaveAsync();
+            return "Hủy đơn thành công!";
         }
 
-        public async Task<(double refundAmount, double wanviCommission)> CancelByGuideAsync(string bookingId, string reason)
+        public async Task<string> CancelBookingForGuide(CancelBookingForGuideModel model)
         {
-            var booking = await _unitOfWork.GetRepository<Booking>().GetByIdAsync(bookingId);
-            if (booking == null) throw new Exception("Booking not found.");
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == model.bookingId && !x.DeletedTime.HasValue) ??
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
 
-            var daysBeforeStart = (booking.RentalDate - DateTime.UtcNow).TotalDays;
-            double refundAmount = 0, wanviCommission = 0;
+            var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.Schedule.Tour.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
 
-            var payment = booking.Payments.FirstOrDefault(p => p.Status == PaymentStatus.Paid);
-            if (payment == null) throw new Exception("No valid payment found.");
+            var customer = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy khách hàng!");
 
-            double depositAmount = payment.Amount * 0.5;
 
-            if (daysBeforeStart > 7)
+            var daysBeforeStart = (booking.RentalDate - DateTime.Now).TotalDays;
+            double penalty = 0;
+            double refundToCustomer = 0;
+            double multiplier = booking.Status == BookingStatus.DepositedHaft ? 0.5 : 1.0;
+
+            if (daysBeforeStart >= 7)
             {
-                refundAmount = depositAmount * 1.1;
+                refundToCustomer = booking.TotalPrice * 1.0 * multiplier;
             }
             else if (daysBeforeStart >= 3)
             {
-                refundAmount = depositAmount * 1.2;
+                penalty = booking.TotalPrice * 0.2 * multiplier;
+                refundToCustomer = booking.TotalPrice * 1.0 * multiplier;
             }
-            else if (daysBeforeStart >= 2 / 24.0)
+            else if (daysBeforeStart >= 2)
             {
-                refundAmount = depositAmount * 1.4;
-                wanviCommission = depositAmount * 0.2;
+                penalty = booking.TotalPrice * 0.4 * multiplier;
+                refundToCustomer = booking.TotalPrice * 1.0 * multiplier;
             }
             else
             {
-                //refundAmount = depositAmount * new Random().Next(1.2, 1.8);
-                //wanviCommission = depositAmount * new Random().Next(0.5, 1.0);
+                penalty = booking.TotalPrice * 0.8 * multiplier;
+                refundToCustomer = booking.TotalPrice * 1.0 * multiplier;
             }
-
+            //Trừ tiền vi phạm của HDV
+            if (penalty > 0) tourGuide.Balance -= (int)penalty;
+            //Trả + tiền bồi thường của khách hàng
+            if (refundToCustomer > 0) customer.Balance += (int)refundToCustomer;
+            //Cập nhật lại trạng thái của đơn
             booking.Status = BookingStatus.Cancelled;
-            payment.Status = PaymentStatus.Refunded;
-
+            //lưu vào DB
             await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
-            await _unitOfWork.GetRepository<Payment>().UpdateAsync(payment);
-
-            //if (refundAmount > 0) await _walletService.AddBalanceAsync(booking.UserId, refundAmount);
-            //if (wanviCommission > 0) await _walletService.AddBalanceAsync("WANVI", wanviCommission);
-
-            return (refundAmount, wanviCommission);
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(customer);
+            await _unitOfWork.SaveAsync();
+            return "Hủy đơn thành công!";
         }
     }
 }
