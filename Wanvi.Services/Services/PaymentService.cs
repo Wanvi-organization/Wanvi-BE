@@ -464,122 +464,103 @@ namespace Wanvi.Services.Services
                 }
             }
         }
-        //public bool VerifyPayOSSignature(PayOSWebhookRequest request, string signature)
-        //{
-        //    // 1. Kiểm tra xem request.data có null không
-        //    if (request.data == null)
-        //    {
-        //        return false;
-        //    }
-
-
-        //    // 3. Tạo chữ ký bằng HMAC-SHA256
-        //    using (HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_checksumKey)))
-        //    {
-        //        byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
-        //        string computedSignature = BitConverter.ToString(hash).Replace("-", "").ToLower();
-
-        //        // 4. So sánh chữ ký với chữ ký nhận được từ PayOS
-        //        return computedSignature == signature;
-        //    }
-        //}
 
         public async Task PayOSCallback(PayOSWebhookRequest request)
         {
-            // Kiểm tra request có data hay không
             if (request?.data == null)
             {
                 Console.WriteLine("Webhook request không có data, bỏ qua xử lý.");
-                return; // Trả về luôn, không ném lỗi để tránh PayOS báo lỗi webhook
+                return;
             }
 
-            //// Xác thực chữ ký
-            //if (!VerifyPayOSSignature(request, request.signature))
-            //{
-            //    Console.WriteLine("❌ Invalid signature, bỏ qua xử lý.");
-            //    return; // Không ném lỗi, tránh PayOS báo lỗi webhook
-            //}
-
-            // 1. Tìm Payment theo orderCode
+            // Tìm Payment theo orderCode
             var payment = await _unitOfWork.GetRepository<Payment>().Entities
-                .OrderByDescending(x => x.CreatedTime)
                 .FirstOrDefaultAsync(x => x.OrderCode == request.data.orderCode && !x.DeletedTime.HasValue);
 
-            // Nếu không tìm thấy payment, có thể đây là request test từ PayOS -> Bỏ qua
             if (payment == null)
             {
                 Console.WriteLine($"Không tìm thấy thanh toán với orderCode: {request.data.orderCode}. Bỏ qua xử lý.");
                 return;
             }
 
-            //if(payment.Signature != request.signature)
-            //{
-            //    Console.WriteLine($"Chữ ký kiểm tra thông tin không đúng. Bỏ qua xử lý.");
-            //    return;
-            //}
+            // Kiểm tra Payment có phải là giao dịch nạp tiền hay không
+            bool isRecharge = payment.Status == PaymentStatus.UnpaidRecharge;
 
-            // 2. Xử lý trạng thái thanh toán
             switch (request.data.code)
             {
                 case "00": // Thành công
-                    payment.Status = PaymentStatus.Paid;
+                    payment.Status = isRecharge ? PaymentStatus.Recharged : PaymentStatus.Paid;
                     await _unitOfWork.SaveAsync();
 
-                    // Tìm Booking liên quan
-                    var booking = await _unitOfWork.GetRepository<Booking>().Entities
-                        .FirstOrDefaultAsync(x => x.Id == payment.BookingId && !x.DeletedTime.HasValue);
-
-                    if (booking == null)
+                    if (isRecharge)
                     {
-                        Console.WriteLine("Không tìm thấy đơn hàng liên quan.");
-                        return;
-                    }
+                        // Xử lý nạp tiền vào tài khoản người dùng
+                        var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities
+                            .FirstOrDefaultAsync(x => x.Email == payment.BuyerEmail && !x.DeletedTime.HasValue);
 
-                    // Tính tổng số tiền đã thanh toán
-                    double totalPaid = booking.Payments
-                        .Where(x => x.Status == PaymentStatus.Paid && !x.DeletedTime.HasValue)
-                        .Sum(x => x.Amount);
+                        if (user != null)
+                        {
+                            user.Balance += (int)payment.Amount;
+                            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+                            await _unitOfWork.SaveAsync();
 
-                    // Cập nhật trạng thái Booking
-                    if (totalPaid >= booking.TotalPrice)
-                    {
-                        booking.Status = BookingStatus.Paid;
-                    }
-                    else if (totalPaid >= booking.TotalPrice * 0.5)
-                    {
-                        booking.Status = (booking.Status == BookingStatus.DepositHaft) ? BookingStatus.DepositedHaft : BookingStatus.Paid;
-                    }
-
-                    // Cập nhật số dư của hướng dẫn viên
-                    var schedule = await _unitOfWork.GetRepository<Schedule>().Entities
-                        .FirstOrDefaultAsync(x => x.Id == booking.ScheduleId && !x.DeletedTime.HasValue);
-
-                    if (schedule == null)
-                    {
-                        Console.WriteLine("Không tìm thấy lịch.");
-                        return;
-                    }
-
-                    var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities
-                        .FirstOrDefaultAsync(x => x.Id == schedule.Tour.UserId && !x.DeletedTime.HasValue);
-
-                    if (tourGuide == null)
-                    {
-                        Console.WriteLine("Không tìm thấy hướng dẫn viên.");
-                        return;
-                    }
-                    //Cộng vào tiền cọc
-                    tourGuide.Deposit += (int)(payment.Amount);
-                    if (booking.Status == BookingStatus.DepositedHaft)
-                    {
-                        SendMailHaft(booking.User, booking, payment);
+                            // Gửi email xác nhận nạp tiền thành công
+                            await SendDepositSuccessEmail(user, payment.Amount);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Không tìm thấy người dùng liên quan đến giao dịch nạp tiền.");
+                        }
                     }
                     else
                     {
-                        SendMailAll(booking.User, booking, payment);
-                    }
+                        // Xử lý thanh toán booking như trước
+                        var booking = await _unitOfWork.GetRepository<Booking>().Entities
+                            .FirstOrDefaultAsync(x => x.Id == payment.BookingId && !x.DeletedTime.HasValue);
 
-                    await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
+                        if (booking != null)
+                        {
+                            double totalPaid = booking.Payments
+                                .Where(x => x.Status == PaymentStatus.Paid && !x.DeletedTime.HasValue)
+                                .Sum(x => x.Amount);
+
+                            if (totalPaid >= booking.TotalPrice)
+                            {
+                                booking.Status = BookingStatus.Paid;
+                            }
+                            else if (totalPaid >= booking.TotalPrice * 0.5)
+                            {
+                                booking.Status = BookingStatus.DepositedHaft;
+                            }
+
+                            var schedule = await _unitOfWork.GetRepository<Schedule>().Entities
+                                .FirstOrDefaultAsync(x => x.Id == booking.ScheduleId && !x.DeletedTime.HasValue);
+
+                            var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities
+                                .FirstOrDefaultAsync(x => x.Id == schedule.Tour.UserId && !x.DeletedTime.HasValue);
+
+                            if (tourGuide != null)
+                            {
+                                tourGuide.Deposit += (int)payment.Amount;
+                                await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
+                            }
+
+                            if (booking.Status == BookingStatus.DepositedHaft)
+                            {
+                                await SendMailHaft(booking.User, booking, payment);
+                            }
+                            else
+                            {
+                                await SendMailAll(booking.User, booking, payment);
+                            }
+
+                            await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Không tìm thấy đơn hàng liên quan.");
+                        }
+                    }
                     break;
 
                 case "01": // Giao dịch thất bại
@@ -596,6 +577,84 @@ namespace Wanvi.Services.Services
             }
 
             await _unitOfWork.SaveAsync();
+        }
+
+        public async Task<string> DepositMoney(DepositMoneyRequest request)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            Guid.TryParse(userId, out Guid cb);
+
+            var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities
+                .FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue)
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy người dùng!");
+
+            // Tạo mã giao dịch
+            long orderCode = await GenerateUniqueOrderCodeAsync();
+
+            // Tạo yêu cầu thanh toán PayOS
+            var payOSRequest = new PayOSPaymentRequest
+            {
+                orderCode = orderCode,
+                amount = (long)request.Amount, // Chuyển số tiền sang long
+                description = "Nạp tiền vào tài khoản",
+                buyerName = user.FullName,
+                buyerEmail = user.Email,
+                buyerPhone = user.PhoneNumber,
+                buyerAddress = user.Address,
+                cancelUrl = "https://wanvi-landing-page.vercel.app/",
+                returnUrl = "https://wanvi-landing-page.vercel.app/",
+                expiredAt = DateTimeOffset.Now.ToUnixTimeSeconds() + 1800
+            };
+
+            // Tạo chữ ký bảo mật
+            payOSRequest.signature = CalculateSignature(payOSRequest);
+
+            // Lưu giao dịch vào DB
+            var payment = new Payment
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Method = PaymentMethod.Banking,
+                Status = PaymentStatus.Unpaid,
+                Amount = request.Amount,
+                OrderCode = orderCode,
+                BuyerAddress = user.Address,
+                Description = "Nạp tiền vào tài khoản",
+                Signature = payOSRequest.signature,
+                BuyerEmail = user.Email,
+                BuyerPhone = user.PhoneNumber,
+                BuyerName = user.FullName,
+                CreatedBy = user.Id.ToString(),
+                LastUpdatedBy = user.Id.ToString(),
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
+                
+            };
+
+            await _unitOfWork.GetRepository<Payment>().InsertAsync(payment);
+            await _unitOfWork.SaveAsync();
+
+            // Gọi API PayOS để lấy link thanh toán
+            string checkoutUrl = await CallPayOSApi(payOSRequest);
+
+            return checkoutUrl; // Trả về URL để người dùng thanh toán
+        }
+
+        private async Task SendDepositSuccessEmail(ApplicationUser user, double amount)
+        {
+            await _emailService.SendEmailAsync(
+                user.Email,
+                "Nạp Tiền Thành Công",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO NẠP TIỀN</h2>
+                <p>Xin chào {user.FullName},</p>
+                <p>Bạn đã nạp thành công số tiền <strong>{amount:N0} đ</strong> vào tài khoản.</p>
+                <p>Số dư hiện tại của bạn là <strong>{user.Balance:N0} đ</strong>.</p>
+                <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+            </body>
+            </html>"
+            );
         }
 
         private async Task SendMailHaft(ApplicationUser user, Booking booking, Payment payment)

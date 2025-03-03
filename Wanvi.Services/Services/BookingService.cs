@@ -721,6 +721,10 @@ namespace Wanvi.Services.Services
             await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
             await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(customer);
             await _unitOfWork.SaveAsync();
+
+            // Gửi email cho hướng dẫn viên
+            await SendMailCancelTourGuide(tourGuide, customer, booking);
+
             return "Hủy đơn thành công!";
         }
 
@@ -769,7 +773,53 @@ namespace Wanvi.Services.Services
             await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
             await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(customer);
             await _unitOfWork.SaveAsync();
+
+            // Gửi email cho khách hàng
+            await SendMailCancelCustomer(customer, booking);
+
             return "Hủy đơn thành công!";
         }
+
+        private async Task SendMailCancelCustomer(ApplicationUser customer, Booking booking)
+        {
+            await _emailService.SendEmailAsync(
+                customer.Email,
+                "Thông Báo Hủy Tour",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO HỦY TOUR</h2>
+                <p>Xin chào {customer.FullName},</p>
+                <p>Chúng tôi xin thông báo rằng hướng dẫn viên đã hủy tour của bạn.</p>
+                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
+                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
+                <p><strong>Giờ:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
+                <p>Chúng tôi xin lỗi vì sự bất tiện này!</p>
+            </body>
+            </html>"
+            );
+        }
+
+        private async Task SendMailCancelTourGuide(ApplicationUser guide, ApplicationUser customer, Booking booking)
+        {
+            await _emailService.SendEmailAsync(
+                guide.Email,
+                "Thông Báo Khách Hủy Tour",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO HỦY TOUR</h2>
+                <p>Khách hàng <strong>{customer.FullName}</strong> đã hủy tour của bạn.</p>
+                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
+                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
+                <p><strong>Giờ:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
+            </body>
+            </html>"
+            );
+        }
+
+
     }
 }
