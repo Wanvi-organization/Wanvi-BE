@@ -820,6 +820,101 @@ namespace Wanvi.Services.Services
             );
         }
 
-        
+        public async Task<string> CancelBookingForAdmin(CancelBookingForAdminModel model)
+        {
+            var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities
+                .FirstOrDefaultAsync(x => x.Id == model.UserId && !x.DeletedTime.HasValue)
+                ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
+
+            var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
+                .Where(x => x.Schedule.Tour.UserId == tourGuide.Id
+                            && x.Status != BookingStatus.Completed
+                            && x.Status != BookingStatus.Cancelled
+                            && x.Status != BookingStatus.Refunded
+                            && !x.DeletedTime.HasValue)
+                .ToListAsync()
+                ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
+
+            // Nhóm khách chưa cọc (DepositAll, DepositHaft)
+            var bookingsNoDeposit = bookingList
+                .Where(x => x.Status == BookingStatus.DepositAll || x.Status == BookingStatus.DepositHaft)
+                .ToList();
+
+            // Nhóm khách đã cọc (DepositedHaft, Paid)
+            var bookingsWithDeposit = bookingList
+                .Where(x => x.Status == BookingStatus.DepositedHaft || x.Status == BookingStatus.Paid)
+                .ToList();
+
+            // Xử lý khách chưa cọc
+            foreach (var booking in bookingsNoDeposit)
+            {
+                booking.Status = BookingStatus.Cancelled;
+                await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+
+                // Gửi email thông báo hủy nhưng không hoàn tiền
+                await SendTourCancellationEmailNoDeposit(booking.User, booking);
+            }
+
+            // Xử lý khách đã cọc
+            foreach (var booking in bookingsWithDeposit)
+            {
+                booking.Status = BookingStatus.Cancelled;
+                await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+
+                // Gửi email thông báo hủy + hoàn tiền
+                await SendTourCancellationEmailWithRefund(booking.User, booking);
+            }
+
+            // Lưu vào DB
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
+            await _unitOfWork.SaveAsync();
+            return "Hủy đơn thành công!";
+        }
+        private async Task SendTourCancellationEmailNoDeposit(ApplicationUser customer, Booking booking)
+        {
+            await _emailService.SendEmailAsync(
+                customer.Email,
+                "Thông Báo Hủy Tour Do Hướng Dẫn Viên Vi Phạm",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO HỦY TOUR</h2>
+                <p>Xin chào {customer.FullName},</p>
+                <p>Chúng tôi rất tiếc phải thông báo rằng tour của bạn đã bị hủy do hướng dẫn viên vi phạm quy định của ứng dụng.</p>
+                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
+                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
+                <p><strong>Thời gian:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
+                <p>Chúng tôi thành thật xin lỗi vì sự bất tiện này.</p>
+                <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
+                <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+            </body>
+            </html>"
+            );
+        }
+        private async Task SendTourCancellationEmailWithRefund(ApplicationUser customer, Booking booking)
+        {
+            await _emailService.SendEmailAsync(
+                customer.Email,
+                "Thông Báo Hủy Tour & Hoàn Tiền",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO HỦY TOUR & HOÀN TIỀN</h2>
+                <p>Xin chào {customer.FullName},</p>
+                <p>Chúng tôi rất tiếc phải thông báo rằng tour của bạn đã bị hủy do hướng dẫn viên vi phạm quy định của ứng dụng.</p>
+                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
+                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
+                <p><strong>Thời gian:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
+                <p>Số tiền cọc của bạn sẽ được hoàn trả vào tài khoản của bạn trong thời gian sớm nhất.</p>
+                <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
+                <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+            </body>
+            </html>"
+            );
+        }
+
+
     }
 }
