@@ -7,5 +7,7 @@ namespace Wanvi.Contract.Services.Interfaces
     {
         Task<IEnumerable<ResponseRequestModel>> GetAllAsync(RequestStatus? status = null);
         Task<ResponseRequestModel> GetByIdAsync(string id);
+        Task<string> AccecptFromAdmin(AccecptRequestFromAdminModel model);
+        Task<string> CancelFromAdmin(CancelRequestFromAdminModel model);
     }
 }

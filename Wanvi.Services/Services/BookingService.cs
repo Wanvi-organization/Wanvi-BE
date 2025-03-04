@@ -723,7 +723,7 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
 
             // Gửi email cho hướng dẫn viên
-            await SendMailCancelTourGuide(tourGuide, customer, booking);
+            await SendMailCancelToTourGuide(tourGuide, customer, booking);
 
             return "Hủy đơn thành công!";
         }
@@ -775,12 +775,12 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
 
             // Gửi email cho khách hàng
-            await SendMailCancelCustomer(customer, booking);
+            await SendMailCancelToCustomer(customer, booking);
 
             return "Hủy đơn thành công!";
         }
 
-        private async Task SendMailCancelCustomer(ApplicationUser customer, Booking booking)
+        private async Task SendMailCancelToCustomer(ApplicationUser customer, Booking booking)
         {
             await _emailService.SendEmailAsync(
                 customer.Email,
@@ -801,7 +801,7 @@ namespace Wanvi.Services.Services
             );
         }
 
-        private async Task SendMailCancelTourGuide(ApplicationUser guide, ApplicationUser customer, Booking booking)
+        private async Task SendMailCancelToTourGuide(ApplicationUser guide, ApplicationUser customer, Booking booking)
         {
             await _emailService.SendEmailAsync(
                 guide.Email,
@@ -820,6 +820,6 @@ namespace Wanvi.Services.Services
             );
         }
 
-
+        
     }
 }
