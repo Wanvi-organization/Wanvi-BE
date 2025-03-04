@@ -28,7 +28,7 @@ namespace Wanvi.Contract.Services.Interfaces
         Task<string> ChangeBookingToUser(ChangeBookingToUserModel model);
         Task<string> CancelBookingForGuide(CancelBookingForGuideModel model);
         Task<string> CancelBookingForCustomer(CancelBookingForCustomerModel model);
-
+        Task<string> CancelBookingForAdmin(CancelBookingForAdminModel model);
     }
 
 }

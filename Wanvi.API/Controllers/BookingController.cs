@@ -149,5 +149,18 @@ namespace Wanvi.API.Controllers
                  data: res
              ));
         }
+        /// <summary>
+        /// Admin hủy tât các các tour của HDV vi phạm quy định của app
+        /// </summary>
+        [HttpPatch("Cancel_Booking_For_Admin")]
+        public async Task<IActionResult> CancelBookingForAdmin(CancelBookingForAdminModel request)
+        {
+            string res = await _bookingService.CancelBookingForAdmin(request);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
     }
 }
