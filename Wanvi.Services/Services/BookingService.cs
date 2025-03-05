@@ -879,6 +879,8 @@ namespace Wanvi.Services.Services
             // Lưu vào DB
             await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
             await _unitOfWork.SaveAsync();
+            // Gửi email thông báo tài khoản bị khóa
+            await SendTourGuideAccountBlockedEmail(tourGuide);
             return "Hủy đơn thành công!";
         }
         private async Task SendTourCancellationEmailNoDeposit(ApplicationUser customer, Booking booking)
@@ -924,6 +926,25 @@ namespace Wanvi.Services.Services
                 <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
             </body>
             </html>"
+            );
+        }
+        private async Task SendTourGuideAccountBlockedEmail(ApplicationUser guide)
+        {
+            await _emailService.SendEmailAsync(
+                guide.Email,
+                "Thông Báo Tài Khoản Bị Khóa",
+                $@"
+                <html>
+                <body>
+                    <h2>THÔNG BÁO KHÓA TÀI KHOẢN</h2>
+                    <p>Xin chào {guide.FullName},</p>
+                    <p>Chúng tôi xin thông báo rằng tài khoản của bạn đã bị khóa do vi phạm quy định của ứng dụng.</p>
+                    <p><strong>Trạng thái tài khoản:</strong> Đã bị khóa</p>
+                    <p>Bạn không thể nhận hoặc quản lý tour trên nền tảng cho đến khi tài khoản được xem xét lại.</p>
+                    <p>Nếu bạn cho rằng đây là sự nhầm lẫn hoặc cần hỗ trợ thêm, vui lòng liên hệ với chúng tôi.</p>
+                    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                </body>
+                </html>"
             );
         }
 

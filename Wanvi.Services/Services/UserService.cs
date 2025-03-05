@@ -27,14 +27,16 @@ namespace Wanvi.Services.Services
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly string _apiKey;
+        private readonly IEmailService _emailService;
 
-        public UserService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration, IHttpContextAccessor contextAccessor)
+        public UserService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration, IHttpContextAccessor contextAccessor, IEmailService emailService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _configuration = configuration;
             _contextAccessor = contextAccessor;
             _apiKey = configuration["VietMap:ApiKey"] ?? throw new Exception("API key is missing from configuration.");
+            _emailService = emailService;
         }
 
         #region Private Service
@@ -293,8 +295,29 @@ namespace Wanvi.Services.Services
             user.Violate  = false;
             await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
             await _unitOfWork.SaveAsync();
-
-            return "Mở khóa thành công!";
+            // Gửi email thông báo cho hướng dẫn viên
+            await SendUnlockTourGuideEmail(user);
+            return "Mở khóa tour của hướng dẫn viên thành công!";
         }
+        private async Task SendUnlockTourGuideEmail(ApplicationUser guide)
+        {
+            await _emailService.SendEmailAsync(
+                guide.Email,
+                "Thông Báo Mở Lại Tour",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO MỞ LẠI TOUR</h2>
+                <p>Xin chào {guide.FullName},</p>
+                <p>Chúng tôi xin thông báo rằng tài khoản của bạn đã được mở lại và bạn có thể tiếp tục hoạt động trên nền tảng.</p>
+                <p><strong>Trạng thái tài khoản:</strong> Đã được mở khóa</p>
+                <p>Bạn có thể tiếp tục nhận và quản lý các tour như bình thường.</p>
+                <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
+                <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+            </body>
+            </html>"
+            );
+        }
+
     }
 }
