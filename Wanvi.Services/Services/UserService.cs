@@ -286,5 +286,15 @@ namespace Wanvi.Services.Services
             return _mapper.Map<ResponseLocalGuideProfileModel>(localGuide);
         }
         #endregion
+
+        public async Task<string> UnlockBookingOfTourGuide(UnlockBookingOfTourGuideModel model)
+        {
+            var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x=>x.Id == model.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
+            user.Violate  = false;
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
+
+            return "Mở khóa thành công!";
+        }
     }
 }
