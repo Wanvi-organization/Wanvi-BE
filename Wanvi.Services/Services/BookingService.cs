@@ -825,7 +825,8 @@ namespace Wanvi.Services.Services
             var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities
                 .FirstOrDefaultAsync(x => x.Id == model.UserId && !x.DeletedTime.HasValue)
                 ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
-
+            //HDV vi phạm đôi trạng thái
+            tourGuide.Violate = true;
             var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
                 .Where(x => x.Schedule.Tour.UserId == tourGuide.Id
                             && x.Status != BookingStatus.Completed
@@ -858,11 +859,21 @@ namespace Wanvi.Services.Services
             // Xử lý khách đã cọc
             foreach (var booking in bookingsWithDeposit)
             {
+                if (booking.Status == BookingStatus.DepositedHaft)
+                {
+                    booking.User.Balance += (int)(booking.TotalPrice * 0.5);
+                }
+                else
+                {
+                    booking.User.Balance += (int)(booking.TotalPrice * 1);
+                }
                 booking.Status = BookingStatus.Cancelled;
                 await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
-
+                await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(booking.User);
+               
                 // Gửi email thông báo hủy + hoàn tiền
                 await SendTourCancellationEmailWithRefund(booking.User, booking);
+                await _unitOfWork.SaveAsync();  // Lưu ngay sau khi cập nhật số dư
             }
 
             // Lưu vào DB
@@ -876,22 +887,23 @@ namespace Wanvi.Services.Services
                 customer.Email,
                 "Thông Báo Hủy Tour Do Hướng Dẫn Viên Vi Phạm",
                 $@"
-            <html>
-            <body>
-                <h2>THÔNG BÁO HỦY TOUR</h2>
-                <p>Xin chào {customer.FullName},</p>
-                <p>Chúng tôi rất tiếc phải thông báo rằng tour của bạn đã bị hủy do hướng dẫn viên vi phạm quy định của ứng dụng.</p>
-                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
-                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
-                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
-                <p><strong>Thời gian:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
-                <p>Chúng tôi thành thật xin lỗi vì sự bất tiện này.</p>
-                <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
-                <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
-            </body>
-            </html>"
+                <html>
+                <body>
+                    <h2>THÔNG BÁO HỦY TOUR</h2>
+                    <p>Xin chào {customer.FullName},</p>
+                    <p>Chúng tôi rất tiếc phải thông báo rằng tour của bạn đã bị hủy do hướng dẫn viên vi phạm quy định của ứng dụng.</p>
+                    <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
+                    <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                    <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
+                    <p><strong>Thời gian:</strong> {booking.Schedule.StartTime.ToString(@"hh\:mm")} - {booking.Schedule.EndTime.ToString(@"hh\:mm")}</p>
+                    <p>Chúng tôi thành thật xin lỗi vì sự bất tiện này.</p>
+                    <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
+                    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                </body>
+                </html>"
             );
         }
+
         private async Task SendTourCancellationEmailWithRefund(ApplicationUser customer, Booking booking)
         {
             await _emailService.SendEmailAsync(
@@ -906,7 +918,7 @@ namespace Wanvi.Services.Services
                 <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
                 <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
                 <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
-                <p><strong>Thời gian:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
+                <p><strong>Thời gian:</strong> {booking.Schedule.StartTime.ToString(@"hh\:mm")} - {booking.Schedule.EndTime.ToString(@"hh\:mm")}</p>
                 <p>Số tiền cọc của bạn sẽ được hoàn trả vào tài khoản của bạn trong thời gian sớm nhất.</p>
                 <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
                 <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
