@@ -26,6 +26,9 @@ namespace Wanvi.Contract.Services.Interfaces
             string? status = null);
         Task<string> WithdrawMoneyFromBooking(WithdrawMoneyFromBookingModel model);
         Task<string> ChangeBookingToUser(ChangeBookingToUserModel model);
-        }
+        Task<string> CancelBookingForGuide(CancelBookingForGuideModel model);
+        Task<string> CancelBookingForCustomer(CancelBookingForCustomerModel model);
+        Task<string> CancelBookingForAdmin(CancelBookingForAdminModel model);
+    }
 
 }

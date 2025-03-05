@@ -3,6 +3,5 @@
     public class ChangeBookingToUserModel
     {
         public string BookingId { get; set; }
-        public string? Note { get; set; }
     }
 }

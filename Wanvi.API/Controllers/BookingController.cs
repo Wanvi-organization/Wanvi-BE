@@ -99,7 +99,7 @@ namespace Wanvi.API.Controllers
         /// <summary>
         /// Chuyển tiền từ cọc sang cho HDV
         /// </summary>
-        [HttpPut("change_booking_to_user")]
+        [HttpPatch("change_booking_to_user")]
         public async Task<IActionResult> ChangeBookingToUser(ChangeBookingToUserModel request)
         {
             string res = await _bookingService.ChangeBookingToUser(request);
@@ -116,6 +116,46 @@ namespace Wanvi.API.Controllers
         public async Task<IActionResult> WithdrawMoneyFromBooking(WithdrawMoneyFromBookingModel request)
         {
             string res = await _bookingService.WithdrawMoneyFromBooking(request);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+
+        /// <summary>
+        /// Hủy đơn dành cho hướng dẫn viên
+        /// </summary>
+        [HttpPatch("Cancel_Booking_For_Guide")]
+        public async Task<IActionResult> CancelBookingForGuide(CancelBookingForGuideModel request)
+        {
+            string res = await _bookingService.CancelBookingForGuide(request);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        /// <summary>
+        /// Hủy đơn dành cho khách hàng
+        /// </summary>
+        [HttpPatch("Cancel_Booking_For_Customer")]
+        public async Task<IActionResult> CancelBookingForCustomer(CancelBookingForCustomerModel request)
+        {
+            string res = await _bookingService.CancelBookingForCustomer(request);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        /// <summary>
+        /// Admin hủy tât các các tour của HDV vi phạm quy định của app
+        /// </summary>
+        [HttpPatch("Cancel_Booking_For_Admin")]
+        public async Task<IActionResult> CancelBookingForAdmin(CancelBookingForAdminModel request)
+        {
+            string res = await _bookingService.CancelBookingForAdmin(request);
             return Ok(new BaseResponseModel<string>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,

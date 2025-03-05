@@ -15,5 +15,6 @@ namespace Wanvi.Contract.Services.Interfaces
         //bool VerifyPayOSSignature(PayOSWebhookRequest request, string signature);
         Task PayOSCallback(PayOSWebhookRequest request);
         Task<string> CreateBookingHaftEnd(CreateBookingEndModel model);
+        Task<string> DepositMoney(DepositMoneyRequest request);
     }
 }

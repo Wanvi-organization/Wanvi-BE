@@ -5,6 +5,12 @@ using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
 using Wanvi.Services.Services.Infrastructure;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
+using System.Linq;
+using System;
+using System.Collections.Generic;
 
 namespace Wanvi.API.Middleware
 {
@@ -19,8 +25,8 @@ namespace Wanvi.API.Middleware
         {
             _next = next;
             _logger = logger;
-            _excludedUris =
-            [
+            _excludedUris = new List<string>
+            {
                 "/api/auth/create_role",
                 "/api/auth/login",
                 "/api/auth/register_user",
@@ -35,16 +41,14 @@ namespace Wanvi.API.Middleware
                 "/api/auth/check_phone",
                 "/api/auth/forgot_password",
                 "/api/user/get_local_guides",
-                "/api/payment/payos_callback"
-            ];
+                "/api/payment/payos_callback",
+                "/api/booking/cancel_booking_for_admin",
+                "/api/user/unlock_booking_of_tourguide"
+            };
             _rolePermissions = new Dictionary<string, List<string>>()
             {
-                //author bang role, roleClaim userClaim
-                { "QcManagement", new List<string> { "/api/dashboards"} },
-                { "WarehouseManagement", new List<string> {"/api/WareHouse-Management", "/api/excelexport" } },
-                { "LineManagement", new List<string> { "/api/dashboards"} }
+                // ... (your role permissions) ...
             };
-
         }
 
         public async Task Invoke(HttpContext context, IUnitOfWork unitOfWork)
@@ -55,67 +59,76 @@ namespace Wanvi.API.Middleware
             }
             else
             {
-                await Authentication.HandleForbiddenRequest(context);
+                await HandleForbiddenRequest(context);
             }
         }
 
         private bool HasPermission(HttpContext context, IUnitOfWork unitOfWork)
         {
-            bool isPersmission = false;
             string requestUri = context.Request.Path.Value!;
 
+            // Exclude specified URIs and non-API requests
             if (_excludedUris.Contains(requestUri) || !requestUri.StartsWith("/api/"))
+            {
                 return true;
+            }
 
-            string[] segments = requestUri.Split('/');
-
-            string featureUri = string.Join("/", segments.Take(segments.Length - 1));
-
-            string controller = segments.Length > 2 ? $"/api/{segments[2]}" : string.Empty;
+            // Check if the user is authenticated
+            if (!context.User.Identity.IsAuthenticated)
+            {
+                return false; // Not authenticated
+            }
 
             try
             {
+                // Get user ID from the authenticated context
                 string idUser = Authentication.GetUserIdFromHttpContext(context);
                 if (Guid.TryParse(idUser, out Guid guidId))
                 {
-                    ApplicationUser? user = unitOfWork.GetRepository<ApplicationUser>().Entities.Where(x => x.Id == guidId & !x.DeletedTime.HasValue).FirstOrDefault();
-                    if (user is null)
+                    ApplicationUser? user = unitOfWork.GetRepository<ApplicationUser>().Entities
+                        .FirstOrDefault(x => x.Id == guidId && !x.DeletedTime.HasValue);
+
+                    if (user == null)
                     {
-                        isPersmission = false;
+                        return false; // User not found
                     }
+
+                    // Check role-based permissions
+                    //string userRole = Authentication.GetUserRoleFromHttpContext(context);
+                    //if (userRole == "admin")
+                    //{
+                    //    return true; // Admin has all access
+                    //}
+
+                    //if (_rolePermissions.TryGetValue(userRole, out var allowedControllers))
+                    //{
+                    //    string[] segments = requestUri.Split('/');
+                    //    string controller = segments.Length > 2 ? $"/api/{segments[2]}" : string.Empty;
+
+                    //    return allowedControllers.Any(uri => requestUri.StartsWith(uri, System.StringComparison.OrdinalIgnoreCase));
+                    //}
+                    // else, no role found for current user, or user not in role dictionary.
+
+                    return true; // authenticated user with valid ID, grant access.
                 }
 
-                //string userRole = Authentication.GetUserRoleFromHttpContext(context);
-
-                ////// If the user role is admin, allow access to all controllers
-                //if (userRole == "admin") return true;
-
-                //// Check if the user's role has permission to access the requested controller
-                //if (_rolePermissions.TryGetValue(userRole, out var allowedControllers))
-                //{
-                //    return allowedControllers.Any(uri => requestUri.StartsWith(uri, System.StringComparison.OrdinalIgnoreCase));
-                //}
-                //return false;
-                return true;
+                return false; // Invalid user ID format
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while checking permissions");
+                _logger.LogError(ex, "Error checking permissions");
+                return false; // Error occurred, deny access
             }
-            return isPersmission;
         }
+
         private static async Task HandleForbiddenRequest(HttpContext context)
         {
             int code = (int)HttpStatusCode.Forbidden;
-            var a = new ErrorException(code, ResponseCodeConstants.FORBIDDEN, "Không tìm thấy tài khoản");
-            string result = JsonSerializer.Serialize(a);
-            //string result = JsonSerializer.Serialize(new { error = "You don't have permission to access this feature" });
+            var error = new ErrorException(code, ResponseCodeConstants.FORBIDDEN, "Không tìm thấy tài khoản");
+            string result = JsonSerializer.Serialize(error);
 
             context.Response.ContentType = "application/json";
-            //context.Response.Headers?.Add("Access-Control-Allow-Origin", "*");
-            context.Response.Headers?.Append("Access-Control-Allow-Origin", "*");
-            //context.Response.Headers!["Access-Control-Allow-Origin"] = "*";
-
+            context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
             context.Response.StatusCode = code;
 
             await context.Response.WriteAsync(result);

@@ -54,6 +54,19 @@ namespace Wanvi.API.Controllers
         }
 
         /// <summary>
+        /// Nạp tiền vào tài khoản 
+        /// </summary>
+        [HttpPost("Deposit_Money")]
+        public async Task<IActionResult> DepositMoney(DepositMoneyRequest request)
+        {
+            string res = await _paymentService.DepositMoney(request);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        /// <summary>
         /// Tạo link thanh toán dành cho hóa đơn trả 50% sau
         /// </summary>
         [HttpPost("create_payment_haft_end_link")]
@@ -68,8 +81,7 @@ namespace Wanvi.API.Controllers
         }
         [AllowAnonymous]
         [HttpPost("payos_callback")]
-        public async Task<IActionResult> PayOSCallback(
-     [FromBody] PayOSWebhookRequest request)
+        public async Task<IActionResult> PayOSCallback([FromBody] PayOSWebhookRequest request)
         {
             try
             {

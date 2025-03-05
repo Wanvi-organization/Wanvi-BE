@@ -10,5 +10,6 @@ namespace Wanvi.Contract.Services.Interfaces
         Task ChangePassword(ChangePasswordModel model);
         Task UpdateProfiel(UpdateProfileModel model);
         Task<ResponseLocalGuideProfileModel> GetLocalGuideProfileInfoByIdAsync(Guid localGuideId);
+        Task<string> UnlockBookingOfTourGuide(UnlockBookingOfTourGuideModel model);
     }
 }

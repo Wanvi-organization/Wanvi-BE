@@ -47,5 +47,29 @@ namespace Wanvi.API.Controllers
                 code: ResponseCodeConstants.SUCCESS,
                 data: await _requestService.GetByIdAsync(id)));
         }
+        /// <summary>
+        /// Admin đồng ý yêu cầu rút tiền
+        /// </summary>
+        [HttpPatch("Accecpt_From_Admin")]
+        public async Task<IActionResult> AccecptFromAdmin(AccecptRequestFromAdminModel model)
+        {
+            var requests = await _requestService.AccecptFromAdmin(model);
+            return Ok(new BaseResponseModel<string>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: requests));
+        }
+        /// <summary>
+        /// Admin hủy yêu cầu rút tiền
+        /// </summary>
+        [HttpPatch("Cancel_From_Admin")]
+        public async Task<IActionResult> CancelFromAdmin(CancelRequestFromAdminModel model)
+        {
+            var requests = await _requestService.CancelFromAdmin(model);
+            return Ok(new BaseResponseModel<string>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: requests));
+        }
     }
 }

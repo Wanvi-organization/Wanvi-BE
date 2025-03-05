@@ -29,6 +29,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public int? EmailCode { get; set; }
         public DateTime? CodeGeneratedTime { get; set; }
         public string? CreatedBy { get; set; }
+        public bool? Violate { get; set; } = false;
         public string? LastUpdatedBy { get; set; }
         public string? DeletedBy { get; set; }
         public DateTimeOffset CreatedTime { get; set; }

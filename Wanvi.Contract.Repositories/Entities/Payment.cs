@@ -13,7 +13,9 @@ namespace Wanvi.Contract.Repositories.Entities
         Unpaid = 0,
         Paid = 1,
         Refunded = 2,
-        Canceled = 3
+        Canceled = 3,
+        UnpaidRecharge = 4,
+        Recharged = 5,
     }
 
     public class Payment : BaseEntity

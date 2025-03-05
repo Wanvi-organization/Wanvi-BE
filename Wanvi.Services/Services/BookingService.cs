@@ -328,10 +328,10 @@ namespace Wanvi.Services.Services
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, $"Số người đăng kí lớn hơn số người mặc định({schedule.MaxTraveler} người)!");
             }
-            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 2 ngày
-            if (model.RentalDate.ToUniversalTime().Date < DateTime.UtcNow.AddDays(2).Date)
+            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 8 ngày
+            if (model.RentalDate.ToUniversalTime().Date < DateTime.Now.AddDays(8).Date)
             {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đặt tour trước 2 ngày!");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đặt tour trước 8 ngày!");
             }
 
             // Lấy danh sách booking hợp lệ (cùng Schedule, cùng ngày, trạng thái hợp lệ)
@@ -376,8 +376,8 @@ namespace Wanvi.Services.Services
                 OrderCode = await GenerateUniqueOrderCodeAsync(),
                 CreatedBy = userId,
                 UserId = cb,
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = userId,
                 RentalDate = model.RentalDate,
                 TotalPrice = model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour,
@@ -389,12 +389,11 @@ namespace Wanvi.Services.Services
 
             var bookingDetail = new BookingDetail
             {
-                Age = model.Age,
                 BookingId = booking.Id,
                 CreatedBy = userId,
                 Email = model.Email,
                 CreatedTime = DateTime.Now,
-                LastUpdatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = userId,
                 PassportNumber = user.IdentificationNumber,
                 IdentityCard = user.IdentificationNumber,
@@ -456,10 +455,10 @@ namespace Wanvi.Services.Services
                     $"Ngày đặt: ({rentalDay}) không phù hợp với lịch trình của hướng dẫn viên: ({scheduleDay})!");
             }
 
-            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 2 ngày
-            if (model.RentalDate.Date < DateTime.Now.AddDays(2).Date)
+            // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 8 ngày
+            if (model.RentalDate.Date < DateTime.Now.AddDays(8).Date)
             {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đạt tour trước 2 ngày!");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đạt tour trước 8 ngày!");
             }
 
             // Lấy danh sách booking hợp lệ (cùng Schedule, cùng ngày, trạng thái hợp lệ)
@@ -502,8 +501,8 @@ namespace Wanvi.Services.Services
                 UserId = cb,
                 OrderCode = await GenerateUniqueOrderCodeAsync(),
                 RentalDate = model.RentalDate,
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = userId,
                 TotalPrice = model.NumberOfParticipants * schedule.Tour.HourlyRate * countHour,
                 TotalTravelers = model.NumberOfParticipants,
@@ -514,12 +513,11 @@ namespace Wanvi.Services.Services
 
             var bookingDetail = new BookingDetail
             {
-                Age = model.Age,
                 BookingId = booking.Id,
                 CreatedBy = userId,
                 Email = model.Email,
                 CreatedTime = DateTime.Now,
-                LastUpdatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = userId,
                 PassportNumber = user.IdentificationNumber,
                 IdentityCard = user.IdentificationNumber,
@@ -550,19 +548,19 @@ namespace Wanvi.Services.Services
             //Tìm HDV
             var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == existingBookings.Schedule.Tour.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
             //Cập nhật tiền của HDV
-            tourGuide.Balance += existingBookings.TotalTravelers;//Chuyển vào tiền lấy làm cọc
+            tourGuide.Balance += (int)(existingBookings.TotalTravelers * 0.8);//Chuyển vào tiền lấy làm cọc
             tourGuide.Deposit -= existingBookings.TotalTravelers;//trừ tiền đã chuyển vào cọc
 
             Request request = new Request()
             {
                 Balance = tourGuide.Balance,
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = tourGuide.Id.ToString(),
                 CreatedBy = tourGuide.Id.ToString(),
                 OrderCode = existingBookings.OrderCode,
                 Status = RequestStatus.Confirmed,
-                Note = model.Note,
+                Note = $"Bạn nhận {existingBookings.TotalTravelers * 0.8:N0} đ là 80% tiền hóa đơn vì {existingBookings.TotalTravelers * 0.2:N0} đ là tiền khấu trừ hoa hồng!",
                 UserId = tourGuide.Id,
                 //Bank = tourGuide.Bank,
                 //BankAccount = tourGuide.BankAccount,
@@ -594,8 +592,8 @@ namespace Wanvi.Services.Services
             Request request = new Request()
             {
                 Balance = tourGuide.Balance,
-                CreatedTime = DateTime.UtcNow,
-                LastUpdatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
+                LastUpdatedTime = DateTime.Now,
                 LastUpdatedBy = tourGuide.Id.ToString(),
                 CreatedBy = tourGuide.Id.ToString(),
                 OrderCode = existingBookings.OrderCode,
@@ -681,6 +679,275 @@ namespace Wanvi.Services.Services
 
             return orderCode;
         }
+
+        public async Task<string> CancelBookingForCustomer(CancelBookingForCustomerModel model)
+        {
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == model.bookingId && !x.DeletedTime.HasValue) ??
+            throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
+
+            var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.Schedule.Tour.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
+
+            var customer = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy khách hàng!");
+
+            var daysBeforeStart = (booking.RentalDate - DateTime.UtcNow).TotalDays;
+            double customerAmount = 0;
+            double tourGuideAmount = 0;
+            double multiplier = booking.Status == BookingStatus.DepositedHaft ? 0.5 : 1.0;
+
+            if (daysBeforeStart > 7)
+            {
+                customerAmount = booking.TotalPrice * 0.1 * multiplier;
+            }
+            else if (daysBeforeStart >= 3)
+            {
+                customerAmount = booking.TotalPrice * 0.6 * multiplier;
+                tourGuideAmount = booking.TotalPrice * 0.2 * multiplier;
+            }
+            else if (daysBeforeStart >= 2)
+            {
+                tourGuideAmount = booking.TotalPrice * 0.7 * multiplier;
+            }
+            else
+            {
+                tourGuideAmount = booking.TotalPrice * 0.8 * multiplier;
+            }
+            //Hoàn tiền cho khách hàng
+            if (customerAmount > 0) customer.Balance += (int)customerAmount;
+            //Hoàn tiền cho HDV
+            if (tourGuideAmount > 0) tourGuide.Balance += (int)tourGuideAmount;
+            //Đổi trạng thái của đơn
+            booking.Status = BookingStatus.Cancelled;
+            await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(customer);
+            await _unitOfWork.SaveAsync();
+
+            // Gửi email cho hướng dẫn viên
+            await SendMailCancelToTourGuide(tourGuide, customer, booking);
+
+            return "Hủy đơn thành công!";
+        }
+
+        public async Task<string> CancelBookingForGuide(CancelBookingForGuideModel model)
+        {
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == model.bookingId && !x.DeletedTime.HasValue) ??
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
+
+            var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.Schedule.Tour.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
+
+            var customer = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy khách hàng!");
+
+
+            var daysBeforeStart = (booking.RentalDate - DateTime.Now).TotalDays;
+            double penalty = 0;
+            double refundToCustomer = 0;
+            double multiplier = booking.Status == BookingStatus.DepositedHaft ? 0.5 : 1.0;
+
+            if (daysBeforeStart >= 7)
+            {
+                refundToCustomer = booking.TotalPrice * 1.0 * multiplier;
+            }
+            else if (daysBeforeStart >= 3)
+            {
+                penalty = booking.TotalPrice * 0.2 * multiplier;
+                refundToCustomer = booking.TotalPrice * 1.0 * multiplier;
+            }
+            else if (daysBeforeStart >= 2)
+            {
+                penalty = booking.TotalPrice * 0.4 * multiplier;
+                refundToCustomer = booking.TotalPrice * 1.0 * multiplier;
+            }
+            else
+            {
+                penalty = booking.TotalPrice * 0.8 * multiplier;
+                refundToCustomer = booking.TotalPrice * 1.0 * multiplier;
+            }
+            //Trừ tiền vi phạm của HDV
+            if (penalty > 0) tourGuide.Balance -= (int)penalty;
+            //Trả + tiền bồi thường của khách hàng
+            if (refundToCustomer > 0) customer.Balance += (int)refundToCustomer;
+            //Cập nhật lại trạng thái của đơn
+            booking.Status = BookingStatus.Cancelled;
+            //lưu vào DB
+            await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(customer);
+            await _unitOfWork.SaveAsync();
+
+            // Gửi email cho khách hàng
+            await SendMailCancelToCustomer(customer, booking);
+
+            return "Hủy đơn thành công!";
+        }
+
+        private async Task SendMailCancelToCustomer(ApplicationUser customer, Booking booking)
+        {
+            await _emailService.SendEmailAsync(
+                customer.Email,
+                "Thông Báo Hủy Tour",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO HỦY TOUR</h2>
+                <p>Xin chào {customer.FullName},</p>
+                <p>Chúng tôi xin thông báo rằng hướng dẫn viên đã hủy tour của bạn.</p>
+                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
+                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
+                <p><strong>Giờ:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
+                <p>Chúng tôi xin lỗi vì sự bất tiện này!</p>
+            </body>
+            </html>"
+            );
+        }
+
+        private async Task SendMailCancelToTourGuide(ApplicationUser guide, ApplicationUser customer, Booking booking)
+        {
+            await _emailService.SendEmailAsync(
+                guide.Email,
+                "Thông Báo Khách Hủy Tour",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO HỦY TOUR</h2>
+                <p>Khách hàng <strong>{customer.FullName}</strong> đã hủy tour của bạn.</p>
+                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
+                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
+                <p><strong>Giờ:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
+            </body>
+            </html>"
+            );
+        }
+
+        public async Task<string> CancelBookingForAdmin(CancelBookingForAdminModel model)
+        {
+            var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities
+                .FirstOrDefaultAsync(x => x.Id == model.UserId && !x.DeletedTime.HasValue)
+                ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
+            //HDV vi phạm đôi trạng thái
+            tourGuide.Violate = true;
+            var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
+                .Where(x => x.Schedule.Tour.UserId == tourGuide.Id
+                            && x.Status != BookingStatus.Completed
+                            && x.Status != BookingStatus.Cancelled
+                            && x.Status != BookingStatus.Refunded
+                            && !x.DeletedTime.HasValue)
+                .ToListAsync()
+                ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
+
+            // Nhóm khách chưa cọc (DepositAll, DepositHaft)
+            var bookingsNoDeposit = bookingList
+                .Where(x => x.Status == BookingStatus.DepositAll || x.Status == BookingStatus.DepositHaft)
+                .ToList();
+
+            // Nhóm khách đã cọc (DepositedHaft, Paid)
+            var bookingsWithDeposit = bookingList
+                .Where(x => x.Status == BookingStatus.DepositedHaft || x.Status == BookingStatus.Paid)
+                .ToList();
+
+            // Xử lý khách chưa cọc
+            foreach (var booking in bookingsNoDeposit)
+            {
+                booking.Status = BookingStatus.Cancelled;
+                await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+
+                // Gửi email thông báo hủy nhưng không hoàn tiền
+                await SendTourCancellationEmailNoDeposit(booking.User, booking);
+            }
+
+            // Xử lý khách đã cọc
+            foreach (var booking in bookingsWithDeposit)
+            {
+                if (booking.Status == BookingStatus.DepositedHaft)
+                {
+                    booking.User.Balance += (int)(booking.TotalPrice * 0.5);
+                }
+                else
+                {
+                    booking.User.Balance += (int)(booking.TotalPrice * 1);
+                }
+                booking.Status = BookingStatus.Cancelled;
+                await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+                await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(booking.User);
+               
+                // Gửi email thông báo hủy + hoàn tiền
+                await SendTourCancellationEmailWithRefund(booking.User, booking);
+                await _unitOfWork.SaveAsync();  // Lưu ngay sau khi cập nhật số dư
+            }
+
+            // Lưu vào DB
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
+            await _unitOfWork.SaveAsync();
+            // Gửi email thông báo tài khoản bị khóa
+            await SendTourGuideAccountBlockedEmail(tourGuide);
+            return "Hủy đơn thành công!";
+        }
+        private async Task SendTourCancellationEmailNoDeposit(ApplicationUser customer, Booking booking)
+        {
+            await _emailService.SendEmailAsync(
+                customer.Email,
+                "Thông Báo Hủy Tour Do Hướng Dẫn Viên Vi Phạm",
+                $@"
+                <html>
+                <body>
+                    <h2>THÔNG BÁO HỦY TOUR</h2>
+                    <p>Xin chào {customer.FullName},</p>
+                    <p>Chúng tôi rất tiếc phải thông báo rằng tour của bạn đã bị hủy do hướng dẫn viên vi phạm quy định của ứng dụng.</p>
+                    <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
+                    <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                    <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
+                    <p><strong>Thời gian:</strong> {booking.Schedule.StartTime.ToString(@"hh\:mm")} - {booking.Schedule.EndTime.ToString(@"hh\:mm")}</p>
+                    <p>Chúng tôi thành thật xin lỗi vì sự bất tiện này.</p>
+                    <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
+                    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                </body>
+                </html>"
+            );
+        }
+
+        private async Task SendTourCancellationEmailWithRefund(ApplicationUser customer, Booking booking)
+        {
+            await _emailService.SendEmailAsync(
+                customer.Email,
+                "Thông Báo Hủy Tour & Hoàn Tiền",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO HỦY TOUR & HOÀN TIỀN</h2>
+                <p>Xin chào {customer.FullName},</p>
+                <p>Chúng tôi rất tiếc phải thông báo rằng tour của bạn đã bị hủy do hướng dẫn viên vi phạm quy định của ứng dụng.</p>
+                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
+                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
+                <p><strong>Thời gian:</strong> {booking.Schedule.StartTime.ToString(@"hh\:mm")} - {booking.Schedule.EndTime.ToString(@"hh\:mm")}</p>
+                <p>Số tiền cọc của bạn sẽ được hoàn trả vào tài khoản của bạn trong thời gian sớm nhất.</p>
+                <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
+                <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+            </body>
+            </html>"
+            );
+        }
+        private async Task SendTourGuideAccountBlockedEmail(ApplicationUser guide)
+        {
+            await _emailService.SendEmailAsync(
+                guide.Email,
+                "Thông Báo Tài Khoản Bị Khóa",
+                $@"
+                <html>
+                <body>
+                    <h2>THÔNG BÁO KHÓA TÀI KHOẢN</h2>
+                    <p>Xin chào {guide.FullName},</p>
+                    <p>Chúng tôi xin thông báo rằng tài khoản của bạn đã bị khóa do vi phạm quy định của ứng dụng.</p>
+                    <p><strong>Trạng thái tài khoản:</strong> Đã bị khóa</p>
+                    <p>Bạn không thể nhận hoặc quản lý tour trên nền tảng cho đến khi tài khoản được xem xét lại.</p>
+                    <p>Nếu bạn cho rằng đây là sự nhầm lẫn hoặc cần hỗ trợ thêm, vui lòng liên hệ với chúng tôi.</p>
+                    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                </body>
+                </html>"
+            );
+        }
+
 
     }
 }

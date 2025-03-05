@@ -9,8 +9,19 @@ namespace Wanvi.Services.MapperProfile
         public RequestProfile()
         {
             CreateMap<Request, ResponseRequestModel>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ConvertRequestStatusToVietnamese(src.Status)))
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName));
+        }
+
+        private string ConvertRequestStatusToVietnamese(RequestStatus status)
+        {
+            return status switch
+            {
+                RequestStatus.Pending => "Đang chờ",
+                RequestStatus.Confirmed => "Đã xác nhận",
+                RequestStatus.Cancelled => "Đã hủy",
+                _ => "Không xác định"
+            };
         }
     }
 }

@@ -76,7 +76,7 @@ namespace Wanvi.Services.Services
             SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddHours(1),
+                Expires = DateTime.Now.AddHours(1),
                 Issuer = issuer,
                 Audience = audience,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -125,7 +125,7 @@ namespace Wanvi.Services.Services
 
             string OTP = GenerateOtp();
             user.EmailCode = int.Parse(OTP);
-            user.CodeGeneratedTime = DateTime.UtcNow;
+            user.CodeGeneratedTime = DateTime.Now;
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
@@ -146,7 +146,7 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "OTP không hợp lệ");
             }
 
-            if (!user.CodeGeneratedTime.HasValue || DateTime.UtcNow > user.CodeGeneratedTime.Value.AddMinutes(5))
+            if (!user.CodeGeneratedTime.HasValue || DateTime.Now > user.CodeGeneratedTime.Value.AddMinutes(5))
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "OTP đã hết hạn");
             }
@@ -232,7 +232,7 @@ namespace Wanvi.Services.Services
             };
             //string OTP = GenerateOtp();
             //newUser.EmailCode = int.Parse(OTP);
-            //newUser.CodeGeneratedTime = DateTime.UtcNow;
+            //newUser.CodeGeneratedTime = DateTime.Now;
             //await _emailService.SendEmailAsync(model.Email, "Xác nhận tài khoản", $"Vui lòng xác nhận tài khoản của bạn, OTP của bạn là: <div class='otp'>{OTP}</div>");
             await _unitOfWork.GetRepository<ApplicationUserRole>().InsertAsync(applicationUserRole);
 
@@ -265,7 +265,7 @@ namespace Wanvi.Services.Services
         //    var user = new ApplicationUser
         //    {
         //        PhoneNumber = model.PhoneNumber,
-        //        CreatedTime = DateTime.UtcNow,
+        //        CreatedTime = DateTime.Now,
         //        EmailConfirmed = true,
         //        PhoneNumberConfirmed = false,
         //        EmailCode = Int32.Parse(GenerateOtp()),
@@ -349,7 +349,7 @@ namespace Wanvi.Services.Services
             var user = new ApplicationUser
             {
                 PhoneNumber = model.PhoneNumber,
-                CreatedTime = DateTime.UtcNow,
+                CreatedTime = DateTime.Now,
                 EmailConfirmed = true,
                 PhoneNumberConfirmed = false,
                 EmailCode = Int32.Parse(GenerateOtp()),
@@ -534,7 +534,7 @@ namespace Wanvi.Services.Services
             string roleName = _unitOfWork.GetRepository<ApplicationRole>().Entities.Where(x => x.Id == roleUser.RoleId).Select(x => x.Name).FirstOrDefault()
              ?? "unknow";
             var tokenResponse = _tokenService.GenerateTokens(user, roleName);
-            var token = Authentication.CreateToken(user.Id.ToString(), _jwtSettings);
+            //var token = Authentication.CreateToken(user.Id.ToString(), _jwtSettings);
             var loginResponse = new LoginResponse
             {
                 TokenResponse = tokenResponse,
@@ -555,7 +555,7 @@ namespace Wanvi.Services.Services
                 RefreshToken = refreshToken,
                 TokenType = "JWT",
                 AuthType = "Bearer",
-                ExpiresIn = DateTime.UtcNow.AddHours(1),
+                ExpiresIn = DateTime.Now.AddMinutes(5),
                 User = new UserInfo
                 {
                     Email = user.Email,
@@ -603,7 +603,7 @@ namespace Wanvi.Services.Services
                 RefreshToken = refreshToken,
                 TokenType = "JWT",
                 AuthType = "Bearer",
-                ExpiresIn = DateTime.UtcNow.AddHours(1),
+                ExpiresIn = DateTime.Now.AddHours(1),
                 User = new UserInfo
                 {
                     Email = user.Email,
@@ -638,7 +638,7 @@ namespace Wanvi.Services.Services
                 RefreshToken = refreshToken,
                 TokenType = "JWT",
                 AuthType = "Bearer",
-                ExpiresIn = DateTime.UtcNow.AddHours(1),
+                ExpiresIn = DateTime.Now.AddHours(1),
                 User = new UserInfo
                 {
                     Email = user.Email,
@@ -689,7 +689,7 @@ namespace Wanvi.Services.Services
                 RefreshToken = refreshToken,
                 TokenType = "JWT",
                 AuthType = "Bearer",
-                ExpiresIn = DateTime.UtcNow.AddHours(1),
+                ExpiresIn = DateTime.Now.AddHours(1),
                 User = new UserInfo
                 {
                     Email = user.Email,
