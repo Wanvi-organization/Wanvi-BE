@@ -1,8 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Wanvi.API.Middleware;
-using Wanvi.Repositories.Context;
 using WanviBE.API;
 using WanviBE.API.Middleware;
 
@@ -15,9 +13,7 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
-//builder.Services.AddDbContext<DatabaseContext>(options =>
-//    options.UseLazyLoadingProxies().UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+// C?u hình JSON Serializer
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -25,34 +21,32 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
+
 builder.Services.AddConfig(builder.Configuration);
 builder.Services.AddHttpClient();
+
 var app = builder.Build();
 
-//setting Middleware
-app.UseMiddleware<ExceptionMiddleware>();
-app.UseMiddleware<PermissionMiddleware>();
-app.UseMiddleware<LoggingMiddleware>();
-
-// Configure the HTTP request pipeline.
+// C?u hình Middleware
 
 app.UseSwagger();
-    app.UseSwaggerUI();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseAuthentication();  // ? Xác th?c ng??i dùng tr??c
+app.UseAuthorization();   // ? Ki?m tra quy?n truy c?p API tr??c
 
-
-
+app.UseMiddleware<ExceptionMiddleware>();
+app.UseMiddleware<LoggingMiddleware>();
+app.UseMiddleware<PermissionMiddleware>();  // ? Ki?m tra quy?n sau khi token ?ã ???c xác th?c
 
 app.MapControllers();
 
