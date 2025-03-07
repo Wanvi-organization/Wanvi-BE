@@ -73,11 +73,6 @@ namespace Wanvi.API.Middleware
                 return true;
             }
 
-            // Check if the user is authenticated
-            if (!context.User.Identity.IsAuthenticated)
-            {
-                return false; // Not authenticated
-            }
 
             try
             {
@@ -91,6 +86,13 @@ namespace Wanvi.API.Middleware
                     if (user == null)
                     {
                         return false; // User not found
+                    }
+
+
+                    ////Check if the user is authenticated
+                    if (!context.User.Identity.IsAuthenticated)
+                    {
+                        return false; // Not authenticated
                     }
 
                     // Check role-based permissions
