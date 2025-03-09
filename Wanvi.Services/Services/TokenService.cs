@@ -70,7 +70,7 @@ namespace Wanvi.Services.Services
                 claims: claims,
                 issuer: _configuration.GetSection("JwtSettings:Issuer").Value,
                 audience: _configuration.GetSection("JwtSettings:Audience").Value,
-                expires: DateTime.UtcNow.AddSeconds(10),
+                expires: DateTime.UtcNow.AddSeconds(30),
                 signingCredentials: creds
             );
             var accessTokenString = new JwtSecurityTokenHandler().WriteToken(accessToken);
