@@ -489,9 +489,6 @@ namespace Wanvi.Services.Services
             switch (request.data.code)
             {
                 case "00": // Thành công
-                    payment.Status = isRecharge ? PaymentStatus.Recharged : PaymentStatus.Paid;
-                    await _unitOfWork.SaveAsync();
-
                     if (isRecharge)
                     {
                         // Xử lý nạp tiền vào tài khoản người dùng
@@ -501,7 +498,11 @@ namespace Wanvi.Services.Services
                         if (user != null)
                         {
                             user.Balance += (int)payment.Amount;
+                            payment.Status = PaymentStatus.Recharged;
+
                             await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+                            await _unitOfWork.GetRepository<Payment>().UpdateAsync(payment);
+
                             await _unitOfWork.SaveAsync();
 
                             // Gửi email xác nhận nạp tiền thành công
@@ -553,7 +554,9 @@ namespace Wanvi.Services.Services
                             {
                                 await SendMailAll(booking.User, booking, payment);
                             }
+                            payment.Status = PaymentStatus.Paid;
 
+                            await _unitOfWork.GetRepository<Payment>().UpdateAsync(payment);
                             await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
                         }
                         else
@@ -627,7 +630,7 @@ namespace Wanvi.Services.Services
                 LastUpdatedBy = user.Id.ToString(),
                 CreatedTime = DateTime.Now,
                 LastUpdatedTime = DateTime.Now,
-                
+
             };
 
             await _unitOfWork.GetRepository<Payment>().InsertAsync(payment);
