@@ -369,7 +369,7 @@ namespace Wanvi.Services.Services
 
             do
             {
-                orderCode = random.NextInt64(10000000, 9999999999); // Sinh số ngẫu nhiên 8 chữ số
+                orderCode = random.Next(10000000, int.MaxValue); // Sinh số trong khoảng từ 8 chữ số đến 2.1 tỷ
                 exists = await _unitOfWork.GetRepository<Payment>().Entities
                     .AnyAsync(x => x.OrderCode == orderCode && !x.DeletedTime.HasValue);
             }
