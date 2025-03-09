@@ -496,7 +496,7 @@ namespace Wanvi.Services.Services
                     {
                         // Xử lý nạp tiền vào tài khoản người dùng
                         var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities
-                            .FirstOrDefaultAsync(x => x.Email == payment.BuyerEmail && !x.DeletedTime.HasValue);
+                            .FirstOrDefaultAsync(x => x.Id.ToString() == payment.CreatedBy && !x.DeletedTime.HasValue);
 
                         if (user != null)
                         {
@@ -614,7 +614,7 @@ namespace Wanvi.Services.Services
             {
                 Id = Guid.NewGuid().ToString("N"),
                 Method = PaymentMethod.Banking,
-                Status = PaymentStatus.Unpaid,
+                Status = PaymentStatus.UnpaidRecharge,
                 Amount = request.Amount,
                 OrderCode = orderCode,
                 BuyerAddress = user.Address,
