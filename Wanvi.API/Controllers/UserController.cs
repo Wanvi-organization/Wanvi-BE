@@ -93,5 +93,18 @@ namespace WanviBE.API.Controllers
                  data: "Cập nhật tài khoản thành công!"
              ));
         }
+        /// <summary>
+        /// Admin mở khóa tour của HDV
+        /// </summary>
+        [HttpPatch("Unlock_Booking_Of_TourGuide")]
+        public async Task<IActionResult> UnlockBookingOfTourGuide(UnlockBookingOfTourGuideModel model)
+        {
+            var res = await _userService.UnlockBookingOfTourGuide(model);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
     }
 }

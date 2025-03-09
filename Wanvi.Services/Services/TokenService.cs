@@ -44,7 +44,7 @@ namespace Wanvi.Services.Services
 
         public async Task<TokenResponse> GenerateTokens(ApplicationUser user, string role)
         {
-            DateTime now = DateTime.Now;
+            DateTime now = DateTime.UtcNow;
 
             // Common claims for both tokens
             List<Claim> claims = new List<Claim>

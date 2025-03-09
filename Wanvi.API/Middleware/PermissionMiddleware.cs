@@ -41,7 +41,9 @@ namespace Wanvi.API.Middleware
                 "/api/auth/check_phone",
                 "/api/auth/forgot_password",
                 "/api/user/get_local_guides",
-                "/api/payment/payos_callback"
+                "/api/payment/payos_callback",
+                "/api/booking/cancel_booking_for_admin",
+                "/api/user/unlock_booking_of_tourguide"
             };
             _rolePermissions = new Dictionary<string, List<string>>()
             {
@@ -71,11 +73,6 @@ namespace Wanvi.API.Middleware
                 return true;
             }
 
-            // Check if the user is authenticated
-            if (!context.User.Identity.IsAuthenticated)
-            {
-                return false; // Not authenticated
-            }
 
             try
             {
@@ -89,6 +86,13 @@ namespace Wanvi.API.Middleware
                     if (user == null)
                     {
                         return false; // User not found
+                    }
+
+
+                    ////Check if the user is authenticated
+                    if (!context.User.Identity.IsAuthenticated)
+                    {
+                        return false; // Not authenticated
                     }
 
                     // Check role-based permissions
