@@ -89,7 +89,8 @@ namespace Wanvi.Services.Services
                 RentalDate = b.RentalDate.ToString("dd/MM/yyyy"), // Chỉ lấy ngày/tháng/năm
                 Status = ConvertStatusToString(b.Status),
                 StartTime = b.Schedule?.StartTime.ToString(@"hh\:mm") ?? "00:00", // Chỉ lấy giờ:phút
-                EndTime = b.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00"
+                EndTime = b.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00",
+                TourName = b.Schedule.Tour.Name
             }).ToList();
 
             return bookingModels;
@@ -146,7 +147,8 @@ namespace Wanvi.Services.Services
                 RentalDate = b.RentalDate.ToString("dd/MM/yyyy"), // Chỉ lấy ngày/tháng/năm
                 Status = ConvertStatusToString(b.Status),
                 StartTime = b.Schedule?.StartTime.ToString(@"hh\:mm") ?? "00:00", // Chỉ lấy giờ:phút
-                EndTime = b.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00"
+                EndTime = b.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00",
+                TourName = b.Schedule.Tour.Name
             }).ToList();
 
             return bookingModels;
@@ -225,7 +227,8 @@ namespace Wanvi.Services.Services
                             RentalDate = b.RentalDate.ToString("dd/MM/yyyy"),
                             Status = ConvertStatusToString(b.Status),
                             StartTime = b.Schedule?.StartTime.ToString(@"hh\:mm") ?? "00:00",
-                            EndTime = b.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00"
+                            EndTime = b.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00",
+                            TourName = b.Schedule.Tour.Name
                         }).ToList()
                     };
                 })
