@@ -544,23 +544,25 @@ namespace Wanvi.Services.Services
 
         }
 
-        public async Task<AuthResponseModelView> RefreshToken(RefreshTokenModel refreshTokenModel)
+        public async Task<LoginResponse> RefreshToken(RefreshTokenModel refreshTokenModel)
         {
             ApplicationUser? user = await CheckRefreshToken(refreshTokenModel.RefreshToken);
-            (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
-            string refreshToken = await GenerateRefreshToken(user);
-            return new AuthResponseModelView
+
+            ApplicationUserRole roleUser = _unitOfWork.GetRepository<ApplicationUserRole>().Entities
+                .FirstOrDefault(x => x.UserId == user.Id)
+                ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
+
+            string roleName = _unitOfWork.GetRepository<ApplicationRole>().Entities
+                .Where(x => x.Id == roleUser.RoleId)
+                .Select(x => x.Name)
+                .FirstOrDefault() ?? "unknown";
+
+            var tokenResponse = _tokenService.GenerateTokens(user, roleName);
+
+            return new LoginResponse
             {
-                AccessToken = token,
-                RefreshToken = refreshToken,
-                TokenType = "JWT",
-                AuthType = "Bearer",
-                ExpiresIn = DateTime.Now.AddMinutes(5),
-                User = new UserInfo
-                {
-                    Email = user.Email,
-                    Roles = roles.ToList()
-                }
+                TokenResponse = tokenResponse,
+                Role = roleName
             };
         }
 
@@ -580,7 +582,7 @@ namespace Wanvi.Services.Services
             throw new ErrorException(StatusCodes.Status401Unauthorized, ErrorCode.Unauthorized, "Token không hợp lệ");
         }
 
-        public async Task<AuthResponseModelView> CheckGoogle(CheckGoogleModel model)
+        public async Task<LoginResponse> CheckGoogle(CheckGoogleModel model)
         {
             ApplicationUser? user = await _userManager.FindByEmailAsync(model.Email);
 
@@ -594,29 +596,29 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
             }
 
-            (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
-            string refreshToken = await GenerateRefreshToken(user);
+            ApplicationUserRole roleUser = _unitOfWork.GetRepository<ApplicationUserRole>().Entities
+                .FirstOrDefault(x => x.UserId == user.Id)
+                ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
 
-            return new AuthResponseModelView
+            string roleName = _unitOfWork.GetRepository<ApplicationRole>().Entities
+                .Where(x => x.Id == roleUser.RoleId)
+                .Select(x => x.Name)
+                .FirstOrDefault() ?? "unknown";
+
+            var tokenResponse = _tokenService.GenerateTokens(user, roleName);
+
+            return new LoginResponse
             {
-                AccessToken = token,
-                RefreshToken = refreshToken,
-                TokenType = "JWT",
-                AuthType = "Bearer",
-                ExpiresIn = DateTime.Now.AddHours(1),
-                User = new UserInfo
-                {
-                    Email = user.Email,
-                    Roles = roles.ToList()
-                }
+                TokenResponse = tokenResponse,
+                Role = roleName
             };
         }
 
-        public async Task<AuthResponseModelView> LoginGoogle(TokenModelView model)
+        public async Task<LoginResponse> LoginGoogle(TokenModelView model)
         {
             GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(model.Token);
             string email = payload.Email;
-            string providerKey = payload.Subject;
+
             ApplicationUser? user = await _userManager.FindByEmailAsync(email);
 
             if (user == null)
@@ -629,25 +631,25 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
             }
 
-            (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
-            string refreshToken = await GenerateRefreshToken(user);
+            ApplicationUserRole roleUser = _unitOfWork.GetRepository<ApplicationUserRole>().Entities
+                .FirstOrDefault(x => x.UserId == user.Id)
+                ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
 
-            return new AuthResponseModelView
+            string roleName = _unitOfWork.GetRepository<ApplicationRole>().Entities
+                .Where(x => x.Id == roleUser.RoleId)
+                .Select(x => x.Name)
+                .FirstOrDefault() ?? "unknown";
+
+            var tokenResponse = _tokenService.GenerateTokens(user, roleName);
+
+            return new LoginResponse
             {
-                AccessToken = token,
-                RefreshToken = refreshToken,
-                TokenType = "JWT",
-                AuthType = "Bearer",
-                ExpiresIn = DateTime.Now.AddHours(1),
-                User = new UserInfo
-                {
-                    Email = user.Email,
-                    Roles = roles.ToList()
-                }
+                TokenResponse = tokenResponse,
+                Role = roleName
             };
         }
 
-        public async Task<AuthResponseModelView> LoginFacebook(TokenModelView model)
+        public async Task<LoginResponse> LoginFacebook(TokenModelView model)
         {
             var httpClient = new HttpClient();
             var response = await httpClient.GetAsync($"https://graph.facebook.com/me?fields=id,email&access_token={model.Token}");
@@ -665,10 +667,7 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không thể lấy thông tin người dùng từ Facebook.");
             }
 
-            string email = facebookData.Email;
-            string providerKey = facebookData.Id;
-
-            ApplicationUser? user = await _userManager.FindByEmailAsync(email);
+            ApplicationUser? user = await _userManager.FindByEmailAsync(facebookData.Email);
 
             if (user == null)
             {
@@ -680,21 +679,21 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
             }
 
-            (string token, IEnumerable<string> roles) = GenerateJwtToken(user);
-            string refreshToken = await GenerateRefreshToken(user);
+            ApplicationUserRole roleUser = _unitOfWork.GetRepository<ApplicationUserRole>().Entities
+                .FirstOrDefault(x => x.UserId == user.Id)
+                ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy tài khoản");
 
-            return new AuthResponseModelView
+            string roleName = _unitOfWork.GetRepository<ApplicationRole>().Entities
+                .Where(x => x.Id == roleUser.RoleId)
+                .Select(x => x.Name)
+                .FirstOrDefault() ?? "unknown";
+
+            var tokenResponse = _tokenService.GenerateTokens(user, roleName);
+
+            return new LoginResponse
             {
-                AccessToken = token,
-                RefreshToken = refreshToken,
-                TokenType = "JWT",
-                AuthType = "Bearer",
-                ExpiresIn = DateTime.Now.AddHours(1),
-                User = new UserInfo
-                {
-                    Email = user.Email,
-                    Roles = roles.ToList()
-                }
+                TokenResponse = tokenResponse,
+                Role = roleName
             };
         }
 

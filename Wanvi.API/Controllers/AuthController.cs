@@ -78,33 +78,45 @@ namespace WanviBE.API.Controllers
         [HttpPost("Login_Google")]
         public async Task<IActionResult> LoginGoogle(TokenModelView model)
         {
-            AuthResponseModelView? result = await _authService.LoginGoogle(model);
-            return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
+            LoginResponse? result = await _authService.LoginGoogle(model);
+            return Ok(new BaseResponseModel<LoginResponse>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: result
+            ));
         }
 
         [HttpPost("Check_Google")]
         public async Task<IActionResult> CheckGoogle(CheckGoogleModel model)
         {
-            AuthResponseModelView? result = await _authService.CheckGoogle(model);
-            return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
+            LoginResponse? result = await _authService.CheckGoogle(model);
+            return Ok(new BaseResponseModel<LoginResponse>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: result
+            ));
         }
 
         [HttpPost("Login_Facebook")]
         public async Task<IActionResult> LoginFacebook(TokenModelView model)
         {
-            AuthResponseModelView? result = await _authService.LoginFacebook(model);
-            return Ok(BaseResponse<AuthResponseModelView>.OkResponse(result));
+            LoginResponse? result = await _authService.LoginFacebook(model);
+            return Ok(new BaseResponseModel<LoginResponse>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: result
+            ));
         }
 
         [HttpPost("RefreshToken")]
         public async Task<IActionResult> RefreshToken(RefreshTokenModel model)
         {
-            AuthResponseModelView? res = await _authService.RefreshToken(model);
-            return Ok(new BaseResponseModel<AuthResponseModelView>(
-                 statusCode: StatusCodes.Status200OK,
-                 code: ResponseCodeConstants.SUCCESS,
-                 data: res
-             ));
+            LoginResponse? res = await _authService.RefreshToken(model);
+            return Ok(new BaseResponseModel<LoginResponse>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: res
+            ));
         }
 
         [HttpPost("Forgot_Password")]
