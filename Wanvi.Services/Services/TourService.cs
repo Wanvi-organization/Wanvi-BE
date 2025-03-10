@@ -10,6 +10,7 @@ using Wanvi.Core.Utils;
 using Wanvi.ModelViews.ScheduleModelViews;
 using Wanvi.ModelViews.TourModelViews;
 using Wanvi.Services.Services.Infrastructure;
+using DayOfWeek = Wanvi.Contract.Repositories.Entities.DayOfWeek;
 
 namespace Wanvi.Services.Services
 {
@@ -168,6 +169,35 @@ namespace Wanvi.Services.Services
             Guid.TryParse(strUserId, out Guid userId);
             model.TrimAllStrings();
 
+            var existingSchedules = await _unitOfWork.GetRepository<Schedule>()
+                .FindAllAsync(s => s.Tour.UserId == userId && !s.DeletedTime.HasValue);
+
+            var newTour = new Tour
+            {
+                Name = model.Name,
+                Description = model.Description,
+                HourlyRate = model.HourlyRate,
+                PickupAddressId = (await _addressService.GetOrCreateAddressAsync(model.PickupAddress.Latitude, model.PickupAddress.Longitude)).Id,
+                DropoffAddressId = (await _addressService.GetOrCreateAddressAsync(model.DropoffAddress.Latitude, model.DropoffAddress.Longitude)).Id,
+                UserId = userId,
+                TourAddresses = new List<TourAddress>(),
+                Schedules = new List<Schedule>(),
+                Medias = new List<Media>(),
+                TourActivities = new List<TourActivity>()
+            };
+
+            foreach (var addressModel in model.TourAddresses)
+            {
+                var address = await _addressService.GetOrCreateAddressAsync(addressModel.Latitude, addressModel.Longitude);
+                newTour.TourAddresses.Add(new TourAddress
+                {
+                    TourId = newTour.Id.ToString(),
+                    AddressId = address.Id
+                });
+            }
+
+            var daysInNewTour = new HashSet<int>();
+
             foreach (var schedule in model.Schedules)
             {
                 if (!TimeSpan.TryParse(schedule.StartTime, out TimeSpan startTime))
@@ -189,60 +219,30 @@ namespace Wanvi.Services.Services
                 {
                     throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian bắt đầu và kết thúc phải cách nhau ít nhất 30 phút.");
                 }
-            }
 
-            var tourActivityIdsList = model.TourActivityIds.ToList();
-
-            var existingActivityIds = await _unitOfWork.GetRepository<Activity>()
-                .GetQueryable()
-                .Where(a => tourActivityIdsList.Contains(a.Id))
-                .Select(a => a.Id)
-                .ToListAsync();
-
-            var invalidActivityIds = model.TourActivityIds.Except(existingActivityIds).ToList();
-
-            if (invalidActivityIds.Any())
-            {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, $"Các hoạt động sau không tồn tại: {string.Join(", ", invalidActivityIds)}");
-            }
-
-            var pickupAddress = await _addressService.GetOrCreateAddressAsync(model.PickupAddress.Latitude, model.PickupAddress.Longitude);
-            var dropoffAddress = await _addressService.GetOrCreateAddressAsync(model.DropoffAddress.Latitude, model.DropoffAddress.Longitude);
-
-            var newTour = new Tour
-            {
-                Name = model.Name,
-                Description = model.Description,
-                HourlyRate = model.HourlyRate,
-                PickupAddressId = pickupAddress.Id,
-                DropoffAddressId = dropoffAddress.Id,
-                UserId = userId,
-                TourAddresses = new List<TourAddress>(),
-                Schedules = new List<Schedule>(),
-                Medias = new List<Media>(),
-                TourActivities = new List<TourActivity>()
-            };
-
-            foreach (var addressModel in model.TourAddresses)
-            {
-                var address = await _addressService.GetOrCreateAddressAsync(addressModel.Latitude, addressModel.Longitude);
-                newTour.TourAddresses.Add(new TourAddress
+                if (!daysInNewTour.Add(schedule.Day))
                 {
-                    TourId = newTour.Id.ToString(),
-                    AddressId = address.Id
-                });
-            }
-
-            foreach (var schedule in model.Schedules)
-            {
-                if (!TimeSpan.TryParse(schedule.StartTime, out TimeSpan startTime))
-                {
-                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "StartTime không hợp lệ.");
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, $"Tour không thể có nhiều lịch trình vào cùng một ngày ({(DayOfWeek)schedule.Day}).");
                 }
 
-                if (!TimeSpan.TryParse(schedule.EndTime, out TimeSpan endTime))
+                // Kiểm tra trùng lịch trình của user
+                foreach (var existingSchedule in existingSchedules)
                 {
-                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "EndTime không hợp lệ.");
+                    if ((int)existingSchedule.Day == schedule.Day)
+                    {
+                        TimeSpan existingStart = existingSchedule.StartTime;
+                        TimeSpan existingEnd = existingSchedule.EndTime;
+
+                        // Kiểm tra trùng giờ hoặc không cách nhau ít nhất 1 tiếng
+                        if ((startTime >= existingStart && startTime < existingEnd) ||
+                            (endTime > existingStart && endTime <= existingEnd) ||
+                            (Math.Abs((startTime - existingEnd).TotalMinutes) < 60) ||
+                            (Math.Abs((endTime - existingStart).TotalMinutes) < 60))
+                        {
+                            throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT,
+                                $"Lịch trình vào {((DayOfWeek)schedule.Day)} {startTime:hh\\:mm} - {endTime:hh\\:mm} trùng với lịch trình đã tồn tại ({existingStart:hh\\:mm} - {existingEnd:hh\\:mm}).");
+                        }
+                    }
                 }
 
                 newTour.Schedules.Add(new Schedule
@@ -444,6 +444,18 @@ namespace Wanvi.Services.Services
             if (hasBookedSchedule)
             {
                 throw new ErrorException(StatusCodes.Status409Conflict, ResponseCodeConstants.FAILED, "Không thể xóa vì tour có lịch trình đã được đặt.");
+            }
+
+            var schedules = await _unitOfWork.GetRepository<Schedule>()
+                .FindAllAsync(s => s.TourId == id && !s.DeletedTime.HasValue);
+
+            foreach (var schedule in schedules)
+            {
+                schedule.LastUpdatedTime = CoreHelper.SystemTimeNow;
+                schedule.LastUpdatedBy = userId;
+                schedule.DeletedTime = CoreHelper.SystemTimeNow;
+                schedule.DeletedBy = userId;
+                await _unitOfWork.GetRepository<Schedule>().UpdateAsync(schedule);
             }
 
             tour.LastUpdatedTime = CoreHelper.SystemTimeNow;

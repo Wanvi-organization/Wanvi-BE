@@ -22,5 +22,6 @@ namespace Wanvi.ModelViews.ScheduleModelViews
         public int BookedTraveler { get; set; }
         public int RemainingTraveler {  get; set; }
         public double MinDeposit { get; set; }
+        public string TourId { get; set; }
     }
 }
