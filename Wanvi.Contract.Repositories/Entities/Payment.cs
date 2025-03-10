@@ -30,7 +30,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public string? BuyerPhone { get; set; }
         public string? BuyerAddress { get; set; }
         public string? Signature { get; set; }
-        public string BookingId { get; set; }
+        public string? BookingId { get; set; }
         public virtual Booking Booking { get; set; }
     }
 }
