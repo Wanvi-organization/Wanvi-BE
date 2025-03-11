@@ -26,8 +26,8 @@ namespace Wanvi.API.Controllers
             bool isAscending = false,
             string? status = null)
         {
-            List<GetBookingUsermodel> res = await _bookingService.GetBookingUser(searchNote, sortBy, isAscending, status);
-            return Ok(new BaseResponseModel<List<GetBookingUsermodel>>(
+            List<GetBookingUserModel> res = await _bookingService.GetBookingUser(searchNote, sortBy, isAscending, status);
+            return Ok(new BaseResponseModel<List<GetBookingUserModel>>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,
                  data: res
@@ -43,8 +43,8 @@ namespace Wanvi.API.Controllers
             bool isAscending = false,
             string? status = null)
         {
-            List<GetBookingUsermodel> res = await _bookingService.GetBookingAdmin(searchNote, sortBy, isAscending, status);
-            return Ok(new BaseResponseModel<List<GetBookingUsermodel>>(
+            List<GetBookingUserModel> res = await _bookingService.GetBookingAdmin(searchNote, sortBy, isAscending, status);
+            return Ok(new BaseResponseModel<List<GetBookingUserModel>>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,
                  data: res
@@ -52,7 +52,7 @@ namespace Wanvi.API.Controllers
         }
 
         /// <summary>
-        /// lấy danh sách booking của tour guide
+        /// lấy danh sách booking của tour guide màn 1
         /// </summary>
         [HttpGet("get_booking_tour_guide")]
         public async Task<IActionResult> GetBookingTourGuide(string? rentalDate = null,
@@ -63,8 +63,39 @@ namespace Wanvi.API.Controllers
             string? sortBy = "RentalDate",
             bool ascending = false)
         {
-            List<GetBookingGuideModel> res = await _bookingService.GetBookingsByTourGuide(rentalDate, status, scheduleId, minTravelers, maxTravelers, sortBy, ascending);
-            return Ok(new BaseResponseModel<List<GetBookingGuideModel>>(
+            List<GetBookingUserDetailModel> res = await _bookingService.GetBookingsByTourGuide(rentalDate, status, scheduleId, minTravelers, maxTravelers, sortBy, ascending);
+            return Ok(new BaseResponseModel<List<GetBookingUserDetailModel>>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        /// <summary>
+        /// lấy danh sách booking của tour guide màn 2
+        /// </summary>
+        [HttpGet("Get_Booking_Details_By_Schedule")]
+        public async Task<IActionResult> GetBookingDetailsBySchedule(string scheduleId,
+            string? status = null,
+            int? minPrice = null,
+            int? maxPrice = null,
+            string sortBy = "CustomerName",
+            bool ascending = true)
+        {
+            var res = await _bookingService.GetBookingSummaryBySchedule(scheduleId, status, minPrice, maxPrice, sortBy, ascending);
+            return Ok(new BaseResponseModel<GetBookingGuideModel>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        /// <summary>
+        /// lấy danh sách booking của tour guide màn 3
+        /// </summary>
+        [HttpGet("Get_Booking_Details_By_Id")]
+        public async Task<IActionResult> GetBookingDetailsById(string bookingId)
+        {
+            var res = await _bookingService.GetBookingDetailsById(bookingId);
+            return Ok(new BaseResponseModel<GetBookingGuideScreen3Model>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,
                  data: res

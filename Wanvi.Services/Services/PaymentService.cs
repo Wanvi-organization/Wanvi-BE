@@ -477,6 +477,7 @@ namespace Wanvi.Services.Services
             var payment = await _unitOfWork.GetRepository<Payment>().Entities
                 .FirstOrDefaultAsync(x => x.OrderCode == request.data.orderCode && !x.DeletedTime.HasValue);
 
+            
             if (payment == null)
             {
                 Console.WriteLine($"Không tìm thấy thanh toán với orderCode: {request.data.orderCode}. Bỏ qua xử lý.");
