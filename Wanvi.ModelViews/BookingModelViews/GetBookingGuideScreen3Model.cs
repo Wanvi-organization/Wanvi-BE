@@ -13,8 +13,12 @@ namespace Wanvi.ModelViews.BookingModelViews
         public string RentalDate { get; set; }
         public int TotalCustomer {  get; set; }
         public string CustomerName { get; set; }
-        public string Address { get; set; }
+        public string DropoffAddress { get; set; }
+        public string PickupAddress { get; set; }
         public string Status { get; set; }
+        public string Gender { get; set; }
+        public string Phone { get; set; }
+        public string Email { get; set; }
         public string Note { get; set; }
     }
 }

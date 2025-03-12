@@ -196,7 +196,7 @@ namespace Wanvi.Services.Services
                 .Entities
                 .Where(b => b.Schedule.Tour.UserId == guideId
                             && !excludedStatuses.Contains(b.Status))
-                .OrderBy(x=>x.RentalDate)
+                .OrderBy(x => x.RentalDate)
                 .Include(b => b.Schedule)
                 .ThenInclude(s => s.Tour)
                 .ToListAsync();
@@ -356,6 +356,9 @@ namespace Wanvi.Services.Services
                 .ThenInclude(s => s.Tour) // Lấy thông tin tour
                 .FirstOrDefaultAsync()
                 ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy đơn hàng.");
+            var pickupAddress = await _unitOfWork.GetRepository<Address>().Entities.FirstOrDefaultAsync(x=>x.Id == booking.Schedule.Tour.PickupAddressId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy đại chỉ đón.");
+
+            var dropoffAddress = await _unitOfWork.GetRepository<Address>().Entities.FirstOrDefaultAsync(x => x.Id == booking.Schedule.Tour.DropoffAddressId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy đại chỉ trả.");
 
             // **💡 Tạo `GetBookingGuideScreen3Model`**
             return new GetBookingGuideScreen3Model
@@ -365,10 +368,13 @@ namespace Wanvi.Services.Services
                 RentalDate = booking.RentalDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN")),
                 TotalCustomer = booking.TotalTravelers,
                 CustomerName = booking.User?.FullName ?? "Không có dữ liệu",
-                Address = booking.User?.Address ?? "Không có địa chỉ",
-                Status = ConvertStatusToString( booking.Status),
+                DropoffAddress = pickupAddress.Street,
+                PickupAddress = dropoffAddress.Street,
+                Status = ConvertStatusToString(booking.Status),
                 Note = booking.Note ?? "Không có ghi chú",
-                
+                Email = booking.User.Email,
+                Phone = booking.User.PhoneNumber,
+                Gender = booking.User.Gender ? "Nam" : "Nữ",
             };
         }
 
