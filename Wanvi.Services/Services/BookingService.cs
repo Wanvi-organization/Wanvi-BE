@@ -177,9 +177,7 @@ namespace Wanvi.Services.Services
     string? status = null,
     string? scheduleId = null,
     int? minTravelers = null,
-    int? maxTravelers = null,
-    string? sortBy = "RentalDate",
-    bool ascending = false)
+    int? maxTravelers = null)
         {
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
             if (!Guid.TryParse(userId, out Guid guideId))
@@ -193,45 +191,43 @@ namespace Wanvi.Services.Services
         BookingStatus.DepositAll, BookingStatus.DepositHaft
     };
 
-            // **💡 Lấy danh sách Schedule của hướng dẫn viên**
-            var schedules = await _unitOfWork.GetRepository<Schedule>()
+            // **💡 Lấy danh sách Booking của hướng dẫn viên theo Tour.UserId**
+            var bookings = await _unitOfWork.GetRepository<Booking>()
                 .Entities
-                .Where(s => s.Tour.UserId == guideId)  // Lọc theo hướng dẫn viên
-                .Include(s => s.Tour)
-                .Include(s => s.Bookings)
+                .Where(b => b.Schedule.Tour.UserId == guideId
+                            && !excludedStatuses.Contains(b.Status))
+                .OrderBy(x=>x.RentalDate)
+                .Include(b => b.Schedule)
+                .ThenInclude(s => s.Tour)
                 .ToListAsync();
 
-            // **💡 Lọc Schedule có Booking hợp lệ**
-            var validSchedules = schedules
-                .Select(schedule => new
+            if (!bookings.Any())
+            {
+                return new List<GetBookingUserDetailModel>(); // Không có dữ liệu, trả về danh sách rỗng
+            }
+
+            // **💡 Gom nhóm theo `ScheduleId` + `RentalDate` để loại bỏ trùng ngày**
+            var groupedBookings = bookings
+                .GroupBy(b => new { b.ScheduleId, b.RentalDate }) // Nhóm theo ScheduleId + Ngày đặt
+                .Select(g => new GetBookingUserDetailModel
                 {
-                    Schedule = schedule,
-                    ValidBookings = schedule.Bookings
-                        .Where(b => !excludedStatuses.Contains(b.Status)) // Lấy các booking có trạng thái hợp lệ
-                        .ToList()
+                    ScheduleId = g.Key.ScheduleId.ToString(),
+                    RentalDate = g.Key.RentalDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN")),
+                    TotalTravelers = g.Sum(b => b.TotalTravelers), // **Cộng tổng số khách**
+                    TotalTravelersOfTour = g.First().Schedule.MaxTraveler, // **Số khách tối đa của tour**
+                    StartTime = g.First().Schedule.StartTime.ToString(@"hh\:mm"),
+                    EndTime = g.First().Schedule.EndTime.ToString(@"hh\:mm"),
+                    TourName = g.First().Schedule.Tour?.Name ?? "Không có dữ liệu"
                 })
-                .Where(s => s.ValidBookings.Any()) // Chỉ giữ lại Schedule có Booking hợp lệ
+                //.OrderBy(g => Math.Abs((DateTime.ParseExact(g.RentalDate.Split(", ")[1], "dd/MM/yyyy", new CultureInfo("vi-VN")) - DateTime.Now).TotalDays)) // **Sắp xếp ngày gần nhất lên đầu**
                 .ToList();
 
-            // **💡 Chuyển đổi thành danh sách hiển thị**
-            var result = validSchedules.Select(s => new GetBookingUserDetailModel
-            {
-                ScheduleId = s.Schedule.Id.ToString(),
-                RentalDate = s.ValidBookings.First().RentalDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN")),
-                TotalTravelers = s.ValidBookings.Sum(b => b.TotalTravelers), // **Cộng tổng số khách**
-                TotalTravelersOfTour = s.Schedule.MaxTraveler, // **Số khách tối đa**
-                StartTime = s.Schedule.StartTime.ToString(@"hh\:mm"),
-                EndTime = s.Schedule.EndTime.ToString(@"hh\:mm"),
-                TourName = s.Schedule.Tour?.Name ?? "Không có dữ liệu"
-            })
-            .ToList();
-
-            // **💡 BƯỚC 1: Lọc dữ liệu**
+            // **💡 BƯỚC 1: Lọc theo điều kiện nếu có**
             if (!string.IsNullOrEmpty(rentalDate))
             {
                 if (DateTime.TryParseExact(rentalDate, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
                 {
-                    result = result
+                    groupedBookings = groupedBookings
                         .Where(s => s.RentalDate.Contains(parsedDate.ToString("dd/MM/yyyy")))
                         .ToList();
                 }
@@ -239,37 +235,25 @@ namespace Wanvi.Services.Services
 
             if (minTravelers.HasValue)
             {
-                result = result
+                groupedBookings = groupedBookings
                     .Where(s => s.TotalTravelers >= minTravelers.Value)
                     .ToList();
             }
 
             if (maxTravelers.HasValue)
             {
-                result = result
+                groupedBookings = groupedBookings
                     .Where(s => s.TotalTravelers <= maxTravelers.Value)
                     .ToList();
             }
 
-            // **💡 BƯỚC 2: Sắp xếp**
-            result = sortBy switch
-            {
-                "RentalDate" => ascending
-                    ? result.OrderBy(s => DateTime.ParseExact(s.RentalDate.Split(", ")[1], "dd/MM/yyyy", new CultureInfo("vi-VN"))).ToList()
-                    : result.OrderByDescending(s => DateTime.ParseExact(s.RentalDate.Split(", ")[1], "dd/MM/yyyy", new CultureInfo("vi-VN"))).ToList(),
-
-                "TotalTravelers" => ascending
-                    ? result.OrderBy(s => s.TotalTravelers).ToList()
-                    : result.OrderByDescending(s => s.TotalTravelers).ToList(),
-
-                _ => result
-            };
-
-            return result;
+            return groupedBookings;
         }
+
 
         public async Task<GetBookingGuideModel> GetBookingSummaryBySchedule(
     string scheduleId,
+    string rentalDate,
     string? status = null,
     int? minPrice = null,
     int? maxPrice = null,
@@ -294,7 +278,7 @@ namespace Wanvi.Services.Services
 
             // **💡 Lọc Booking hợp lệ**
             var validBookings = schedule.Bookings
-                .Where(b => !excludedStatuses.Contains(b.Status))
+                .Where(b => !excludedStatuses.Contains(b.Status) && b.RentalDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN")) == rentalDate)
                 .ToList();
 
             if (!validBookings.Any())
@@ -353,7 +337,7 @@ namespace Wanvi.Services.Services
             return new GetBookingGuideModel
             {
                 TourName = schedule.Tour?.Name ?? "Không có dữ liệu",
-                RentalDate = validBookings.First().RentalDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN")),
+                RentalDate = rentalDate,
                 TotalBooking = validBookings.Count, // **Tổng số đơn**
                 TotailPrice = validBookings.Sum(b => (long)b.TotalPrice), // **Tổng doanh thu**
                 Bookings = bookings // **Danh sách Booking đã lọc & sắp xếp**

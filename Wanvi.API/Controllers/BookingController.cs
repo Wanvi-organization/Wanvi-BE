@@ -55,15 +55,14 @@ namespace Wanvi.API.Controllers
         /// lấy danh sách booking của tour guide màn 1
         /// </summary>
         [HttpGet("get_booking_tour_guide")]
-        public async Task<IActionResult> GetBookingTourGuide(string? rentalDate = null,
+        public async Task<IActionResult> GetBookingTourGuide(
+            string? rentalDate = null,
             string? status = null,
             string? scheduleId = null,
             int? minTravelers = null,
-            int? maxTravelers = null,
-            string? sortBy = "RentalDate",
-            bool ascending = false)
+            int? maxTravelers = null)
         {
-            List<GetBookingUserDetailModel> res = await _bookingService.GetBookingsByTourGuide(rentalDate, status, scheduleId, minTravelers, maxTravelers, sortBy, ascending);
+            List<GetBookingUserDetailModel> res = await _bookingService.GetBookingsByTourGuide(rentalDate, status, scheduleId, minTravelers, maxTravelers);
             return Ok(new BaseResponseModel<List<GetBookingUserDetailModel>>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,
@@ -74,14 +73,14 @@ namespace Wanvi.API.Controllers
         /// lấy danh sách booking của tour guide màn 2
         /// </summary>
         [HttpGet("Get_Booking_Details_By_Schedule")]
-        public async Task<IActionResult> GetBookingDetailsBySchedule(string scheduleId,
+        public async Task<IActionResult> GetBookingDetailsBySchedule(string scheduleId, string rentalDate,
             string? status = null,
             int? minPrice = null,
             int? maxPrice = null,
             string sortBy = "CustomerName",
             bool ascending = true)
         {
-            var res = await _bookingService.GetBookingSummaryBySchedule(scheduleId, status, minPrice, maxPrice, sortBy, ascending);
+            var res = await _bookingService.GetBookingSummaryBySchedule(scheduleId, rentalDate, status, minPrice, maxPrice, sortBy, ascending);
             return Ok(new BaseResponseModel<GetBookingGuideModel>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,

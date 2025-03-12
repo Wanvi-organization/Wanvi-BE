@@ -16,9 +16,7 @@ namespace Wanvi.Contract.Services.Interfaces
             string? status = null,
             string? scheduleId = null,
             int? minTravelers = null,
-            int? maxTravelers = null,
-            string? sortBy = "RentalDate",
-            bool ascending = false);
+            int? maxTravelers = null);
         Task<List<GetBookingUserModel>> GetBookingAdmin(
             string? searchNote = null,
             string? sortBy = null,
@@ -26,6 +24,7 @@ namespace Wanvi.Contract.Services.Interfaces
             string? status = null);
         Task<GetBookingGuideModel> GetBookingSummaryBySchedule(
     string scheduleId,
+    string rentalDate,
     string? status = null,
     int? minPrice = null,
     int? maxPrice = null,
