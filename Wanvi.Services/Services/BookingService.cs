@@ -250,7 +250,6 @@ namespace Wanvi.Services.Services
             return groupedBookings;
         }
 
-
         public async Task<GetBookingGuideModel> GetBookingSummaryBySchedule(
     string scheduleId,
     string rentalDate,
@@ -426,7 +425,7 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, $"Số người đăng kí lớn hơn số người mặc định({schedule.MaxTraveler} người)!");
             }
             // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 8 ngày
-            if (model.RentalDate.ToUniversalTime().Date < DateTime.Now.AddDays(8).Date)
+            if (model.RentalDate.Date < DateTime.Now.AddDays(8).Date)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đặt tour trước 8 ngày!");
             }

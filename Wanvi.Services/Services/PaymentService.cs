@@ -66,7 +66,14 @@ namespace Wanvi.Services.Services
                 await _unitOfWork.SaveAsync();
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tour hiện tại không còn đủ chỗ để đặt!");
             }
-
+            if (booking.RentalDate.Date < DateTime.Now.AddDays(8).Date)
+            {
+                //Cập nhật lại khi ko hợp ngày
+                booking.Status |= BookingStatus.Cancelled;
+                await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+                await _unitOfWork.SaveAsync();
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đặt tour trước 8 ngày!");
+            }
             //Điều kiện số người hợp lệ
             // Lấy danh sách booking hợp lệ (cùng Schedule, cùng ngày, trạng thái hợp lệ)
             var existingBookings = await _unitOfWork.GetRepository<Booking>().Entities
@@ -210,6 +217,15 @@ namespace Wanvi.Services.Services
                 booking.Status = BookingStatus.Cancelled;
                 await _unitOfWork.SaveAsync();
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tour hiện tại không còn đủ chỗ để đặt!");
+            }
+
+            if (booking.RentalDate.Date < DateTime.Now.AddDays(8).Date)
+            {
+                //Cập nhật lại khi ko hợp ngày
+                booking.Status |= BookingStatus.Cancelled;
+                await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+                await _unitOfWork.SaveAsync();
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đặt tour trước 8 ngày!");
             }
 
             //Điều kiện số người hợp lệ
@@ -426,7 +442,6 @@ namespace Wanvi.Services.Services
                 return signature;
             }
         }
-
         private async Task<string> CallPayOSApi(PayOSPaymentRequest payOSRequest)
         {
             _httpClient.DefaultRequestHeaders.Clear();
@@ -464,7 +479,6 @@ namespace Wanvi.Services.Services
                 }
             }
         }
-
         public async Task PayOSCallback(PayOSWebhookRequest request)
         {
             if (request?.data == null)
