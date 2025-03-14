@@ -10,8 +10,18 @@ namespace Wanvi.Services.MapperProfile
         {
             CreateMap<Media, ResponseMediaModel>()
                 .ForMember(dest => dest.Url, opt => opt.MapFrom(src => src.Url))
-                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => (ResponseMediaModel.MediaType)src.Type))
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => ConvertMediaTypeToVietnameseString((MediaType)src.Type)))
                 .ForMember(dest => dest.AltText, opt => opt.MapFrom(src => src.AltText));
+        }
+
+        private string ConvertMediaTypeToVietnameseString(MediaType type)
+        {
+            return type switch
+            {
+                MediaType.Image => "Hình ảnh",
+                MediaType.Video => "Video",
+                _ => "Không xác định"
+            };
         }
     }
 }

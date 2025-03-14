@@ -1,6 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Wanvi.ModelViews.AddressModelViews;
-using Wanvi.ModelViews.MediaModelViews;
 using Wanvi.ModelViews.ScheduleModelViews;
 
 namespace Wanvi.ModelViews.TourModelViews
@@ -17,14 +15,14 @@ namespace Wanvi.ModelViews.TourModelViews
         public double HourlyRate { get; set; }
 
         [Required(ErrorMessage = "Địa chỉ đón khách không được để trống.")]
-        public CreateAddressModel PickupAddress { get; set; }
+        public string PickupAddressId { get; set; }
 
         [Required(ErrorMessage = "Địa chỉ trả khách không được để trống.")]
-        public CreateAddressModel DropoffAddress { get; set; }
+        public string DropoffAddressId { get; set; }
 
         [Required(ErrorMessage = "Danh sách địa điểm tour không được để trống.")]
         [MinLength(1, ErrorMessage = "Danh sách địa điểm tour cần ít nhất một địa điểm.")]
-        public List<CreateAddressModel> TourAddresses { get; set; } = new();
+        public List<string> TourAddressIds { get; set; } = new();
 
         [Required(ErrorMessage = "Lịch trình không được để trống.")]
         [MinLength(1, ErrorMessage = "Lịch trình cần ít nhất một ngày.")]
@@ -32,10 +30,11 @@ namespace Wanvi.ModelViews.TourModelViews
 
         [Required(ErrorMessage = "Tour cần ít nhất một ảnh/video.")]
         [MinLength(1, ErrorMessage = "Tour cần ít nhất một ảnh/video.")]
-        public List<CreateMediaModel> Medias { get; set; } = new();
+        public List<string> MediaIds { get; set; } = new();
 
         [Required(ErrorMessage = "Hoạt động của tour không được để trống.")]
         [MinLength(1, ErrorMessage = "Tour phải có ít nhất một hoạt động.")]
         public List<string> TourActivityIds { get; set; } = new();
+        public string? Note { get; set; }
     }
 }

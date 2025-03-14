@@ -8,6 +8,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public string Street { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
+        public string RefId { get; set; }
 
         public string DistrictId { get; set; }
         public virtual District District { get; set; }

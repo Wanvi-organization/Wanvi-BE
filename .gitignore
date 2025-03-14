@@ -362,3 +362,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /Wanvi.Repositories/Migrations/20250201163122_citydata.cs
+/Wanvi.API/wwwroot/uploads
