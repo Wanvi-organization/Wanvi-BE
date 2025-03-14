@@ -503,7 +503,7 @@ namespace Wanvi.Services.Services
 
             // Call PaymentService to generate payment link
             //string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(payOSRequest);
-            return "Tạo đơn hàng thành công";
+            return booking.Id;
         }
         public async Task<string> CreateBookingHaft(CreateBookingModel model)
         {
@@ -627,7 +627,7 @@ namespace Wanvi.Services.Services
 
             // Call PaymentService to generate payment link
             //string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(payOSRequest);
-            return "Tạo đơn hàng thành công";
+            return booking.Id;
         }
 
         public async Task<string> ChangeBookingToUser(ChangeBookingToUserModel model)
