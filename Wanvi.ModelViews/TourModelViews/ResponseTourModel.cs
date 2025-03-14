@@ -13,6 +13,7 @@ namespace Wanvi.ModelViews.TourModelViews
         public string DropoffAddress { get; set; }
         public string LocalGuideId { get; set; }
         public string LocalGuideName { get; set; }
+        public string Note {  get; set; }
         public List<string> TourAddresses { get; set; }
         public List<ResponseScheduleModel> Schedules { get; set; }
         public List<ResponseMediaModel> Medias { get; set; }
