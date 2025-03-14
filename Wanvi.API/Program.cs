@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Wanvi.API.Middleware;
+using Wanvi.Services.Configurations;
 using WanviBE.API;
 using WanviBE.API.Middleware;
 
@@ -12,6 +13,8 @@ builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
+
+builder.Services.Configure<UploadSettings>(builder.Configuration.GetSection("UploadSettings"));
 
 // C?u hình JSON Serializer
 builder.Services.AddControllers()
@@ -40,6 +43,8 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+app.UseStaticFiles();
 
 app.UseAuthentication();  // ? Xác th?c ng??i dùng tr??c
 app.UseAuthorization();   // ? Ki?m tra quy?n truy c?p API tr??c

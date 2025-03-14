@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
@@ -9,6 +10,7 @@ using Wanvi.Core.Constants;
 using Wanvi.Core.Utils;
 using Wanvi.ModelViews.ScheduleModelViews;
 using Wanvi.ModelViews.TourModelViews;
+using Wanvi.Services.Configurations;
 using Wanvi.Services.Services.Infrastructure;
 using DayOfWeek = Wanvi.Contract.Repositories.Entities.DayOfWeek;
 
@@ -20,13 +22,15 @@ namespace Wanvi.Services.Services
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly IAddressService _addressService;
+        private readonly UploadSettings _uploadSettings;
 
-        public TourService(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAddressService addressService)
+        public TourService(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAddressService addressService, IOptions<UploadSettings> uploadSettings)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _contextAccessor = httpContextAccessor;
             _addressService = addressService;
+            _uploadSettings = uploadSettings.Value;
         }
 
         public async Task<IEnumerable<ResponseTourModel>> GetAllAsync()
@@ -169,119 +173,108 @@ namespace Wanvi.Services.Services
             Guid.TryParse(strUserId, out Guid userId);
             model.TrimAllStrings();
 
-            var existingSchedules = await _unitOfWork.GetRepository<Schedule>()
-                .FindAllAsync(s => s.Tour.UserId == userId && !s.DeletedTime.HasValue);
+            var mediaRepo = _unitOfWork.GetRepository<Media>();
+            List<Media> medias = new();
 
-            var newTour = new Tour
+            try
             {
-                Name = model.Name,
-                Description = model.Description,
-                HourlyRate = model.HourlyRate,
-                PickupAddressId = (await _addressService.GetOrCreateAddressAsync(model.PickupAddress.Latitude, model.PickupAddress.Longitude)).Id,
-                DropoffAddressId = (await _addressService.GetOrCreateAddressAsync(model.DropoffAddress.Latitude, model.DropoffAddress.Longitude)).Id,
-                UserId = userId,
-                TourAddresses = new List<TourAddress>(),
-                Schedules = new List<Schedule>(),
-                Medias = new List<Media>(),
-                TourActivities = new List<TourActivity>()
-            };
+                var existingSchedules = await _unitOfWork.GetRepository<Schedule>()
+                    .FindAllAsync(s => s.Tour.UserId == userId && !s.DeletedTime.HasValue);
 
-            foreach (var addressModel in model.TourAddresses)
-            {
-                var address = await _addressService.GetOrCreateAddressAsync(addressModel.Latitude, addressModel.Longitude);
-                newTour.TourAddresses.Add(new TourAddress
+                var newTour = new Tour
                 {
-                    TourId = newTour.Id.ToString(),
-                    AddressId = address.Id
-                });
-            }
+                    Id = Guid.NewGuid().ToString(),
+                    Name = model.Name,
+                    Description = model.Description,
+                    HourlyRate = model.HourlyRate,
+                    PickupAddressId = model.PickupAddressId,
+                    DropoffAddressId = model.DropoffAddressId,
+                    Note = model.Note,
+                    UserId = userId,
+                    TourAddresses = new List<TourAddress>(),
+                    Schedules = new List<Schedule>(),
+                    Medias = new List<Media>(),
+                    TourActivities = new List<TourActivity>()
+                };
 
-            var daysInNewTour = new HashSet<int>();
-
-            foreach (var schedule in model.Schedules)
-            {
-                if (!TimeSpan.TryParse(schedule.StartTime, out TimeSpan startTime))
+                newTour.TourAddresses = model.TourAddressIds.Select(id => new TourAddress
                 {
-                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian bắt đầu không hợp lệ.");
-                }
+                    TourId = newTour.Id,
+                    AddressId = id
+                }).ToList();
 
-                if (!TimeSpan.TryParse(schedule.EndTime, out TimeSpan endTime))
-                {
-                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian kết thúc không hợp lệ.");
-                }
+                var daysInNewTour = new HashSet<int>();
 
-                if (startTime >= endTime)
+                foreach (var schedule in model.Schedules)
                 {
-                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.");
-                }
-
-                if ((endTime - startTime).TotalMinutes < 30)
-                {
-                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian bắt đầu và kết thúc phải cách nhau ít nhất 30 phút.");
-                }
-
-                if (!daysInNewTour.Add(schedule.Day))
-                {
-                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, $"Tour không thể có nhiều lịch trình vào cùng một ngày ({(DayOfWeek)schedule.Day}).");
-                }
-
-                // Kiểm tra trùng lịch trình của user
-                foreach (var existingSchedule in existingSchedules)
-                {
-                    if ((int)existingSchedule.Day == schedule.Day)
+                    if (!TimeSpan.TryParse(schedule.StartTime, out TimeSpan startTime) ||
+                        !TimeSpan.TryParse(schedule.EndTime, out TimeSpan endTime) ||
+                        startTime >= endTime ||
+                        (endTime - startTime).TotalMinutes < 30)
                     {
-                        TimeSpan existingStart = existingSchedule.StartTime;
-                        TimeSpan existingEnd = existingSchedule.EndTime;
-
-                        // Kiểm tra trùng giờ hoặc không cách nhau ít nhất 1 tiếng
-                        if ((startTime >= existingStart && startTime < existingEnd) ||
-                            (endTime > existingStart && endTime <= existingEnd) ||
-                            (Math.Abs((startTime - existingEnd).TotalMinutes) < 60) ||
-                            (Math.Abs((endTime - existingStart).TotalMinutes) < 60))
-                        {
-                            throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT,
-                                $"Lịch trình vào {((DayOfWeek)schedule.Day)} {startTime:hh\\:mm} - {endTime:hh\\:mm} trùng với lịch trình đã tồn tại ({existingStart:hh\\:mm} - {existingEnd:hh\\:mm}).");
-                        }
+                        throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Lịch trình không hợp lệ.");
                     }
+
+                    if (!daysInNewTour.Add(schedule.Day))
+                    {
+                        throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, $"Tour không thể có nhiều lịch trình vào cùng một ngày ({(DayOfWeek)schedule.Day}).");
+                    }
+
+                    newTour.Schedules.Add(new Schedule
+                    {
+                        Day = (DayOfWeek)schedule.Day,
+                        StartTime = startTime,
+                        EndTime = endTime,
+                        MaxTraveler = schedule.MaxTraveler,
+                        BookedTraveler = 0,
+                        MinDeposit = (endTime - startTime).TotalHours * model.HourlyRate * 0.2,
+                        TourId = newTour.Id
+                    });
                 }
 
-                newTour.Schedules.Add(new Schedule
+                if (model.MediaIds.Count > 10)
                 {
-                    Day = (Contract.Repositories.Entities.DayOfWeek)schedule.Day,
-                    StartTime = startTime,
-                    EndTime = endTime,
-                    MaxTraveler = schedule.MaxTraveler,
-                    BookedTraveler = 0,
-                    MinDeposit = (endTime - startTime).TotalHours * model.HourlyRate * 0.2,
-                    TourId = newTour.Id.ToString()
-                });
-            }
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Không thể tải lên quá 10 ảnh.");
+                }
 
-            foreach (var media in model.Medias)
+                medias = await mediaRepo.FindAllAsync(m => model.MediaIds.Contains(m.Id));
+
+                foreach (var media in medias)
+                {
+                    media.TourId = newTour.Id;
+                    newTour.Medias.Add(media);
+                }
+
+                newTour.TourActivities = model.TourActivityIds.Select(id => new TourActivity
+                {
+                    TourId = newTour.Id,
+                    ActivityId = id
+                }).ToList();
+
+                newTour.CreatedBy = userId.ToString();
+                newTour.LastUpdatedBy = userId.ToString();
+
+                await _unitOfWork.GetRepository<Tour>().InsertAsync(newTour);
+                await _unitOfWork.SaveAsync();
+            }
+            catch (Exception ex)
             {
-                newTour.Medias.Add(new Media
+                var unusedMedias = await mediaRepo.FindAllAsync(m => m.TourId == null);
+
+                foreach (var media in unusedMedias)
                 {
-                    Url = media.Url,
-                    Type = (Contract.Repositories.Entities.MediaType)media.Type,
-                    AltText = media.AltText,
-                    TourId = newTour.Id.ToString()
-                });
+                    string filePath = Path.Combine(Directory.GetCurrentDirectory(), _uploadSettings.UploadPath, Path.GetFileName(media.Url));
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                    }
+                    await mediaRepo.DeleteAsync(media.Id);
+                }
+
+                await _unitOfWork.SaveAsync();
+                throw new ErrorException(StatusCodes.Status500InternalServerError, ResponseCodeConstants.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi khi tạo tour.");
             }
 
-            foreach (var activityId in model.TourActivityIds)
-            {
-                newTour.TourActivities.Add(new TourActivity
-                {
-                    TourId = newTour.Id.ToString(),
-                    ActivityId = activityId
-                });
-            }
-
-            newTour.CreatedBy = userId.ToString();
-            newTour.LastUpdatedBy = userId.ToString();
-
-            await _unitOfWork.GetRepository<Tour>().InsertAsync(newTour);
-            await _unitOfWork.SaveAsync();
         }
 
         public async Task UpdateAsync(string id, UpdateTourModel model)
