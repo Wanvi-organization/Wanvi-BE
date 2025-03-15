@@ -83,13 +83,11 @@ namespace WanviBE.API
         {
             services.AddCors(options =>
             {
-                options.AddPolicy("CorsPolicy",
-                    builder =>
-                    {
-                        builder.WithOrigins("*")
-                               .AllowAnyHeader()
-                               .AllowAnyMethod();
-                    });
+                options.AddPolicy("AllowAllOrigins",
+            builder => builder
+                .AllowAnyOrigin()  // Cho phép tất cả nguồn
+                .AllowAnyMethod()  // Cho phép tất cả phương thức (GET, POST, PUT, DELETE,...)
+                .AllowAnyHeader()); // Cho phép tất cả headers
             });
         }
         public static void ConfigCorsSignalR(this IServiceCollection services)
