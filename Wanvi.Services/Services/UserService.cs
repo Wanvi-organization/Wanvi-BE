@@ -331,6 +331,71 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
         }
 
+        public async Task<IEnumerable<AdminResponseUserModel>> GetAllAsync(Guid? roleId = null, string? cityId = null)
+        {
+            var userRepo = _unitOfWork.GetRepository<ApplicationUser>();
+            var cityRepo = _unitOfWork.GetRepository<City>();
+
+            string? cityName = null;
+            if (!string.IsNullOrEmpty(cityId))
+            {
+                cityName = await cityRepo.Entities
+                    .Where(c => c.Id.ToString() == cityId)
+                    .Select(c => c.Name)
+                    .FirstOrDefaultAsync();
+            }
+
+            var query = userRepo.Entities.AsQueryable();
+
+            if (roleId.HasValue)
+            {
+                query = query.Where(u => u.UserRoles.Any(ur => ur.RoleId == roleId));
+            }
+
+            if (!string.IsNullOrEmpty(cityName))
+            {
+                query = query.Where(u => u.Address.Contains(cityName));
+            }
+
+            var users = await query
+                .Select(u => new AdminResponseUserModel
+                {
+                    Id = u.Id,
+                    FullName = u.FullName,
+                    Gender = u.Gender,
+                    DateOfBirth = u.DateOfBirth,
+                    ProfileImageUrl = u.ProfileImageUrl,
+                    BankAccount = u.BankAccount,
+                    BankAccountName = u.BankAccountName,
+                    Bank = u.Bank,
+                    Balance = u.Balance,
+                    Deposit = u.Deposit,
+                    Point = u.Point,
+                    Address = u.Address,
+                    Latitude = u.Latitude,
+                    Longitude = u.Longitude,
+                    AvgRating = u.AvgRating,
+                    MinHourlyRate = u.MinHourlyRate,
+                    IsPremium = u.IsPremium,
+                    IsVerified = u.IsVerified,
+                    IdentificationNumber = u.IdentificationNumber,
+                    Bio = u.Bio,
+                    Language = u.Language,
+                    PersonalVehicle = u.PersonalVehicle,
+                    EmailCode = u.EmailCode,
+                    CodeGeneratedTime = u.CodeGeneratedTime,
+                    CreatedBy = u.CreatedBy,
+                    Violate = u.Violate,
+                    LastUpdatedBy = u.LastUpdatedBy,
+                    DeletedBy = u.DeletedBy,
+                    CreatedTime = u.CreatedTime,
+                    LastUpdatedTime = u.LastUpdatedTime,
+                    DeletedTime = u.DeletedTime
+                })
+                .ToListAsync();
+
+            return users;
+        }
         #endregion
 
         public async Task<string> UnlockBookingOfTourGuide(UnlockBookingOfTourGuideModel model)

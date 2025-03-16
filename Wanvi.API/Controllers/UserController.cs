@@ -19,6 +19,23 @@ namespace WanviBE.API.Controllers
         }
 
         /// <summary>
+        /// Lấy danh sách tất cả người dùng trong hệ thống, có thể lọc theo vai trò và thành phố.
+        /// </summary>
+        /// <param name="roleId">ID của vai trò để lọc danh sách người dùng (tùy chọn).</param>
+        /// <param name="cityId">ID của thành phố để lọc danh sách người dùng (tùy chọn).</param>
+        [HttpGet("get_all_users")]
+        public async Task<IActionResult> GetAllUsers([FromQuery] Guid? roleId, [FromQuery] string? cityId)
+        {
+            var users = await _userService.GetAllAsync(roleId, cityId);
+
+            return Ok(new BaseResponseModel<IEnumerable<AdminResponseUserModel>>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: users
+            ));
+        }
+
+        /// <summary>
         /// Truy vấn danh sách hướng dẫn viên du lịch địa phương theo nhiều tiêu chí lọc và sắp xếp.
         /// </summary>
         /// <param name="latitude">Vĩ độ của vị trí cần tìm kiếm.</param>
