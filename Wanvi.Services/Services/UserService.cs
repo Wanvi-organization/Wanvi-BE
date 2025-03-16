@@ -345,7 +345,10 @@ namespace Wanvi.Services.Services
                     .FirstOrDefaultAsync();
             }
 
-            var query = userRepo.Entities.AsQueryable();
+            var query = userRepo.Entities
+        .Include(u => u.UserRoles)
+        .ThenInclude(ur => ur.Role)
+        .AsQueryable();
 
             if (roleId.HasValue)
             {
@@ -362,6 +365,7 @@ namespace Wanvi.Services.Services
                 {
                     Id = u.Id,
                     RoleId = u.UserRoles.Select(ur => ur.RoleId).FirstOrDefault(),
+                    RoleName = u.UserRoles.Select(ur => ur.Role.Name).FirstOrDefault(),
                     FullName = u.FullName,
                     Gender = u.Gender,
                     DateOfBirth = u.DateOfBirth,
