@@ -3,6 +3,7 @@
     public class AdminResponseUserModel
     {
         public Guid Id { get; set; }
+        public Guid RoleId { get; set; }
         public string FullName { get; set; }
         public bool Gender { get; set; } = true;
         public DateTime? DateOfBirth { get; set; }
