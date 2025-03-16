@@ -396,6 +396,83 @@ namespace Wanvi.Services.Services
 
             return users;
         }
+
+        public async Task UpdateTravelerProfileAsync(Guid userId, UpdateTravelerProfileModel model)
+        {
+            string adminId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            model.TrimAllStrings();
+            var userRepo = _unitOfWork.GetRepository<ApplicationUser>();
+
+            var user = await userRepo.Entities
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId)
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Người dùng không tồn tại!");
+
+            if (!user.UserRoles.Any(ur => ur.Role.Name == "Traveler"))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Người dùng không có vai trò Traveler!");
+            }
+
+            if (model.FullName != null) user.FullName = model.FullName;
+            if (model.Gender.HasValue) user.Gender = model.Gender.Value;
+            if (model.DateOfBirth.HasValue) user.DateOfBirth = model.DateOfBirth;
+            if (model.ProfileImageUrl != null) user.ProfileImageUrl = model.ProfileImageUrl;
+            if (model.BankAccount != null) user.BankAccount = model.BankAccount;
+            if (model.BankAccountName != null) user.BankAccountName = model.BankAccountName;
+            if (model.Bank != null) user.Bank = model.Bank;
+            if (model.Address != null) user.Address = model.Address;
+            if (model.IsPremium.HasValue) user.IsPremium = model.IsPremium.Value;
+            if (model.IsVerified.HasValue) user.IsVerified = model.IsVerified.Value;
+            if (model.IdentificationNumber != null) user.IdentificationNumber = model.IdentificationNumber;
+            if (model.Violate.HasValue) user.Violate = model.Violate.Value;
+
+            user.LastUpdatedTime = CoreHelper.SystemTimeNow;
+            user.LastUpdatedBy = adminId;
+
+            await userRepo.UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
+        }
+
+        public async Task UpdateLocalGuideProfileAsync(Guid userId, UpdateLocalGuideProfileModel model)
+        {
+            string adminId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            model.TrimAllStrings();
+            var userRepo = _unitOfWork.GetRepository<ApplicationUser>();
+
+            var user = await userRepo.Entities
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId)
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Người dùng không tồn tại!");
+
+            if (!user.UserRoles.Any(ur => ur.Role.Name == "LocalGuide"))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Người dùng không có vai trò LocalGuide!");
+            }
+
+            if (model.FullName != null) user.FullName = model.FullName;
+            if (model.Gender.HasValue) user.Gender = model.Gender.Value;
+            if (model.DateOfBirth.HasValue) user.DateOfBirth = model.DateOfBirth;
+            if (model.ProfileImageUrl != null) user.ProfileImageUrl = model.ProfileImageUrl;
+            if (model.BankAccount != null) user.BankAccount = model.BankAccount;
+            if (model.BankAccountName != null) user.BankAccountName = model.BankAccountName;
+            if (model.Bank != null) user.Bank = model.Bank;
+            if (model.Address != null) user.Address = model.Address;
+            if (model.IsPremium.HasValue) user.IsPremium = model.IsPremium.Value;
+            if (model.IsVerified.HasValue) user.IsVerified = model.IsVerified.Value;
+            if (model.IdentificationNumber != null) user.IdentificationNumber = model.IdentificationNumber;
+            if (model.Violate.HasValue) user.Violate = model.Violate.Value;
+            if (model.Bio != null) user.Bio = model.Bio;
+            if (model.Language != null) user.Language = model.Language;
+            if (model.PersonalVehicle != null) user.PersonalVehicle = model.PersonalVehicle;
+
+            user.LastUpdatedTime = CoreHelper.SystemTimeNow;
+            user.LastUpdatedBy = adminId;
+
+            await userRepo.UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
+        }
         #endregion
 
         public async Task<string> UnlockBookingOfTourGuide(UnlockBookingOfTourGuideModel model)
