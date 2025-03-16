@@ -107,7 +107,7 @@ namespace WanviBE.API.Controllers
              ));
         }
 
-        [HttpPatch("assign_role")]
+        [HttpPost("assign_role")]
         public async Task<IActionResult> AssignRole([FromBody] AssignUserRoleModel model)
         {
             await _userService.AssignUserToRoleAsync(model.UserId, model.RoleId);
