@@ -6,24 +6,31 @@ namespace Wanvi.Contract.Services.Interfaces
     {
         Task<string> CreateBookingHaft(CreateBookingModel model);
         Task<string> CreateBookingAll(CreateBookingModel model);
-        Task<List<GetBookingUsermodel>> GetBookingUser(
+        Task<List<GetBookingUserModel>> GetBookingUser(
             string? searchNote = null,
             string? sortBy = null,
             bool isAscending = false,
             string? status = null);
-        Task<List<GetBookingGuideModel>> GetBookingsByTourGuide(
+        Task<List<GetBookingUserDetailModel>> GetBookingsByTourGuide(
             string? rentalDate = null,
             string? status = null,
             string? scheduleId = null,
             int? minTravelers = null,
-            int? maxTravelers = null,
-            string? sortBy = "RentalDate",
-            bool ascending = false);
-        Task<List<GetBookingUsermodel>> GetBookingAdmin(
+            int? maxTravelers = null);
+        Task<List<GetBookingUserModel>> GetBookingAdmin(
             string? searchNote = null,
             string? sortBy = null,
             bool isAscending = false,
             string? status = null);
+        Task<GetBookingGuideModel> GetBookingSummaryBySchedule(
+    string scheduleId,
+    string rentalDate,
+    string? status = null,
+    int? minPrice = null,
+    int? maxPrice = null,
+    string sortBy = "CustomerName",
+    bool ascending = true);
+        Task<GetBookingGuideScreen3Model> GetBookingDetailsById(string bookingId);
         Task<string> WithdrawMoneyFromBooking(WithdrawMoneyFromBookingModel model);
         Task<string> ChangeBookingToUser(ChangeBookingToUserModel model);
         Task<string> CancelBookingForGuide(CancelBookingForGuideModel model);

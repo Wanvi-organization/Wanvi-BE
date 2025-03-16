@@ -11,6 +11,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public virtual Address PickupAddress { get; set; }
         public string DropoffAddressId { get; set; }
         public virtual Address DropoffAddress { get; set; }
+        public string? Note {  get; set; }
         public Guid UserId { get; set; }
         public virtual ApplicationUser ApplicationUser { get; set; }
         public virtual ICollection<TourAddress> TourAddresses { get; set; }
