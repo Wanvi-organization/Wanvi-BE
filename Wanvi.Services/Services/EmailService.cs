@@ -69,7 +69,7 @@ namespace Wanvi.Services.Services
             }
         }
 
-        public async Task AdminSendEmailAsync(SendEmailRequestModel model)
+        public async Task StaffSendEmailAsync(SendEmailRequestModel model)
         {
             var userRepo = _unitOfWork.GetRepository<ApplicationUser>();
             List<ApplicationUser> usersToSend = new List<ApplicationUser>();

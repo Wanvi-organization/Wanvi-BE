@@ -5,6 +5,6 @@ namespace Wanvi.Contract.Services.Interfaces
     public interface IEmailService
     {
         Task SendEmailAsync(string email, string subject, string body);
-        Task AdminSendEmailAsync(SendEmailRequestModel model);
+        Task StaffSendEmailAsync(SendEmailRequestModel model);
     }
 }

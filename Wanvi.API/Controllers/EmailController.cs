@@ -18,13 +18,13 @@ namespace Wanvi.API.Controllers
         }
 
         /// <summary>
-        /// Gửi email từ Admin đến danh sách người dùng cụ thể hoặc tất cả người dùng theo RoleId.
+        /// Gửi email từ Staff đến danh sách người dùng cụ thể hoặc tất cả người dùng theo RoleId.
         /// </summary>
         /// <param name="model">Thông tin email cần gửi, bao gồm danh sách userId hoặc RoleId.</param>
-        [HttpPost("admin_send_email")]
-        public async Task<IActionResult> AdminSendEmail([FromBody] SendEmailRequestModel model)
+        [HttpPost("staff_send_email")]
+        public async Task<IActionResult> StaffSendEmail([FromBody] SendEmailRequestModel model)
         {
-            await _emailService.AdminSendEmailAsync(model);
+            await _emailService.StaffSendEmailAsync(model);
 
             return Ok(new BaseResponseModel<string>(
                 statusCode: StatusCodes.Status200OK,
