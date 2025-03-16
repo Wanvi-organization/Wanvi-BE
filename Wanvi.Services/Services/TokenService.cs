@@ -50,9 +50,7 @@ namespace Wanvi.Services.Services
             List<Claim> claims = new List<Claim>
         {
             new Claim("id", user.Id.ToString()),
-            new Claim("role", role),
-            // assign 
-            new Claim("exp", now.Ticks.ToString())
+            new Claim("role", role)
         };
 
             var keyString = _configuration.GetSection("JwtSettings:SecretKey").Value ?? string.Empty;
@@ -80,7 +78,7 @@ namespace Wanvi.Services.Services
                 claims: claims,
             issuer: _configuration.GetSection("JwtSettings:Issuer").Value,
             audience: _configuration.GetSection("JwtSettings:Audience").Value,
-            expires: DateTime.UtcNow.AddMinutes(20),
+            expires: DateTime.UtcNow.AddDays(7),
                 signingCredentials: creds
             );
             var refreshTokenString = new JwtSecurityTokenHandler().WriteToken(refreshToken);
