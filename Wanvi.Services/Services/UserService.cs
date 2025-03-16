@@ -287,6 +287,50 @@ namespace Wanvi.Services.Services
 
             return _mapper.Map<ResponseLocalGuideProfileModel>(localGuide);
         }
+
+        public async Task AssignUserToRoleAsync(Guid userId, Guid roleId)
+        {
+            var user = await _unitOfWork.GetRepository<ApplicationUser>()
+                .Entities.FirstOrDefaultAsync(x => x.Id == userId && !x.DeletedTime.HasValue)
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Người dùng không tồn tại!");
+
+            var role = await _unitOfWork.GetRepository<ApplicationRole>()
+                .Entities.FirstOrDefaultAsync(x => x.Id == roleId)
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Vai trò không tồn tại!");
+
+            var userRoleRepo = _unitOfWork.GetRepository<ApplicationUserRole>();
+
+            var existingUserRole = await userRoleRepo.Entities
+                .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
+
+            if (existingUserRole != null)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Người dùng đã được gán vai trò này!");
+            }
+
+            var rolesToDelete = await userRoleRepo.Entities
+                .Where(ur => ur.UserId == userId)
+                .ToListAsync();
+
+            if (rolesToDelete.Any())
+            {
+                foreach (var roleToDelete in rolesToDelete)
+                {
+                    userRoleRepo.Delete(roleToDelete);
+                }
+                await _unitOfWork.SaveAsync();
+            }
+
+            var newUserRole = new ApplicationUserRole
+            {
+                UserId = userId,
+                RoleId = roleId
+            };
+
+            await userRoleRepo.InsertAsync(newUserRole);
+            await _unitOfWork.SaveAsync();
+        }
+
         #endregion
 
         public async Task<string> UnlockBookingOfTourGuide(UnlockBookingOfTourGuideModel model)

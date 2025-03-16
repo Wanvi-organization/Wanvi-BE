@@ -11,5 +11,6 @@ namespace Wanvi.Contract.Services.Interfaces
         Task UpdateProfiel(UpdateProfileModel model);
         Task<ResponseLocalGuideProfileModel> GetLocalGuideProfileInfoByIdAsync(Guid localGuideId);
         Task<string> UnlockBookingOfTourGuide(UnlockBookingOfTourGuideModel model);
+        Task AssignUserToRoleAsync(Guid userId, Guid roleId);
     }
 }

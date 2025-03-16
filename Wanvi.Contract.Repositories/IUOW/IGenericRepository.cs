@@ -14,7 +14,7 @@ namespace Wanvi.Contract.Repositories.IUOW
         void Insert(T obj);
         void InsertRange(IList<T> obj);
         void Update(T obj);
-        void Delete(object id);
+        void Delete(T entity);
         void Save();
 
         // async
