@@ -361,6 +361,7 @@ namespace Wanvi.Services.Services
                 .Select(u => new AdminResponseUserModel
                 {
                     Id = u.Id,
+                    RoleId = u.UserRoles.Select(ur => ur.RoleId).FirstOrDefault(),
                     FullName = u.FullName,
                     Gender = u.Gender,
                     DateOfBirth = u.DateOfBirth,
