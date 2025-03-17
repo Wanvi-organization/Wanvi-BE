@@ -34,7 +34,7 @@ namespace Wanvi.Services.Services
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
             model.TrimAllStrings();
             var uploadedMedia = new List<ResponseMediaModel>();
-            string uploadPath = Path.Combine(Directory.GetCurrentDirectory(), _uploadSettings.UploadPath);
+            string uploadPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "uploads");
 
             if (!Directory.Exists(uploadPath))
             {
