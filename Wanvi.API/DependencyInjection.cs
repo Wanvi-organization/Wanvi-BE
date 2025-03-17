@@ -290,6 +290,7 @@ namespace WanviBE.API
             services.AddScoped<IHashtagService, HashtagService>();
             services.AddScoped<IPostService, PostService>();
             services.AddScoped<IMediaService, MediaService>();
+            services.AddScoped<IRoleService, RoleService>();
         }
 
         public static void AddEmailConfig(this IServiceCollection services, IConfiguration configuration)

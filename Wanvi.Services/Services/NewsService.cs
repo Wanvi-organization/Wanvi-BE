@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using Wanvi.Contract.Repositories.Entities;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
@@ -131,59 +132,103 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tin tức đã bị xóa.");
             }
 
-            if (model.Title != null && string.IsNullOrWhiteSpace(model.Title))
+            if (!string.IsNullOrEmpty(model.Title) && string.IsNullOrWhiteSpace(model.Title))
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Tiêu đề tin tức không hợp lệ.");
             }
 
-            if (model.Summary != null && string.IsNullOrWhiteSpace(model.Summary))
+            if (!string.IsNullOrEmpty(model.Summary) && string.IsNullOrWhiteSpace(model.Summary))
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Tóm tắt tin tức không hợp lệ.");
             }
 
-            if (model.CategoryId != null)
+            if (!string.IsNullOrEmpty(model.CategoryId))
             {
-                var categoryExists = await _unitOfWork.GetRepository<Category>().Entities.AnyAsync(c => c.Id == model.CategoryId.Trim());
+                bool categoryExists = await _unitOfWork.GetRepository<Category>()
+                    .Entities.AnyAsync(c => c.Id == model.CategoryId.Trim());
+
                 if (!categoryExists)
                 {
                     throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Danh mục không tồn tại.");
                 }
             }
 
-            if (model.NewsDetails != null)
+            if (model.NewsDetails != null && model.NewsDetails.Count > 0)
             {
                 var existingDetails = news.NewsDetails.ToList();
-                var newSortOrders = model.NewsDetails.Select(d => d.SortOrder).ToList();
-                var existingSortOrders = existingDetails.Select(d => d.SortOrder).ToList();
+                var existingDetailIds = existingDetails.Select(nd => nd.Id).ToHashSet(); // Lưu danh sách ID cũ
+                var newSortOrders = model.NewsDetails
+                    .Where(d => d.SortOrder.HasValue)
+                    .Select(d => d.SortOrder.Value)
+                    .ToList();
 
+                var existingSortOrders = existingDetails
+                    .Select(nd => nd.SortOrder)
+                    .ToList();
+
+                // Kiểm tra trùng lặp `SortOrder` trong request
                 if (newSortOrders.Distinct().Count() != newSortOrders.Count)
                 {
                     throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Thứ tự sắp xếp không được trùng lặp trong dữ liệu gửi lên.");
                 }
 
-                if (newSortOrders.Any(sortOrder => existingSortOrders.Contains((int)sortOrder)))
-                {
-                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Thứ tự sắp xếp không được trùng lặp với dữ liệu cũ.");
-                }
-
                 foreach (var newsDetailModel in model.NewsDetails)
                 {
-                    var existingDetail = existingDetails.FirstOrDefault(nd => nd.SortOrder == newsDetailModel.SortOrder);
+                    NewsDetail? existingDetail = null;
+
+                    // Nếu có ID, kiểm tra xem có tồn tại không
+                    if (!string.IsNullOrEmpty(newsDetailModel.Id))
+                    {
+                        existingDetail = existingDetails.FirstOrDefault(nd => nd.Id == newsDetailModel.Id);
+                    }
 
                     if (existingDetail != null)
                     {
+                        // Nếu `SortOrder` không được truyền lên, giữ nguyên giá trị cũ
+                        if (!newsDetailModel.SortOrder.HasValue)
+                        {
+                            newsDetailModel.SortOrder = existingDetail.SortOrder;
+                        }
+
+                        // Nếu `SortOrder` thay đổi, kiểm tra trùng lặp
+                        if (existingDetail.SortOrder != newsDetailModel.SortOrder)
+                        {
+                            if (existingDetails.Any(nd => nd.SortOrder == newsDetailModel.SortOrder && nd.Id != existingDetail.Id))
+                            {
+                                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Thứ tự sắp xếp không được trùng lặp.");
+                            }
+                            existingDetail.SortOrder = newsDetailModel.SortOrder.Value;
+                        }
+
+                        // Cập nhật nội dung
                         existingDetail.Url = newsDetailModel.Url;
                         existingDetail.Content = newsDetailModel.Content;
+
+                        // Đánh dấu ID này đã được xử lý
+                        existingDetailIds.Remove(existingDetail.Id);
                     }
                     else
                     {
+                        // Nếu tạo mới mà không có `SortOrder`, báo lỗi
+                        if (!newsDetailModel.SortOrder.HasValue)
+                        {
+                            throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "SortOrder không được để trống khi thêm mới.");
+                        }
+
+                        // Kiểm tra tránh thêm `SortOrder` trùng lặp
+                        if (existingDetails.Any(nd => nd.SortOrder == newsDetailModel.SortOrder))
+                        {
+                            throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Thứ tự sắp xếp không được trùng lặp.");
+                        }
+
                         var newDetail = new NewsDetail
                         {
                             NewsId = news.Id.ToString(),
                             Url = newsDetailModel.Url,
                             Content = newsDetailModel.Content,
-                            SortOrder = (int)newsDetailModel.SortOrder
+                            SortOrder = newsDetailModel.SortOrder.Value
                         };
+
                         _unitOfWork.GetRepository<NewsDetail>().Insert(newDetail);
                         news.NewsDetails.Add(newDetail);
                     }

@@ -16,9 +16,10 @@ namespace Wanvi.Services.MapperProfile
             .ReverseMap();
             CreateMap<News, CreateNewsModel>().ReverseMap();
             CreateMap<News, UpdateNewsModel>()
-                .ForMember(dest => dest.NewsDetails, opt => opt.Ignore())
-                .ReverseMap()
-                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+    .ForMember(dest => dest.NewsDetails, opt => opt.MapFrom(src => src.NewsDetails)) // Đảm bảo `NewsDetails` được map
+    .ReverseMap()
+    .ForMember(dest => dest.NewsDetails, opt => opt.Ignore()) // Không ghi đè `NewsDetails`, xử lý thủ công
+    .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
 }

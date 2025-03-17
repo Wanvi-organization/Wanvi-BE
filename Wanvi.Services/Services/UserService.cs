@@ -331,6 +331,153 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
         }
 
+        public async Task<IEnumerable<AdminResponseUserModel>> GetAllAsync(Guid? roleId = null, string? cityId = null)
+        {
+            var userRepo = _unitOfWork.GetRepository<ApplicationUser>();
+            var cityRepo = _unitOfWork.GetRepository<City>();
+
+            string? cityName = null;
+            if (!string.IsNullOrEmpty(cityId))
+            {
+                cityName = await cityRepo.Entities
+                    .Where(c => c.Id.ToString() == cityId)
+                    .Select(c => c.Name)
+                    .FirstOrDefaultAsync();
+            }
+
+            var query = userRepo.Entities
+        .Include(u => u.UserRoles)
+        .ThenInclude(ur => ur.Role)
+        .AsQueryable();
+
+            if (roleId.HasValue)
+            {
+                query = query.Where(u => u.UserRoles.Any(ur => ur.RoleId == roleId));
+            }
+
+            if (!string.IsNullOrEmpty(cityName))
+            {
+                query = query.Where(u => u.Address.Contains(cityName));
+            }
+
+            var users = await query
+                .Select(u => new AdminResponseUserModel
+                {
+                    Id = u.Id,
+                    RoleId = u.UserRoles.Select(ur => ur.RoleId).FirstOrDefault(),
+                    RoleName = u.UserRoles.Select(ur => ur.Role.Name).FirstOrDefault(),
+                    FullName = u.FullName,
+                    Gender = u.Gender,
+                    DateOfBirth = u.DateOfBirth,
+                    ProfileImageUrl = u.ProfileImageUrl,
+                    BankAccount = u.BankAccount,
+                    BankAccountName = u.BankAccountName,
+                    Bank = u.Bank,
+                    Balance = u.Balance,
+                    Deposit = u.Deposit,
+                    Point = u.Point,
+                    Address = u.Address,
+                    Latitude = u.Latitude,
+                    Longitude = u.Longitude,
+                    AvgRating = u.AvgRating,
+                    MinHourlyRate = u.MinHourlyRate,
+                    IsPremium = u.IsPremium,
+                    IsVerified = u.IsVerified,
+                    IdentificationNumber = u.IdentificationNumber,
+                    Bio = u.Bio,
+                    Language = u.Language,
+                    PersonalVehicle = u.PersonalVehicle,
+                    EmailCode = u.EmailCode,
+                    CodeGeneratedTime = u.CodeGeneratedTime,
+                    CreatedBy = u.CreatedBy,
+                    Violate = u.Violate,
+                    LastUpdatedBy = u.LastUpdatedBy,
+                    DeletedBy = u.DeletedBy,
+                    CreatedTime = u.CreatedTime,
+                    LastUpdatedTime = u.LastUpdatedTime,
+                    DeletedTime = u.DeletedTime
+                })
+                .ToListAsync();
+
+            return users;
+        }
+
+        public async Task UpdateTravelerProfileAsync(Guid userId, UpdateTravelerProfileModel model)
+        {
+            string adminId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            model.TrimAllStrings();
+            var userRepo = _unitOfWork.GetRepository<ApplicationUser>();
+
+            var user = await userRepo.Entities
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId)
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Người dùng không tồn tại!");
+
+            if (!user.UserRoles.Any(ur => ur.Role.Name == "Traveler"))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Người dùng không có vai trò Traveler!");
+            }
+
+            if (model.FullName != null) user.FullName = model.FullName;
+            if (model.Gender.HasValue) user.Gender = model.Gender.Value;
+            if (model.DateOfBirth.HasValue) user.DateOfBirth = model.DateOfBirth;
+            if (model.ProfileImageUrl != null) user.ProfileImageUrl = model.ProfileImageUrl;
+            if (model.BankAccount != null) user.BankAccount = model.BankAccount;
+            if (model.BankAccountName != null) user.BankAccountName = model.BankAccountName;
+            if (model.Bank != null) user.Bank = model.Bank;
+            if (model.Address != null) user.Address = model.Address;
+            if (model.IsPremium.HasValue) user.IsPremium = model.IsPremium.Value;
+            if (model.IsVerified.HasValue) user.IsVerified = model.IsVerified.Value;
+            if (model.IdentificationNumber != null) user.IdentificationNumber = model.IdentificationNumber;
+            if (model.Violate.HasValue) user.Violate = model.Violate.Value;
+
+            user.LastUpdatedTime = CoreHelper.SystemTimeNow;
+            user.LastUpdatedBy = adminId;
+
+            await userRepo.UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
+        }
+
+        public async Task UpdateLocalGuideProfileAsync(Guid userId, UpdateLocalGuideProfileModel model)
+        {
+            string adminId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            model.TrimAllStrings();
+            var userRepo = _unitOfWork.GetRepository<ApplicationUser>();
+
+            var user = await userRepo.Entities
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId)
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Người dùng không tồn tại!");
+
+            if (!user.UserRoles.Any(ur => ur.Role.Name == "LocalGuide"))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Người dùng không có vai trò LocalGuide!");
+            }
+
+            if (model.FullName != null) user.FullName = model.FullName;
+            if (model.Gender.HasValue) user.Gender = model.Gender.Value;
+            if (model.DateOfBirth.HasValue) user.DateOfBirth = model.DateOfBirth;
+            if (model.ProfileImageUrl != null) user.ProfileImageUrl = model.ProfileImageUrl;
+            if (model.BankAccount != null) user.BankAccount = model.BankAccount;
+            if (model.BankAccountName != null) user.BankAccountName = model.BankAccountName;
+            if (model.Bank != null) user.Bank = model.Bank;
+            if (model.Address != null) user.Address = model.Address;
+            if (model.IsPremium.HasValue) user.IsPremium = model.IsPremium.Value;
+            if (model.IsVerified.HasValue) user.IsVerified = model.IsVerified.Value;
+            if (model.IdentificationNumber != null) user.IdentificationNumber = model.IdentificationNumber;
+            if (model.Violate.HasValue) user.Violate = model.Violate.Value;
+            if (model.Bio != null) user.Bio = model.Bio;
+            if (model.Language != null) user.Language = model.Language;
+            if (model.PersonalVehicle != null) user.PersonalVehicle = model.PersonalVehicle;
+
+            user.LastUpdatedTime = CoreHelper.SystemTimeNow;
+            user.LastUpdatedBy = adminId;
+
+            await userRepo.UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
+        }
         #endregion
 
         public async Task<string> UnlockBookingOfTourGuide(UnlockBookingOfTourGuideModel model)
