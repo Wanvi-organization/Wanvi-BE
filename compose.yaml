@@ -15,10 +15,10 @@ services:
     ports:
       - "3000:8080"
     volumes:
-      - wwwroot_data:/app/wwwroot  # Mount volume để giữ dữ liệu wwwroot
+      - wanvi-be_wwwroot_data:/app/wwwroot  # Sử dụng đúng volume
 
 volumes:
-  wwwroot_data:  # Khai báo volume để lưu dữ liệu
+  wanvi-be_wwwroot_data:  # Khai báo volume đúng với container
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to
