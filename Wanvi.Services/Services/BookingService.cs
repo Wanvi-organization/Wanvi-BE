@@ -377,7 +377,6 @@ namespace Wanvi.Services.Services
             };
         }
 
-
         public async Task<string> CreateBookingAll(CreateBookingModel model)
         {
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
@@ -979,6 +978,7 @@ namespace Wanvi.Services.Services
             await SendTourGuideAccountBlockedEmail(tourGuide);
             return "Hủy đơn thành công!";
         }
+
         private async Task SendTourCancellationEmailNoDeposit(ApplicationUser customer, Booking booking)
         {
             await _emailService.SendEmailAsync(
@@ -1001,7 +1001,6 @@ namespace Wanvi.Services.Services
                 </html>"
             );
         }
-
         private async Task SendTourCancellationEmailWithRefund(ApplicationUser customer, Booking booking)
         {
             await _emailService.SendEmailAsync(
