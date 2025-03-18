@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -155,7 +156,6 @@ namespace Wanvi.Services.Services
             // 5. Trả về checkout URL
             return checkoutUrl;
         }
-
         public bool CheckGuideDeposit(Guid guideId, Booking booking)
         {
             // Lấy danh sách Booking mà HDV đã nhận (trừ các trạng thái không cần tính tiền cọc)
@@ -199,7 +199,6 @@ namespace Wanvi.Services.Services
             return availableBalance >= totalRequiredDeposit;
 
         }
-
         public async Task<string> CreatePayOSPaymentHaftLink(CreatePayOSPaymentRequest request)
         {
             // 1. Lấy thông tin booking từ database dựa trên BookingId
@@ -309,7 +308,6 @@ namespace Wanvi.Services.Services
             // 5. Trả về checkout URL
             return checkoutUrl;
         }
-
         public async Task<string> CreateBookingHaftEnd(CreateBookingEndModel model)
         {
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
@@ -376,7 +374,6 @@ namespace Wanvi.Services.Services
             // 5. Trả về checkout URL
             return checkoutUrl;
         }
-
         private async Task<long> GenerateUniqueOrderCodeAsync()
         {
             Random random = new Random();
@@ -393,7 +390,6 @@ namespace Wanvi.Services.Services
 
             return orderCode;
         }
-
         // Hàm lấy danh sách sản phẩm từ booking (bạn cần điều chỉnh theo cấu trúc database của bạn)
         private List<PayOSItem> GetBookingItems(string bookingId)
         {
@@ -418,7 +414,6 @@ namespace Wanvi.Services.Services
 
             return items;
         }
-
         private string CalculateSignature(PayOSPaymentRequest request)
         {
             // 1. Đảm bảo amount là số nguyên
@@ -491,7 +486,7 @@ namespace Wanvi.Services.Services
             var payment = await _unitOfWork.GetRepository<Payment>().Entities
                 .FirstOrDefaultAsync(x => x.OrderCode == request.data.orderCode && !x.DeletedTime.HasValue);
 
-            
+
             if (payment == null)
             {
                 Console.WriteLine($"Không tìm thấy thanh toán với orderCode: {request.data.orderCode}. Bỏ qua xử lý.");
@@ -596,7 +591,6 @@ namespace Wanvi.Services.Services
 
             await _unitOfWork.SaveAsync();
         }
-
         public async Task<string> DepositMoney(DepositMoneyRequest request)
         {
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
@@ -656,7 +650,6 @@ namespace Wanvi.Services.Services
 
             return checkoutUrl; // Trả về URL để người dùng thanh toán
         }
-
         private async Task SendDepositSuccessEmail(ApplicationUser user, double amount)
         {
             await _emailService.SendEmailAsync(
@@ -674,7 +667,6 @@ namespace Wanvi.Services.Services
             </html>"
             );
         }
-
         private async Task SendMailHaft(ApplicationUser user, Booking booking, Payment payment)
         {
             int countHour = (booking.Schedule.EndTime.Hours - booking.Schedule.StartTime.Hours);
@@ -916,7 +908,205 @@ namespace Wanvi.Services.Services
         </html>"
   );
         }
+        public async Task<TransactionSummaryModel> TransactionSummary(string? day, string? month, int? year, PaymentStatus? status)
+        {
+            // Lọc theo ngày (format: dd/MM/yyyy)
+            if (day != null)
+            {
+                
+                if(!DateTime.TryParseExact(day, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'ngày/tháng/năm' (vd: '26/01/2023').");
 
+                }
+                // Lọc danh sách payment theo ngày/tháng/năm đã chọn
+                var responsePaymentModel = await _unitOfWork.GetRepository<Payment>().Entities
+                    .Where(p => (!status.HasValue || p.Status == status) && !p.DeletedTime.HasValue)
+                    .Where(p=>p.CreatedTime.Date == parsedDate.Date)
+                    .Select(p => new ResponsePaymentModel
+                    {
+                        Method = ConvertPaymentMethodToString(p.Method),
+                        Status = ConvertPaymentStatusToString(p.Status),
+                        OrderCode = p.OrderCode,
+                        Amount = p.Amount,
+                        Description = p.Description,
+                        BuyerName = p.BuyerName,
+                        BuyerEmail = p.BuyerEmail,
+                        BuyerPhone = p.BuyerPhone,
+                        BuyerAddress = p.BuyerAddress,
+                        //Signature = p.Signature,
+                        BookingId = p.BookingId
+                    })
+                    .ToListAsync();
+                // Tính toán tổng số giao dịch theo từng trạng thái
+                var totalPayment = responsePaymentModel.Count(x=>x.Status != "Chưa thanh toán" && x.Status != "Đã hoàn tiền");
+                var totalPaid = responsePaymentModel.Count(p => p.Status == "Đã thanh toán");
+                var totalCanceled = responsePaymentModel.Count(p => p.Status == "Đã hủy");
+                var totalUnpaidRecharge = responsePaymentModel.Count(p => p.Status == "Chưa nạp tiền");
+                var totalRecharged = responsePaymentModel.Count(p => p.Status == "Đã nạp tiền");
+
+                var transactionSummary = new TransactionSummaryModel
+                {
+                    Totalpayment = totalPayment,
+                    TotalPaid = totalPaid,
+                    TotalCanceled = totalCanceled,
+                    TotalUnpaidRecharge = totalUnpaidRecharge,
+                    TotalRecharged = totalRecharged,
+                    responsePaymentModels = responsePaymentModel
+                };
+                return await Task.FromResult(transactionSummary);
+            }
+            // Lọc theo tháng (format: MM/yyyy)
+            if (!string.IsNullOrWhiteSpace(month))
+            {
+                 if(!DateTime.TryParseExact(month, "MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'tháng/năm' (vd: '01/2023').");
+                }
+                // Lọc danh sách payment theo ngày/tháng/năm đã chọn
+                var responsePaymentModel = await _unitOfWork.GetRepository<Payment>().Entities
+                    .Where(p => !status.HasValue || p.Status == status && !p.DeletedTime.HasValue)
+                    .Where(p => p.CreatedTime.Month == parsedDate.Month && p.CreatedTime.Year == parsedDate.Year)
+                    .Select(p => new ResponsePaymentModel
+                    {
+                        Method = ConvertPaymentMethodToString(p.Method),
+                        Status = ConvertPaymentStatusToString(p.Status),
+                        OrderCode = p.OrderCode,
+                        Amount = p.Amount,
+                        Description = p.Description,
+                        BuyerName = p.BuyerName,
+                        BuyerEmail = p.BuyerEmail,
+                        BuyerPhone = p.BuyerPhone,
+                        BuyerAddress = p.BuyerAddress,
+                        //Signature = p.Signature,
+                        BookingId = p.BookingId
+                    })
+                    .ToListAsync();
+                // Tính toán tổng số giao dịch theo từng trạng thái
+                var totalPayment = responsePaymentModel.Count(x => x.Status != "Chưa thanh toán" && x.Status != "Đã hoàn tiền");
+                var totalPaid = responsePaymentModel.Count(p => p.Status == "Đã thanh toán");
+                var totalCanceled = responsePaymentModel.Count(p => p.Status == "Đã hủy");
+                var totalUnpaidRecharge = responsePaymentModel.Count(p => p.Status == "Chưa nạp tiền");
+                var totalRecharged = responsePaymentModel.Count(p => p.Status == "Đã nạp tiền");
+
+                var transactionSummary = new TransactionSummaryModel
+                {
+                    Totalpayment = totalPayment,
+                    TotalPaid = totalPaid,
+                    TotalCanceled = totalCanceled,
+                    TotalUnpaidRecharge = totalUnpaidRecharge,
+                    TotalRecharged = totalRecharged,
+                    responsePaymentModels = responsePaymentModel
+                };
+                return await Task.FromResult(transactionSummary);
+            }
+
+            // Lọc theo năm (format: yyyy)
+            if (year != null)
+            {
+                var responsePaymentModel = await _unitOfWork.GetRepository<Payment>().Entities
+                    .Where(p => !status.HasValue || p.Status == status && !p.DeletedTime.HasValue)
+                    .Where(p => p.CreatedTime.Year == year )
+                    .Select(p => new ResponsePaymentModel
+                    {
+                        Method = ConvertPaymentMethodToString(p.Method),
+                        Status = ConvertPaymentStatusToString(p.Status),
+                        OrderCode = p.OrderCode,
+                        Amount = p.Amount,
+                        Description = p.Description,
+                        BuyerName = p.BuyerName,
+                        BuyerEmail = p.BuyerEmail,
+                        BuyerPhone = p.BuyerPhone,
+                        BuyerAddress = p.BuyerAddress,
+                        //Signature = p.Signature,
+                        BookingId = p.BookingId
+                    })
+                    .ToListAsync();
+                // Tính toán tổng số giao dịch theo từng trạng thái
+                var totalPayment = responsePaymentModel.Count(x => x.Status != "Chưa thanh toán" && x.Status != "Đã hoàn tiền");
+                var totalPaid = responsePaymentModel.Count(p => p.Status == "Đã thanh toán");
+                var totalCanceled = responsePaymentModel.Count(p => p.Status == "Đã hủy");
+                var totalUnpaidRecharge = responsePaymentModel.Count(p => p.Status == "Chưa nạp tiền");
+                var totalRecharged = responsePaymentModel.Count(p => p.Status == "Đã nạp tiền");
+
+                var transactionSummary = new TransactionSummaryModel
+                {
+                    Totalpayment = totalPayment,
+                    TotalPaid = totalPaid,
+                    TotalCanceled = totalCanceled,
+                    TotalUnpaidRecharge = totalUnpaidRecharge,
+                    TotalRecharged = totalRecharged,
+                    responsePaymentModels = responsePaymentModel
+                };
+                return await Task.FromResult(transactionSummary);
+            }
+            else
+            {
+                int yearNow = DateTime.Now.Year;
+                var responsePaymentModel = await _unitOfWork.GetRepository<Payment>().Entities
+                    .Where(p => !status.HasValue || p.Status == status && !p.DeletedTime.HasValue && p.CreatedTime.Year == yearNow)
+                    .Select(p => new ResponsePaymentModel
+                    {
+                        Method = ConvertPaymentMethodToString(p.Method),
+                        Status = ConvertPaymentStatusToString(p.Status),
+                        OrderCode = p.OrderCode,
+                        Amount = p.Amount,
+                        Description = p.Description,
+                        BuyerName = p.BuyerName,
+                        BuyerEmail = p.BuyerEmail,
+                        BuyerPhone = p.BuyerPhone,
+                        BuyerAddress = p.BuyerAddress,
+                        //Signature = p.Signature,
+                        BookingId = p.BookingId
+                    })
+                    .ToListAsync();
+                // Tính toán tổng số giao dịch theo từng trạng thái
+                var totalPayment = responsePaymentModel.Count(x => x.Status != "Chưa thanh toán" && x.Status != "Đã hoàn tiền");
+                var totalPaid = responsePaymentModel.Count(p => p.Status == "Đã thanh toán");
+                var totalCanceled = responsePaymentModel.Count(p => p.Status == "Đã hủy");
+                var totalUnpaidRecharge = responsePaymentModel.Count(p => p.Status == "Chưa nạp tiền");
+                var totalRecharged = responsePaymentModel.Count(p => p.Status == "Đã nạp tiền");
+
+                var transactionSummary = new TransactionSummaryModel
+                {
+                    Totalpayment = totalPayment,
+                    TotalPaid = totalPaid,
+                    TotalCanceled = totalCanceled,
+                    TotalUnpaidRecharge = totalUnpaidRecharge,
+                    TotalRecharged = totalRecharged,
+                    responsePaymentModels = responsePaymentModel
+                };
+                return await Task.FromResult(transactionSummary);
+            }
+
+        }
+
+
+        // Hàm chuyển đổi PaymentStatus sang chữ tiếng Việt
+        private static string ConvertPaymentStatusToString(PaymentStatus status)
+        {
+            return status switch
+            {
+                PaymentStatus.Unpaid => "Chưa thanh toán",
+                PaymentStatus.Paid => "Đã thanh toán",
+                PaymentStatus.Refunded => "Đã hoàn tiền",
+                PaymentStatus.Canceled => "Đã hủy",
+                PaymentStatus.UnpaidRecharge => "Chưa nạp tiền",
+                PaymentStatus.Recharged => "Đã nạp tiền",
+                _ => "Không xác định"
+            };
+        }
+
+        // Hàm chuyển đổi PaymentMethod sang chữ tiếng Việt
+        private static string ConvertPaymentMethodToString(PaymentMethod method)
+        {
+            return method switch
+            {
+                PaymentMethod.EWallet => "Ví cá nhân",
+                PaymentMethod.Banking => "Chuyển khoản ngân hàng",
+                _ => "Không xác định"
+            };
+        }
     }
 }
 
