@@ -921,7 +921,7 @@ namespace Wanvi.Services.Services
                 }
                 // Lọc danh sách payment theo ngày/tháng/năm đã chọn
                 var paymentsInPeriod = await _unitOfWork.GetRepository<Payment>().Entities
-                    .Where(p => !status.HasValue || p.Status == status)
+                    .Where(p => !status.HasValue || p.Status == status && !p.DeletedTime.HasValue)
                     .Where(p=>p.CreatedTime.Date == parsedDate.Date)
                     .Select(p => new TransactionSummaryModel
                     {
@@ -949,7 +949,7 @@ namespace Wanvi.Services.Services
                 }
                 // Lọc danh sách payment theo ngày/tháng/năm đã chọn
                 var paymentsInPeriod = await _unitOfWork.GetRepository<Payment>().Entities
-                    .Where(p => !status.HasValue || p.Status == status)
+                    .Where(p => !status.HasValue || p.Status == status && !p.DeletedTime.HasValue)
                     .Where(p => p.CreatedTime.Month == parsedDate.Month && p.CreatedTime.Year == parsedDate.Year)
                     .Select(p => new TransactionSummaryModel
                     {
@@ -974,7 +974,7 @@ namespace Wanvi.Services.Services
             if (year != null)
             {
                 var paymentsInPeriod = await _unitOfWork.GetRepository<Payment>().Entities
-                    .Where(p => !status.HasValue || p.Status == status)
+                    .Where(p => !status.HasValue || p.Status == status && !p.DeletedTime.HasValue)
                     .Where(p => p.CreatedTime.Year == year )
                     .Select(p => new TransactionSummaryModel
                     {
@@ -996,7 +996,7 @@ namespace Wanvi.Services.Services
             else
             {
                 var paymentsInPeriod = await _unitOfWork.GetRepository<Payment>().Entities
-                    .Where(p => !status.HasValue || p.Status == status)
+                    .Where(p => !status.HasValue || p.Status == status && !p.DeletedTime.HasValue)
                     .Select(p => new TransactionSummaryModel
                     {
                         Method = ConvertPaymentMethodToString(p.Method),

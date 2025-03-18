@@ -355,7 +355,7 @@ namespace Wanvi.Services.Services
                 .ThenInclude(s => s.Tour) // Lấy thông tin tour
                 .FirstOrDefaultAsync()
                 ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy đơn hàng.");
-            var pickupAddress = await _unitOfWork.GetRepository<Address>().Entities.FirstOrDefaultAsync(x=>x.Id == booking.Schedule.Tour.PickupAddressId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy đại chỉ đón.");
+            var pickupAddress = await _unitOfWork.GetRepository<Address>().Entities.FirstOrDefaultAsync(x => x.Id == booking.Schedule.Tour.PickupAddressId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy đại chỉ đón.");
 
             var dropoffAddress = await _unitOfWork.GetRepository<Address>().Entities.FirstOrDefaultAsync(x => x.Id == booking.Schedule.Tour.DropoffAddressId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy đại chỉ trả.");
 
@@ -979,6 +979,182 @@ namespace Wanvi.Services.Services
             return "Hủy đơn thành công!";
         }
 
+        public async Task<BookingStatisticsModel> BookingStatistics(string? day, string? month, int? year)
+        {
+            if (day != null)
+            {
+
+                if (!DateTime.TryParseExact(day, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'ngày/tháng/năm' (vd: '26/01/2023').");
+
+                }
+                // Lọc danh sách payment theo ngày/tháng/năm đã chọn
+                var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
+                    .Where(p => !p.DeletedTime.HasValue && p.CreatedTime.Date == parsedDate.Date)
+                    .ToListAsync();
+
+                var bookingStatistic = new BookingStatisticsModel()
+                {
+                    TotalBooking = bookingList.Count,
+                    TotalCompleted = bookingList.Count(x => x.Status == BookingStatus.Completed && x.Status == BookingStatus.Refunded),
+                    TotalCancelled = bookingList.Count(x => x.Status == BookingStatus.Cancelled)
+                };
+
+                return await Task.FromResult(bookingStatistic);
+            }
+            // Lọc theo tháng (format: MM/yyyy)
+            if (!string.IsNullOrWhiteSpace(month))
+            {
+                if (!DateTime.TryParseExact(month, "MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'tháng/năm' (vd: '01/2023').");
+                }
+                // Lọc danh sách payment theo ngày/tháng/năm đã chọn
+                var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
+                    .Where(p => !p.DeletedTime.HasValue)
+                    .Where(p => p.CreatedTime.Month == parsedDate.Month && p.CreatedTime.Year == parsedDate.Year)
+                    .ToListAsync();
+                var bookingStatistic = new BookingStatisticsModel()
+                {
+                    TotalBooking = bookingList.Count,
+                    TotalCompleted = bookingList.Count(x => x.Status == BookingStatus.Completed && x.Status == BookingStatus.Refunded),
+                    TotalCancelled = bookingList.Count(x => x.Status == BookingStatus.Cancelled)
+                };
+                return await Task.FromResult(bookingStatistic);
+
+            }
+
+            // Lọc theo năm (format: yyyy)
+            if (year != null)
+            {
+                var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
+                    .Where(p => !p.DeletedTime.HasValue)
+                    .Where(p => p.CreatedTime.Year == year)
+                    .ToListAsync();
+                var bookingStatistic = new BookingStatisticsModel()
+                {
+                    TotalBooking = bookingList.Count,
+                    TotalCompleted = bookingList.Count(x => x.Status == BookingStatus.Completed && x.Status == BookingStatus.Refunded),
+                    TotalCancelled = bookingList.Count(x => x.Status == BookingStatus.Cancelled)
+                };
+                return await Task.FromResult(bookingStatistic);
+            }
+            else
+            {
+                var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
+                    .Where(p => !p.DeletedTime.HasValue)
+                    .ToListAsync();
+                var bookingStatistic = new BookingStatisticsModel()
+                {
+                    TotalBooking = bookingList.Count,
+                    TotalCompleted = bookingList.Count(x => x.Status == BookingStatus.Completed && x.Status == BookingStatus.Refunded),
+                    TotalCancelled = bookingList.Count(x => x.Status == BookingStatus.Cancelled)
+                };
+                return await Task.FromResult(bookingStatistic);
+            }
+        }
+        public async Task<TotalRevenueModel> TotalRevenue(string? day, string? month, int? year)
+        {
+            if (day != null)
+            {
+
+                if (!DateTime.TryParseExact(day, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'ngày/tháng/năm' (vd: '26/01/2023').");
+
+                }
+                // Lọc danh sách payment theo ngày/tháng/năm đã chọn
+                var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
+                    .Where(p => !p.DeletedTime.HasValue
+                    && p.CreatedTime.Date == parsedDate.Date
+                    && p.Status == BookingStatus.Completed && p.Status == BookingStatus.Refunded)
+                    .ToListAsync();
+                long CommissionRevenue = 0;
+                long TourGuideRevenue = 0;
+                foreach (var booking in bookingList)
+                {
+                    CommissionRevenue += (long)(booking.TotalPrice * 0.2);
+                    TourGuideRevenue += (long)(booking.TotalPrice * 0.8);
+                }
+                var totalRevenueModel = new TotalRevenueModel()
+                {
+                    CommissionRevenue = CommissionRevenue,
+                    TourGuideRevenue = TourGuideRevenue,
+                };
+
+                return await Task.FromResult(totalRevenueModel);
+            }
+            // Lọc theo tháng (format: MM/yyyy)
+            if (!string.IsNullOrWhiteSpace(month))
+            {
+                if (!DateTime.TryParseExact(month, "MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'tháng/năm' (vd: '01/2023').");
+                }
+                // Lọc danh sách payment theo ngày/tháng/năm đã chọn
+                var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
+                    .Where(p => !p.DeletedTime.HasValue)
+                    .Where(p => p.CreatedTime.Month == parsedDate.Month && p.CreatedTime.Year == parsedDate.Year
+                     && p.Status == BookingStatus.Completed && p.Status == BookingStatus.Refunded)
+                    .ToListAsync();
+                long CommissionRevenue = 0;
+                long TourGuideRevenue = 0;
+                foreach (var booking in bookingList)
+                {
+                    CommissionRevenue += (long)(booking.TotalPrice * 0.2);
+                    TourGuideRevenue += (long)(booking.TotalPrice * 0.8);
+                }
+                var totalRevenueModel = new TotalRevenueModel()
+                {
+                    CommissionRevenue = CommissionRevenue,
+                    TourGuideRevenue = TourGuideRevenue,
+                };
+                return await Task.FromResult(totalRevenueModel);
+
+            }
+
+            // Lọc theo năm (format: yyyy)
+            if (year != null)
+            {
+                var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
+                    .Where(p => !p.DeletedTime.HasValue)
+                    .Where(p => p.CreatedTime.Year == year && p.Status == BookingStatus.Completed && p.Status == BookingStatus.Refunded)
+                    .ToListAsync();
+                long CommissionRevenue = 0;
+                long TourGuideRevenue = 0;
+                foreach (var booking in bookingList)
+                {
+                    CommissionRevenue += (long)(booking.TotalPrice * 0.2);
+                    TourGuideRevenue += (long)(booking.TotalPrice * 0.8);
+                }
+                var totalRevenueModel = new TotalRevenueModel()
+                {
+                    CommissionRevenue = CommissionRevenue,
+                    TourGuideRevenue = TourGuideRevenue,
+                };
+                return await Task.FromResult(totalRevenueModel);
+            }
+            else
+            {
+                var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
+                    .Where(p => !p.DeletedTime.HasValue && p.Status == BookingStatus.Completed && p.Status == BookingStatus.Refunded)
+                    .ToListAsync();
+                long CommissionRevenue = 0;
+                long TourGuideRevenue = 0;
+                foreach (var booking in bookingList)
+                {
+                    CommissionRevenue += (long)(booking.TotalPrice * 0.2);
+                    TourGuideRevenue += (long)(booking.TotalPrice * 0.8);
+                }
+                var totalRevenueModel = new TotalRevenueModel()
+                {
+                    CommissionRevenue = CommissionRevenue,
+                    TourGuideRevenue = TourGuideRevenue,
+                };
+                return await Task.FromResult(totalRevenueModel);
+            }
+        }
         private async Task SendTourCancellationEmailNoDeposit(ApplicationUser customer, Booking booking)
         {
             await _emailService.SendEmailAsync(
