@@ -8,6 +8,7 @@ namespace Wanvi.ModelViews.BookingModelViews
 {
     public class BookingStatisticsModel
     {
+        public string Time { get; set; }
         public int TotalBooking { get; set; }
         public int TotalCompleted {  get; set; }
         public int TotalCancelled { get; set; }

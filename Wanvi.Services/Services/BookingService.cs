@@ -13,6 +13,7 @@ using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
+using Wanvi.Core.Utils;
 using Wanvi.ModelViews.AuthModelViews;
 using Wanvi.ModelViews.BookingModelViews;
 using Wanvi.ModelViews.PaymentModelViews;
@@ -979,7 +980,7 @@ namespace Wanvi.Services.Services
             return "Hủy đơn thành công!";
         }
 
-        public async Task<BookingStatisticsModel> BookingStatistics(string? day, string? month, int? year)
+        public async Task<List<BookingStatisticsModel>> BookingStatistics(string? day, string? month, int? year)
         {
             if (day != null)
             {
@@ -993,15 +994,17 @@ namespace Wanvi.Services.Services
                 var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
                     .Where(p => !p.DeletedTime.HasValue && p.CreatedTime.Date == parsedDate.Date)
                     .ToListAsync();
+                var bookingStatisticList = new List<BookingStatisticsModel>();
 
                 var bookingStatistic = new BookingStatisticsModel()
                 {
+                    Time = day,
                     TotalBooking = bookingList.Count,
-                    TotalCompleted = bookingList.Count(x => x.Status == BookingStatus.Completed && x.Status == BookingStatus.Refunded),
+                    TotalCompleted = bookingList.Count(x => x.Status == BookingStatus.Completed || x.Status == BookingStatus.Refunded),
                     TotalCancelled = bookingList.Count(x => x.Status == BookingStatus.Cancelled)
                 };
-
-                return await Task.FromResult(bookingStatistic);
+                bookingStatisticList.Add(bookingStatistic);
+                return await Task.FromResult(bookingStatisticList);
             }
             // Lọc theo tháng (format: MM/yyyy)
             if (!string.IsNullOrWhiteSpace(month))
@@ -1015,13 +1018,16 @@ namespace Wanvi.Services.Services
                     .Where(p => !p.DeletedTime.HasValue)
                     .Where(p => p.CreatedTime.Month == parsedDate.Month && p.CreatedTime.Year == parsedDate.Year)
                     .ToListAsync();
+                var bookingStatisticList = new List<BookingStatisticsModel>();
                 var bookingStatistic = new BookingStatisticsModel()
                 {
+                    Time = month,
                     TotalBooking = bookingList.Count,
-                    TotalCompleted = bookingList.Count(x => x.Status == BookingStatus.Completed && x.Status == BookingStatus.Refunded),
+                    TotalCompleted = bookingList.Count(x => x.Status == BookingStatus.Completed || x.Status == BookingStatus.Refunded),
                     TotalCancelled = bookingList.Count(x => x.Status == BookingStatus.Cancelled)
                 };
-                return await Task.FromResult(bookingStatistic);
+                bookingStatisticList.Add(bookingStatistic);
+                return await Task.FromResult(bookingStatisticList);
 
             }
 
@@ -1029,32 +1035,45 @@ namespace Wanvi.Services.Services
             if (year != null)
             {
                 var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
-                    .Where(p => !p.DeletedTime.HasValue)
-                    .Where(p => p.CreatedTime.Year == year)
+                    .Where(p => !p.DeletedTime.HasValue && p.CreatedTime.Year == year)
                     .ToListAsync();
-                var bookingStatistic = new BookingStatisticsModel()
+                var bookingStatisticList = new List<BookingStatisticsModel>();
+                for (int i = 1; i <= 12; i++)
                 {
-                    TotalBooking = bookingList.Count,
-                    TotalCompleted = bookingList.Count(x => x.Status == BookingStatus.Completed && x.Status == BookingStatus.Refunded),
-                    TotalCancelled = bookingList.Count(x => x.Status == BookingStatus.Cancelled)
-                };
-                return await Task.FromResult(bookingStatistic);
+                    var bookingStatistic = new BookingStatisticsModel()
+                    {
+                        Time = $"{i}/{year}",
+                        TotalBooking = bookingList.Count(x => x.CreatedTime.Month == i),
+                        TotalCompleted = bookingList.Count(x => (x.Status == BookingStatus.Completed || x.Status == BookingStatus.Refunded) && x.CreatedTime.Month == i),
+                        TotalCancelled = bookingList.Count(x => x.Status == BookingStatus.Cancelled && x.CreatedTime.Month == i)
+                    };
+                    bookingStatisticList.Add(bookingStatistic);
+                }
+                return await Task.FromResult(bookingStatisticList);
             }
             else
             {
+                int yearNow = DateTime.Now.Year;
                 var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
-                    .Where(p => !p.DeletedTime.HasValue)
+                    .Where(p => !p.DeletedTime.HasValue && p.CreatedTime.Year == yearNow)
                     .ToListAsync();
-                var bookingStatistic = new BookingStatisticsModel()
+                var bookingStatisticList = new List<BookingStatisticsModel>();
+                for (int i = 1; i <= 12; i++)
                 {
-                    TotalBooking = bookingList.Count,
-                    TotalCompleted = bookingList.Count(x => x.Status == BookingStatus.Completed && x.Status == BookingStatus.Refunded),
-                    TotalCancelled = bookingList.Count(x => x.Status == BookingStatus.Cancelled)
-                };
-                return await Task.FromResult(bookingStatistic);
+                    var bookingStatistic = new BookingStatisticsModel()
+                    {
+                        Time = $"{i}/{yearNow}",
+                        TotalBooking = bookingList.Count(x => x.CreatedTime.Month == i),
+                        TotalCompleted = bookingList.Count(x => (x.Status == BookingStatus.Completed || x.Status == BookingStatus.Refunded) && x.CreatedTime.Month == i),
+                        TotalCancelled = bookingList.Count(x => x.Status == BookingStatus.Cancelled && x.CreatedTime.Month == i)
+                    };
+                    bookingStatisticList.Add(bookingStatistic);
+                }
+
+                return await Task.FromResult(bookingStatisticList);
             }
         }
-        public async Task<TotalRevenueModel> TotalRevenue(string? day, string? month, int? year)
+        public async Task<List<TotalRevenueModel>> TotalRevenue(string? day, string? month, int? year)
         {
             if (day != null)
             {
@@ -1068,10 +1087,11 @@ namespace Wanvi.Services.Services
                 var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
                     .Where(p => !p.DeletedTime.HasValue
                     && p.CreatedTime.Date == parsedDate.Date
-                    && p.Status == BookingStatus.Completed && p.Status == BookingStatus.Refunded)
+                    && (p.Status == BookingStatus.Completed || p.Status == BookingStatus.Refunded))
                     .ToListAsync();
                 long CommissionRevenue = 0;
                 long TourGuideRevenue = 0;
+                var totalRevenueModelList = new List<TotalRevenueModel>();
                 foreach (var booking in bookingList)
                 {
                     CommissionRevenue += (long)(booking.TotalPrice * 0.2);
@@ -1079,11 +1099,13 @@ namespace Wanvi.Services.Services
                 }
                 var totalRevenueModel = new TotalRevenueModel()
                 {
+                    Time = day,
                     CommissionRevenue = CommissionRevenue,
                     TourGuideRevenue = TourGuideRevenue,
                 };
+                totalRevenueModelList.Add(totalRevenueModel);
 
-                return await Task.FromResult(totalRevenueModel);
+                return await Task.FromResult(totalRevenueModelList);
             }
             // Lọc theo tháng (format: MM/yyyy)
             if (!string.IsNullOrWhiteSpace(month))
@@ -1096,10 +1118,11 @@ namespace Wanvi.Services.Services
                 var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
                     .Where(p => !p.DeletedTime.HasValue)
                     .Where(p => p.CreatedTime.Month == parsedDate.Month && p.CreatedTime.Year == parsedDate.Year
-                     && p.Status == BookingStatus.Completed && p.Status == BookingStatus.Refunded)
+                     && (p.Status == BookingStatus.Completed || p.Status == BookingStatus.Refunded))
                     .ToListAsync();
                 long CommissionRevenue = 0;
                 long TourGuideRevenue = 0;
+                var totalRevenueModelList = new List<TotalRevenueModel>();
                 foreach (var booking in bookingList)
                 {
                     CommissionRevenue += (long)(booking.TotalPrice * 0.2);
@@ -1107,10 +1130,12 @@ namespace Wanvi.Services.Services
                 }
                 var totalRevenueModel = new TotalRevenueModel()
                 {
+                    Time = month,
                     CommissionRevenue = CommissionRevenue,
                     TourGuideRevenue = TourGuideRevenue,
                 };
-                return await Task.FromResult(totalRevenueModel);
+                totalRevenueModelList.Add(totalRevenueModel);
+                return await Task.FromResult(totalRevenueModelList);
 
             }
 
@@ -1119,40 +1144,60 @@ namespace Wanvi.Services.Services
             {
                 var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
                     .Where(p => !p.DeletedTime.HasValue)
-                    .Where(p => p.CreatedTime.Year == year && p.Status == BookingStatus.Completed && p.Status == BookingStatus.Refunded)
+                    .Where(p => p.CreatedTime.Year == year && (p.Status == BookingStatus.Completed || p.Status == BookingStatus.Refunded))
                     .ToListAsync();
-                long CommissionRevenue = 0;
-                long TourGuideRevenue = 0;
-                foreach (var booking in bookingList)
+
+                var totalRevenueModelList = new List<TotalRevenueModel>();
+
+                for (int i = 1; i <= 12; i++)
                 {
-                    CommissionRevenue += (long)(booking.TotalPrice * 0.2);
-                    TourGuideRevenue += (long)(booking.TotalPrice * 0.8);
+                    long CommissionRevenue = 0;
+                    long TourGuideRevenue = 0;
+                    foreach (var booking in bookingList.Where(x => x.CreatedTime.Month == i))
+                    {
+                        CommissionRevenue += (long)(booking.TotalPrice * 0.2);
+                        TourGuideRevenue += (long)(booking.TotalPrice * 0.8);
+                    }
+                    var totalRevenueModel = new TotalRevenueModel()
+                    {
+                        Time = $"{i}/{year}",
+                        CommissionRevenue = CommissionRevenue,
+                        TourGuideRevenue = TourGuideRevenue,
+                    };
+                    totalRevenueModelList.Add(totalRevenueModel);
                 }
-                var totalRevenueModel = new TotalRevenueModel()
-                {
-                    CommissionRevenue = CommissionRevenue,
-                    TourGuideRevenue = TourGuideRevenue,
-                };
-                return await Task.FromResult(totalRevenueModel);
+
+                return await Task.FromResult(totalRevenueModelList);
             }
             else
             {
+                int yearNow = DateTime.Now.Year;
                 var bookingList = await _unitOfWork.GetRepository<Booking>().Entities
-                    .Where(p => !p.DeletedTime.HasValue && p.Status == BookingStatus.Completed && p.Status == BookingStatus.Refunded)
+                    .Where(p => !p.DeletedTime.HasValue && (p.Status == BookingStatus.Completed
+                    || p.Status == BookingStatus.Refunded)
+                    && p.CreatedTime.Year == yearNow)
                     .ToListAsync();
-                long CommissionRevenue = 0;
-                long TourGuideRevenue = 0;
-                foreach (var booking in bookingList)
+
+                var totalRevenueModelList = new List<TotalRevenueModel>();
+
+                for (int i = 1; i <= 12; i++)
                 {
-                    CommissionRevenue += (long)(booking.TotalPrice * 0.2);
-                    TourGuideRevenue += (long)(booking.TotalPrice * 0.8);
+                    long CommissionRevenue = 0;
+                    long TourGuideRevenue = 0;
+                    foreach (var booking in bookingList.Where(x => x.CreatedTime.Month == i))
+                    {
+                        CommissionRevenue += (long)(booking.TotalPrice * 0.2);
+                        TourGuideRevenue += (long)(booking.TotalPrice * 0.8);
+                    }
+                    var totalRevenueModel = new TotalRevenueModel()
+                    {
+                        Time = $"{i}/{yearNow}",
+                        CommissionRevenue = CommissionRevenue,
+                        TourGuideRevenue = TourGuideRevenue,
+                    };
+                    totalRevenueModelList.Add(totalRevenueModel);
                 }
-                var totalRevenueModel = new TotalRevenueModel()
-                {
-                    CommissionRevenue = CommissionRevenue,
-                    TourGuideRevenue = TourGuideRevenue,
-                };
-                return await Task.FromResult(totalRevenueModel);
+                return await Task.FromResult(totalRevenueModelList);
             }
         }
         private async Task SendTourCancellationEmailNoDeposit(ApplicationUser customer, Booking booking)
