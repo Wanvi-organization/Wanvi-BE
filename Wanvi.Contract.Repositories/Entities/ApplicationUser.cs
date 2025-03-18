@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations.Schema;
 using Wanvi.Core.Utils;
 
 namespace Wanvi.Contract.Repositories.Entities
@@ -41,7 +42,11 @@ namespace Wanvi.Contract.Repositories.Entities
         public virtual ICollection<Post> Posts { get; set; }
         public virtual ICollection<Request> Requests { get; set; }
         public virtual ICollection<Comment> Comments { get; set; }
-        public virtual ICollection<Review> Reviews { get; set; }
+        [InverseProperty("Traveler")]
+        public virtual ICollection<Review> TravelerReviews { get; set; }
+
+        [InverseProperty("LocalGuide")]
+        public virtual ICollection<Review> LocalGuideReviews { get; set; }
         public virtual ICollection<Subscription> Subscriptions { get; set; }
         public virtual ICollection<Tour> Tours { get; set; }
         public ApplicationUser()
