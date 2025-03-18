@@ -17,6 +17,6 @@ namespace Wanvi.Contract.Services.Interfaces
         Task PayOSCallback(PayOSWebhookRequest request);
         Task<string> CreateBookingHaftEnd(CreateBookingEndModel model);
         Task<string> DepositMoney(DepositMoneyRequest request);
-        Task<List<TransactionSummaryModel>> TransactionSummary(string? day, string? month, int? year, PaymentStatus? status);
+        Task<TransactionSummaryModel> TransactionSummary(string? day, string? month, int? year, PaymentStatus? status);
     }
 }

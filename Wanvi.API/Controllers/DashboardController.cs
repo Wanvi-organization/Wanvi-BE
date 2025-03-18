@@ -33,7 +33,7 @@ namespace Wanvi.API.Controllers
             return Ok(BaseResponse<ResponseDashboardModel>.OkResponse(result));
         }
         /// <summary>
-        /// Tổng hợp giao dịch trên app (thành công, thất bại, nạp tiền,...), thứ tự ưu tiên day>month>year
+        /// Tổng hợp giao dịch trên app, khi ko chọn gì mặc định lấy năm hiện tại (thành công, thất bại, nạp tiền,...), thứ tự ưu tiên day>month>year
         /// </summary>
         /// <param name="day">format điền vào là:21/01/2024</param>
         /// <param name="month">format điền vào là:01/2024</param>
@@ -43,7 +43,7 @@ namespace Wanvi.API.Controllers
         public async Task<IActionResult> TransactionSummary(string? day, string? month, int? year, PaymentStatus? status)
         {
             var res = await _paymentService.TransactionSummary(day, month, year, status);
-            return Ok(new BaseResponseModel<List<TransactionSummaryModel>>(
+            return Ok(new BaseResponseModel<TransactionSummaryModel>(
                 statusCode: StatusCodes.Status200OK,
                 code: ResponseCodeConstants.SUCCESS, // Thay bằng hằng số của bạn
                 data: res
