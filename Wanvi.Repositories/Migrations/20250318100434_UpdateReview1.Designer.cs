@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Wanvi.Repositories.Context;
 
@@ -11,9 +12,11 @@ using Wanvi.Repositories.Context;
 namespace Wanvi.Repositories.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250318100434_UpdateReview1")]
+    partial class UpdateReview1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -883,9 +886,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Property<string>("PostId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("ReviewId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("TourId")
                         .HasColumnType("nvarchar(450)");
 
@@ -899,8 +899,6 @@ namespace Wanvi.Repositories.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PostId");
-
-                    b.HasIndex("ReviewId");
 
                     b.HasIndex("TourId");
 
@@ -1323,8 +1321,8 @@ namespace Wanvi.Repositories.Migrations
                     b.Property<Guid?>("LocalGuideId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("Rating")
-                        .HasColumnType("int");
+                    b.Property<double>("Rating")
+                        .HasColumnType("float");
 
                     b.Property<int>("ReviewType")
                         .HasColumnType("int");
@@ -1776,19 +1774,12 @@ namespace Wanvi.Repositories.Migrations
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Wanvi.Contract.Repositories.Entities.Review", "Review")
-                        .WithMany("Medias")
-                        .HasForeignKey("ReviewId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.HasOne("Wanvi.Contract.Repositories.Entities.Tour", "Tour")
                         .WithMany("Medias")
                         .HasForeignKey("TourId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Post");
-
-                    b.Navigation("Review");
 
                     b.Navigation("Tour");
                 });
@@ -2152,11 +2143,6 @@ namespace Wanvi.Repositories.Migrations
                     b.Navigation("Medias");
 
                     b.Navigation("PostHashtags");
-                });
-
-            modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Review", b =>
-                {
-                    b.Navigation("Medias");
                 });
 
             modelBuilder.Entity("Wanvi.Contract.Repositories.Entities.Schedule", b =>

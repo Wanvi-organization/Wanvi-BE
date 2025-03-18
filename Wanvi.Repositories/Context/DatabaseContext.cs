@@ -239,18 +239,6 @@ namespace Wanvi.Repositories.Context
                 .HasForeignKey(n => n.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Review>()
-                .HasOne(r => r.Tour)
-                .WithMany(t => t.Reviews)
-                .HasForeignKey(r => r.TourId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Review>()
-                .HasOne(r => r.User)
-                .WithMany(u => u.Reviews)
-                .HasForeignKey(r => r.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
             modelBuilder.Entity<Media>()
                 .HasOne(r => r.Tour)
                 .WithMany(t => t.Medias)
@@ -311,6 +299,36 @@ namespace Wanvi.Repositories.Context
                 .WithMany(u => u.Tours)
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Booking>()
+                .HasOne(b => b.Review)
+                .WithOne(r => r.Booking)
+                .HasForeignKey<Review>(r => r.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.Tour)
+                .WithMany(t => t.Reviews)
+                .HasForeignKey(r => r.TourId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.Traveler)
+                .WithMany(u => u.TravelerReviews)
+                .HasForeignKey(r => r.TravelerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.LocalGuide)
+                .WithMany(u => u.LocalGuideReviews)
+                .HasForeignKey(r => r.LocalGuideId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Review>()
+                .HasMany(r => r.Medias)
+                .WithOne(m => m.Review)
+                .HasForeignKey(m => m.ReviewId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

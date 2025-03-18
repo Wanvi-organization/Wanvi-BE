@@ -134,7 +134,7 @@ namespace Wanvi.Services.Services
                     lg.MinHourlyRate,
                     lg.IsPremium,
                     lg.IsVerified,
-                    ReviewCount = lg.Reviews.Count
+                    ReviewCount = lg.LocalGuideReviews.Count
                 })
                 .ToListAsync();
 
