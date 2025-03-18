@@ -595,6 +595,10 @@ namespace Wanvi.Services.Services
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
             }
+            if (user.Violate == true)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị khóa");
+            }
 
             ApplicationUserRole roleUser = _unitOfWork.GetRepository<ApplicationUserRole>().Entities
                 .FirstOrDefault(x => x.UserId == user.Id)
@@ -629,6 +633,10 @@ namespace Wanvi.Services.Services
             if (user.DeletedTime.HasValue)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
+            }
+            if (user.Violate == true)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị khóa");
             }
 
             ApplicationUserRole roleUser = _unitOfWork.GetRepository<ApplicationUserRole>().Entities
@@ -677,6 +685,10 @@ namespace Wanvi.Services.Services
             if (user.DeletedTime.HasValue)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị xóa");
+            }
+            if (user.Violate == true)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản đã bị khóa");
             }
 
             ApplicationUserRole roleUser = _unitOfWork.GetRepository<ApplicationUserRole>().Entities
