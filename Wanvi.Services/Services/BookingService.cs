@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,7 +39,7 @@ namespace Wanvi.Services.Services
             _emailService = emailService;
         }
 
-        public async Task<List<GetBookingUsermodel>> GetBookingAdmin(
+        public async Task<List<GetBookingUserModel>> GetBookingAdmin(
             string? searchNote = null,
             string? sortBy = null,
             bool isAscending = false,
@@ -80,7 +81,7 @@ namespace Wanvi.Services.Services
 
             var bookings = await query.ToListAsync();
 
-            var bookingModels = bookings.Select(b => new GetBookingUsermodel
+            var bookingModels = bookings.Select(b => new GetBookingUserModel
             {
                 Id = b.Id.ToString(),
                 TotalTravelers = b.TotalTravelers,
@@ -96,7 +97,7 @@ namespace Wanvi.Services.Services
             return bookingModels;
         }
 
-        public async Task<List<GetBookingUsermodel>> GetBookingUser(
+        public async Task<List<GetBookingUserModel>> GetBookingUser(
             string? searchNote = null,
             string? sortBy = null,
             bool isAscending = false,
@@ -138,7 +139,7 @@ namespace Wanvi.Services.Services
 
             var bookings = await query.ToListAsync();
 
-            var bookingModels = bookings.Select(b => new GetBookingUsermodel
+            var bookingModels = bookings.Select(b => new GetBookingUserModel
             {
                 Id = b.Id.ToString(),
                 TotalTravelers = b.TotalTravelers,
@@ -160,8 +161,8 @@ namespace Wanvi.Services.Services
             return status switch
             {
                 BookingStatus.DepositHaft => "Đặt cọc 50%",
-                BookingStatus.DepositAll => "Đặt cọc toàn bộ",
-                BookingStatus.DepositedHaft => "Đã đặt cọc một phần",
+                BookingStatus.DepositAll => "Đặt cọc 100%",
+                BookingStatus.DepositedHaft => "Đã đặt cọc 50%",
                 //BookingStatus.DepositHaftEnd => "Đặt cọc 50% còn lại",
                 BookingStatus.Paid => "Đã thanh toán",
                 BookingStatus.Completed => "Hoàn thành",
@@ -171,117 +172,209 @@ namespace Wanvi.Services.Services
             };
         }
 
-        public async Task<List<GetBookingGuideModel>> GetBookingsByTourGuide(
-            string? rentalDate = null,
-            string? status = null,
-            string? scheduleId = null,
-            int? minTravelers = null,
-            int? maxTravelers = null,
-            string? sortBy = "RentalDate",
-            bool ascending = false)
+        public async Task<List<GetBookingUserDetailModel>> GetBookingsByTourGuide(
+    string? rentalDate = null,
+    string? status = null,
+    string? scheduleId = null,
+    int? minTravelers = null,
+    int? maxTravelers = null)
         {
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
-            Guid.TryParse(userId, out Guid guideId);
-
-            // Lấy danh sách Tour của hướng dẫn viên
-            var tours = await _unitOfWork.GetRepository<Tour>()
-                .Entities.Where(t => t.UserId == guideId)
-                .ToListAsync();
-
-            var tourIds = tours.Select(t => t.Id).ToList();
-
-            var excludedStatuses = new[] { BookingStatus.Completed, BookingStatus.Cancelled, BookingStatus.Refunded };
-
-            // Lấy danh sách Booking
-            var bookings = await _unitOfWork.GetRepository<Booking>()
-                .Entities
-                .Where(b => tourIds.Contains(b.Schedule.TourId)
-                            && !excludedStatuses.Contains(b.Status))
-                .Include(b => b.Schedule)
-                .ToListAsync();
-
-            // Nhóm Booking theo ScheduleId + RentalDate
-            var groupedBookings = bookings
-                .GroupBy(b => new { b.ScheduleId, b.RentalDate })
-                .Select(group =>
-                {
-                    var bookingsList = group.ToList();
-                    var allBookingDetailsCompleted = bookingsList
-                        .All(d => excludedStatuses.Contains(d.Status));
-
-                    return new GetBookingGuideModel
-                    {
-
-                        RentalDate = group.Key.RentalDate.ToString("dd/MM/yyyy"),
-                        TotalTravelers = group.Sum(b => b.TotalTravelers),
-                        MaxTraveler = group.First().Schedule.MaxTraveler,
-                        BookedTraveler = bookingsList.Where(b => !excludedStatuses.Contains(b.Status)).Sum(b => b.TotalTravelers),
-                        //Status = allBookingDetailsCompleted ? "Hoàn thành" : "Chưa hoàn thành",
-
-                        Bookings = bookingsList.Select(b => new GetBookingUsermodel
-                        {
-                            Id = b.Id.ToString(),
-                            TotalTravelers = b.TotalTravelers,
-                            TotalPrice = b.TotalPrice,
-                            Note = b.Note,
-                            RentalDate = b.RentalDate.ToString("dd/MM/yyyy"),
-                            Status = ConvertStatusToString(b.Status),
-                            StartTime = b.Schedule?.StartTime.ToString(@"hh\:mm") ?? "00:00",
-                            EndTime = b.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00",
-                            TourName = b.Schedule.Tour.Name
-                        }).ToList()
-                    };
-                })
-                .ToList();
-
-            // **💡 BƯỚC 1: Tìm kiếm**
-            if (!string.IsNullOrEmpty(rentalDate))
+            if (!Guid.TryParse(userId, out Guid guideId))
             {
-                groupedBookings = groupedBookings
-                    .Where(b => b.RentalDate == rentalDate)
-                    .ToList();
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "UserId không hợp lệ.");
             }
 
-            //if (!string.IsNullOrEmpty(status))
-            //{
-            //    groupedBookings = groupedBookings
-            //        .Where(b => b.Status.Equals(status, StringComparison.OrdinalIgnoreCase))
-            //        .ToList();
-            //}
+            var excludedStatuses = new[]
+            {
+        BookingStatus.Completed, BookingStatus.Cancelled, BookingStatus.Refunded,
+        BookingStatus.DepositAll, BookingStatus.DepositHaft
+    };
+
+            // **💡 Lấy danh sách Booking của hướng dẫn viên theo Tour.UserId**
+            var bookings = await _unitOfWork.GetRepository<Booking>()
+                .Entities
+                .Where(b => b.Schedule.Tour.UserId == guideId
+                            && !excludedStatuses.Contains(b.Status))
+                .OrderBy(x => x.RentalDate)
+                .Include(b => b.Schedule)
+                .ThenInclude(s => s.Tour)
+                .ToListAsync();
+
+            if (!bookings.Any())
+            {
+                return new List<GetBookingUserDetailModel>(); // Không có dữ liệu, trả về danh sách rỗng
+            }
+
+            // **💡 Gom nhóm theo `ScheduleId` + `RentalDate` để loại bỏ trùng ngày**
+            var groupedBookings = bookings
+                .GroupBy(b => new { b.ScheduleId, b.RentalDate }) // Nhóm theo ScheduleId + Ngày đặt
+                .Select(g => new GetBookingUserDetailModel
+                {
+                    ScheduleId = g.Key.ScheduleId.ToString(),
+                    RentalDate = g.Key.RentalDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN")),
+                    TotalTravelers = g.Sum(b => b.TotalTravelers), // **Cộng tổng số khách**
+                    TotalTravelersOfTour = g.First().Schedule.MaxTraveler, // **Số khách tối đa của tour**
+                    StartTime = g.First().Schedule.StartTime.ToString(@"hh\:mm"),
+                    EndTime = g.First().Schedule.EndTime.ToString(@"hh\:mm"),
+                    TourName = g.First().Schedule.Tour?.Name ?? "Không có dữ liệu"
+                })
+                //.OrderBy(g => Math.Abs((DateTime.ParseExact(g.RentalDate.Split(", ")[1], "dd/MM/yyyy", new CultureInfo("vi-VN")) - DateTime.Now).TotalDays)) // **Sắp xếp ngày gần nhất lên đầu**
+                .ToList();
+
+            // **💡 BƯỚC 1: Lọc theo điều kiện nếu có**
+            if (!string.IsNullOrEmpty(rentalDate))
+            {
+                if (DateTime.TryParseExact(rentalDate, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+                {
+                    groupedBookings = groupedBookings
+                        .Where(s => s.RentalDate.Contains(parsedDate.ToString("dd/MM/yyyy")))
+                        .ToList();
+                }
+            }
 
             if (minTravelers.HasValue)
             {
                 groupedBookings = groupedBookings
-                    .Where(b => b.TotalTravelers >= minTravelers.Value)
+                    .Where(s => s.TotalTravelers >= minTravelers.Value)
                     .ToList();
             }
 
             if (maxTravelers.HasValue)
             {
                 groupedBookings = groupedBookings
-                    .Where(b => b.TotalTravelers <= maxTravelers.Value)
+                    .Where(s => s.TotalTravelers <= maxTravelers.Value)
                     .ToList();
             }
 
-            // **💡 BƯỚC 2: Sắp xếp**
-            groupedBookings = sortBy switch
+            return groupedBookings;
+        }
+
+        public async Task<GetBookingGuideModel> GetBookingSummaryBySchedule(
+    string scheduleId,
+    string rentalDate,
+    string? status = null,
+    int? minPrice = null,
+    int? maxPrice = null,
+    string sortBy = "CustomerName",
+    bool ascending = true)
+        {
+            var excludedStatuses = new[]
             {
-                "RentalDate" => ascending
-                    ? groupedBookings.OrderBy(b => DateTime.ParseExact(b.RentalDate, "dd/MM/yyyy", null)).ToList()
-                    : groupedBookings.OrderByDescending(b => DateTime.ParseExact(b.RentalDate, "dd/MM/yyyy", null)).ToList(),
-
-                "TotalTravelers" => ascending
-                    ? groupedBookings.OrderBy(b => b.TotalTravelers).ToList()
-                    : groupedBookings.OrderByDescending(b => b.TotalTravelers).ToList(),
-
-                "BookedTraveler" => ascending
-                    ? groupedBookings.OrderBy(b => b.BookedTraveler).ToList()
-                    : groupedBookings.OrderByDescending(b => b.BookedTraveler).ToList(),
-
-                _ => groupedBookings
+        BookingStatus.Completed, BookingStatus.Cancelled, BookingStatus.Refunded,
+        BookingStatus.DepositAll, BookingStatus.DepositHaft
             };
 
-            return groupedBookings;
+            // **💡 Lấy Schedule & Tour theo ScheduleId**
+            var schedule = await _unitOfWork.GetRepository<Schedule>()
+                .Entities
+                .Where(s => s.Id == scheduleId)
+                .Include(s => s.Tour)
+                .Include(s => s.Bookings)
+                .ThenInclude(b => b.User) // Lấy thông tin khách hàng
+                .FirstOrDefaultAsync()
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy lịch trình.");
+
+            // **💡 Lọc Booking hợp lệ**
+            var validBookings = schedule.Bookings
+                .Where(b => !excludedStatuses.Contains(b.Status) && b.RentalDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN")) == rentalDate)
+                .ToList();
+
+            if (!validBookings.Any())
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không có đơn đặt chỗ hợp lệ.");
+            }
+
+            // **💡 Chuyển danh sách `Booking` thành `GetBookingUserByTourGuideModel`**
+            var bookings = validBookings
+                .Select(b => new GetBookingUserByTourGuideModel
+                {
+                    BookingId = b.Id.ToString(),
+                    CustomerName = b.User?.FullName ?? "Không có dữ liệu",
+                    Price = (int)b.TotalPrice,
+                    Status = ConvertStatusToString(b.Status)
+                })
+                .ToList();
+
+            // **💡 BƯỚC 1: Lọc dữ liệu**
+            if (!string.IsNullOrEmpty(status))
+            {
+                bookings = bookings
+                    .Where(b => b.Status.Equals(status, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            if (minPrice.HasValue)
+            {
+                bookings = bookings
+                    .Where(b => b.Price >= minPrice.Value)
+                    .ToList();
+            }
+
+            if (maxPrice.HasValue)
+            {
+                bookings = bookings
+                    .Where(b => b.Price <= maxPrice.Value)
+                    .ToList();
+            }
+
+            // **💡 BƯỚC 2: Sắp xếp danh sách `Bookings`**
+            bookings = sortBy switch
+            {
+                "CustomerName" => ascending
+                    ? bookings.OrderBy(b => b.CustomerName).ToList()
+                    : bookings.OrderByDescending(b => b.CustomerName).ToList(),
+
+                "Price" => ascending
+                    ? bookings.OrderBy(b => b.Price).ToList()
+                    : bookings.OrderByDescending(b => b.Price).ToList(),
+
+                _ => bookings
+            };
+
+            // **💡 Tạo `GetBookingGuideModel` duy nhất**
+            return new GetBookingGuideModel
+            {
+                TourName = schedule.Tour?.Name ?? "Không có dữ liệu",
+                RentalDate = rentalDate,
+                TotalBooking = validBookings.Count, // **Tổng số đơn**
+                TotailPrice = validBookings.Sum(b => (long)b.TotalPrice), // **Tổng doanh thu**
+                Bookings = bookings // **Danh sách Booking đã lọc & sắp xếp**
+            };
+        }
+
+        public async Task<GetBookingGuideScreen3Model> GetBookingDetailsById(string bookingId)
+        {
+
+            // **💡 Lấy thông tin Booking**
+            var booking = await _unitOfWork.GetRepository<Booking>()
+                .Entities
+                .Where(b => b.Id == bookingId)
+                .Include(b => b.User) // Thông tin khách hàng
+                .Include(b => b.Schedule)
+                .ThenInclude(s => s.Tour) // Lấy thông tin tour
+                .FirstOrDefaultAsync()
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy đơn hàng.");
+            var pickupAddress = await _unitOfWork.GetRepository<Address>().Entities.FirstOrDefaultAsync(x=>x.Id == booking.Schedule.Tour.PickupAddressId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy đại chỉ đón.");
+
+            var dropoffAddress = await _unitOfWork.GetRepository<Address>().Entities.FirstOrDefaultAsync(x => x.Id == booking.Schedule.Tour.DropoffAddressId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy đại chỉ trả.");
+
+            // **💡 Tạo `GetBookingGuideScreen3Model`**
+            return new GetBookingGuideScreen3Model
+            {
+                TourName = booking.Schedule?.Tour?.Name ?? "Không có dữ liệu",
+                TotailPrice = (long)booking.TotalPrice,
+                RentalDate = booking.RentalDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN")),
+                TotalCustomer = booking.TotalTravelers,
+                CustomerName = booking.User?.FullName ?? "Không có dữ liệu",
+                DropoffAddress = pickupAddress.Street,
+                PickupAddress = dropoffAddress.Street,
+                Status = ConvertStatusToString(booking.Status),
+                Note = booking.Note ?? "Không có ghi chú",
+                Email = booking.User.Email,
+                Phone = booking.User.PhoneNumber,
+                Gender = booking.User.Gender ? "Nam" : "Nữ",
+            };
         }
 
 
@@ -332,7 +425,7 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, $"Số người đăng kí lớn hơn số người mặc định({schedule.MaxTraveler} người)!");
             }
             // Lấy ngày tháng năm của DateOfArrival và ngày hiện tại để so sánh, điều kiện phải đặt trước 8 ngày
-            if (model.RentalDate.ToUniversalTime().Date < DateTime.Now.AddDays(8).Date)
+            if (model.RentalDate.Date < DateTime.Now.AddDays(8).Date)
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Bạn chỉ có thể đặt tour trước 8 ngày!");
             }
@@ -410,7 +503,7 @@ namespace Wanvi.Services.Services
 
             // Call PaymentService to generate payment link
             //string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(payOSRequest);
-            return "Tạo đơn hàng thành công";
+            return booking.Id;
         }
         public async Task<string> CreateBookingHaft(CreateBookingModel model)
         {
@@ -534,7 +627,7 @@ namespace Wanvi.Services.Services
 
             // Call PaymentService to generate payment link
             //string checkoutUrl = await _paymentService.CreatePayOSPaymentLink(payOSRequest);
-            return "Tạo đơn hàng thành công";
+            return booking.Id;
         }
 
         public async Task<string> ChangeBookingToUser(ChangeBookingToUserModel model)
@@ -873,7 +966,7 @@ namespace Wanvi.Services.Services
                 booking.Status = BookingStatus.Cancelled;
                 await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
                 await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(booking.User);
-               
+
                 // Gửi email thông báo hủy + hoàn tiền
                 await SendTourCancellationEmailWithRefund(booking.User, booking);
                 await _unitOfWork.SaveAsync();  // Lưu ngay sau khi cập nhật số dư

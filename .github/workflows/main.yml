@@ -45,6 +45,12 @@ jobs:
             echo "Container $CONTAINER_NAME không tồn tại, bỏ qua..."
           fi
 
+          # Giữ nguyên volume wwwroot_data, không xóa volume
+          echo "Đảm bảo volume wwwroot_data tồn tại..."
+          if ! docker volume inspect wwwroot_data >/dev/null 2>&1; then
+            docker volume create wwwroot_data
+          fi
+
       - name: Build container
         run: |
           echo "Building container..."

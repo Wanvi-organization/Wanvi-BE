@@ -699,9 +699,11 @@ namespace Wanvi.Services.Services
 
         public async Task LogoutAsync(RefreshTokenModel model)
         {
+            // Tải toàn bộ user (hoặc tối ưu hơn nếu bạn có userId từ JWT)
             var users = await _userManager.Users.ToListAsync();
 
-            ApplicationUser user = null;
+            // Tìm user có refresh token trùng khớp
+            ApplicationUser? user = null;
             foreach (var u in users)
             {
                 var token = await _userManager.GetAuthenticationTokenAsync(u, "Default", "RefreshToken");
@@ -714,11 +716,18 @@ namespace Wanvi.Services.Services
 
             if (user == null)
             {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Refresh token không hợp lệ");
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Refresh token không hợp lệ.");
             }
 
-            var result = await _userManager.RemoveAuthenticationTokenAsync(user, "Default", "RefreshToken");
+            // Kiểm tra token có hết hạn không
+            var expirationString = await _userManager.GetAuthenticationTokenAsync(user, "Default", "RefreshTokenExpiration");
+            if (!string.IsNullOrEmpty(expirationString) && DateTime.UtcNow > DateTime.Parse(expirationString))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Refresh token đã hết hạn.");
+            }
 
+            // Xóa Refresh Token
+            var result = await _userManager.RemoveAuthenticationTokenAsync(user, "Default", "RefreshToken");
             if (!result.Succeeded)
             {
                 throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, "Không thể logout, vui lòng thử lại.");

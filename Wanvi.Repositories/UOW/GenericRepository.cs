@@ -17,9 +17,12 @@ namespace Wanvi.Repositories.UOW
         }
         public IQueryable<T> Entities => _context.Set<T>();
 
-        public void Delete(object id)
+        public void Delete(T entity)
         {
-            T entity = _dbSet.Find(id) ?? throw new Exception();
+            if (entity == null)
+            {
+                throw new ArgumentNullException(nameof(entity));
+            }
             _dbSet.Remove(entity);
         }
 

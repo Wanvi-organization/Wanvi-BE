@@ -27,7 +27,11 @@ WORKDIR /app
 
 # Enable globalization and time zones
 RUN apk add --no-cache icu-libs tzdata
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+
+# Tạo thư mục wwwroot và cấp quyền cho user `app`
+RUN mkdir -p /app/wwwroot \
+    && chown -R app:app /app \
+    && chmod -R 755 /app
 
 # Copy published app
 COPY --from=build /app .

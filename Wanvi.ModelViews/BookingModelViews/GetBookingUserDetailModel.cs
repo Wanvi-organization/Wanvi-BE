@@ -6,14 +6,12 @@ using System.Threading.Tasks;
 
 namespace Wanvi.ModelViews.BookingModelViews
 {
-    public class GetBookingUserModel { 
-        public string Id { get; set; }
+    public class GetBookingUserDetailModel
+    {
+        public string ScheduleId { get; set; }
         public int TotalTravelers { get; set; }
         public int TotalTravelersOfTour { get; set; }
-        public double TotalPrice { get; set; }
-        public string? Note { get; set; }
         public string RentalDate { get; set; }
-        public string Status { get; set; }
         public string StartTime { get; set; }
         public string EndTime { get; set; }
         public string TourName { get; set; }
