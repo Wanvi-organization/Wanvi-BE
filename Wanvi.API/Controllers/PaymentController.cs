@@ -27,6 +27,23 @@ namespace Wanvi.API.Controllers
             _unitOfWork = unitOfWork;
         }
         /// <summary>
+        /// Tổng hợp giao dịch trên app (thành công, thất bại, nạp tiền,...), thứ tự ưu tiên day>month>year
+        /// </summary>
+        /// <param name="day">format điền vào là:21/01/2024</param>
+        /// <param name="month">format điền vào là:01/2024</param>
+        /// <param name="year">format điền vào là:01/2024</param>
+        /// <param name="status">0 là Chưa thanh toán, 1 là Đã thanh toán, 2 là Đã hoàn tiền, 3 là Đã hủy, 4 là Chưa nạp tiền, 5 là Đã nạp tiền</param>
+        [HttpGet("Transaction_Summary")]
+        public async Task<IActionResult> TransactionSummary(string? day, string? month, int? year, PaymentStatus? status)
+        {
+            var res = await _paymentService.TransactionSummary(day, month, year, status);
+            return Ok(new BaseResponseModel<List<TransactionSummaryModel>>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS, // Thay bằng hằng số của bạn
+                data: res
+            ));
+        }
+        /// <summary>
         /// Tạo link thanh toán dành cho hóa đơn 100%
         /// </summary>
         [HttpPost("create_payment_all_link")]
