@@ -28,5 +28,6 @@ namespace Wanvi.Contract.Repositories.Entities
         public virtual ApplicationUser User { get; set; }
         public virtual ICollection<BookingDetail> BookingDetails { get; set; }
         public virtual ICollection<Payment> Payments { get; set; }
+        public virtual Review Review { get; set; }
     }
 }

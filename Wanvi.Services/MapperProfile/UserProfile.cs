@@ -14,7 +14,7 @@ namespace Wanvi.Services.MapperProfile
                         .SelectMany(s => s.Bookings)
                         .Count(b => b.Status == BookingStatus.Completed || b.Status == BookingStatus.Refunded)
             ))
-            .ForMember(dest => dest.ReviewCount, opt => opt.MapFrom(src => src.Reviews.Count))
+            .ForMember(dest => dest.ReviewCount, opt => opt.MapFrom(src => src.LocalGuideReviews.Count))
             .ReverseMap();
         }
     }
