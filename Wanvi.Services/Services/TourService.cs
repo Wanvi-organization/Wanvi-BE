@@ -421,124 +421,211 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
         }
 
-        //public async Task<TourStatisticsModel> GetTourStatistics(string? day, string? month, int? year)
-        //{
-        //    if (day != null)
-        //    {
-        //        // Lọc theo ngày (format: dd/MM/yyyy)
-        //        if (!DateTime.TryParseExact(day, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
-        //        {
-        //            throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'ngày/tháng/năm' (vd: '26/01/2023').");
-        //        }
+        public async Task<TourStatisticsModel> GetTourStatistics(string? day, string? month, int? year)
+        {
+            if (day != null)
+            {
+                // Lọc theo ngày (format: dd/MM/yyyy)
+                if (!DateTime.TryParseExact(day, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'ngày/tháng/năm' (vd: '26/01/2023').");
+                }
 
-        //        var tours = await _unitOfWork.GetRepository<Tour>().Entities
-        //            .Where(t => !t.DeletedTime.HasValue)
-        //            .ToListAsync();
+                var tours = await _unitOfWork.GetRepository<Tour>().Entities
+                    .Where(t => !t.DeletedTime.HasValue)
+                    .ToListAsync();
 
-        //        var bookings = await _unitOfWork.GetRepository<Booking>().Entities
-        //            .Where(b => !b.DeletedTime.HasValue && b.CreatedTime.Date == parsedDate.Date)
-        //            .ToListAsync();
+                var bookings = await _unitOfWork.GetRepository<Booking>().Entities
+                    .Where(b => !b.DeletedTime.HasValue && b.CreatedTime.Date == parsedDate.Date)
+                    .ToListAsync();
 
-        //        var tourStatistics = new TourStatisticsModel
-        //        {
-        //            TimePeriod = day,
-        //            TotalTours = tours.Count,
-        //            TotalByArea = tours.Count(t => t.PickupAddress.Area == "Khu vực cụ thể"),  // Giả sử khu vực được lưu trong Address
-        //            PopularTours = tours.Select(tour => new PopularTourModel
-        //            {
-        //                TourName = tour.Name,
-        //                BookingRate = bookings.Count(b => b.TourId == tour.Id) / (double)bookings.Count(),
-        //                CancelRate = bookings.Count(b => b.TourId == tour.Id && b.Status == BookingStatus.Cancelled) / (double)bookings.Count()
-        //            }).OrderByDescending(t => t.BookingRate).ThenBy(t => t.CancelRate).ToList()
-        //        };
+                // Tạo thống kê tour theo thành phố
+                var cityStats = new List<CityTourStatisticsModel>();
+                foreach (var tour in tours)
+                {
+                    var cityName = await GetCityNameById(tour.PickupAddress.District.CityId);
+                    var cityStat = cityStats.FirstOrDefault(c => c.CityName == cityName);
+                    if (cityStat == null)
+                    {
+                        cityStats.Add(new CityTourStatisticsModel
+                        {
+                            CityName = cityName,
+                            TotalToursInCity = 1
+                        });
+                    }
+                    else
+                    {
+                        cityStat.TotalToursInCity++;
+                    }
+                }
 
-        //        return tourStatistics;
-        //    }
+                var tourStatistics = new TourStatisticsModel
+                {
+                    TimePeriod = day,
+                    TotalTours = tours.Count,
+                    CityStatistics = cityStats,  // Thêm thống kê tour theo thành phố
+                    PopularTours = tours.Select(tour => new PopularTourModel
+                    {
+                        TourName = tour.Name,
+                        BookingRate = bookings.Count(b => b.Schedule.TourId == tour.Id) / (double)bookings.Count(),
+                        CancelRate = bookings.Count(b => b.Schedule.TourId == tour.Id && b.Status == BookingStatus.Cancelled) / (double)bookings.Count()
+                    }).OrderByDescending(t => t.BookingRate).ThenBy(t => t.CancelRate).ToList()
+                };
 
-        //    // Lọc theo tháng (format: MM/yyyy)
-        //    if (!string.IsNullOrWhiteSpace(month))
-        //    {
-        //        if (!DateTime.TryParseExact(month, "MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
-        //        {
-        //            throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'tháng/năm' (vd: '01/2023').");
-        //        }
+                return tourStatistics;
+            }
 
-        //        var tours = await _unitOfWork.GetRepository<Tour>().Entities
-        //            .Where(t => !t.DeletedTime.HasValue)
-        //            .ToListAsync();
+            // Lọc theo tháng (format: MM/yyyy)
+            if (!string.IsNullOrWhiteSpace(month))
+            {
+                if (!DateTime.TryParseExact(month, "MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+                {
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'tháng/năm' (vd: '01/2023').");
+                }
 
-        //        var bookings = await _unitOfWork.GetRepository<Booking>().Entities
-        //            .Where(b => !b.DeletedTime.HasValue && b.CreatedTime.Month == parsedDate.Month && b.CreatedTime.Year == parsedDate.Year)
-        //            .ToListAsync();
+                var tours = await _unitOfWork.GetRepository<Tour>().Entities
+                    .Where(t => !t.DeletedTime.HasValue)
+                    .ToListAsync();
 
-        //        var tourStatistics = new TourStatisticsModel
-        //        {
-        //            TimePeriod = month,
-        //            TotalTours = tours.Count,
-        //            TotalByArea = tours.Count(t => t.PickupAddress.Area == "Khu vực cụ thể"),  // Giả sử khu vực được lưu trong Address
-        //            PopularTours = tours.Select(tour => new PopularTourModel
-        //            {
-        //                TourName = tour.Name,
-        //                BookingRate = bookings.Count(b => b.TourId == tour.Id) / (double)bookings.Count(),
-        //                CancelRate = bookings.Count(b => b.TourId == tour.Id && b.Status == BookingStatus.Cancelled) / (double)bookings.Count()
-        //            }).OrderByDescending(t => t.BookingRate).ThenBy(t => t.CancelRate).ToList()
-        //        };
+                var bookings = await _unitOfWork.GetRepository<Booking>().Entities
+                    .Where(b => !b.DeletedTime.HasValue && b.CreatedTime.Month == parsedDate.Month && b.CreatedTime.Year == parsedDate.Year)
+                    .ToListAsync();
 
-        //        return tourStatistics;
-        //    }
+                // Tạo thống kê tour theo thành phố
+                var cityStats = new List<CityTourStatisticsModel>();
+                foreach (var tour in tours)
+                {
+                    var cityName = await GetCityNameById(tour.PickupAddress.District.CityId);
+                    var cityStat = cityStats.FirstOrDefault(c => c.CityName == cityName);
+                    if (cityStat == null)
+                    {
+                        cityStats.Add(new CityTourStatisticsModel
+                        {
+                            CityName = cityName,
+                            TotalToursInCity = 1
+                        });
+                    }
+                    else
+                    {
+                        cityStat.TotalToursInCity++;
+                    }
+                }
 
-        //    // Lọc theo năm (format: yyyy)
-        //    if (year != null)
-        //    {
-        //        var tours = await _unitOfWork.GetRepository<Tour>().Entities
-        //            .Where(t => !t.DeletedTime.HasValue)
-        //            .ToListAsync();
+                var tourStatistics = new TourStatisticsModel
+                {
+                    TimePeriod = month,
+                    TotalTours = tours.Count,
+                    CityStatistics = cityStats,  // Thêm thống kê tour theo thành phố
+                    PopularTours = tours.Select(tour => new PopularTourModel
+                    {
+                        TourName = tour.Name,
+                        BookingRate = bookings.Count(b => b.Schedule.TourId == tour.Id) / (double)bookings.Count(),
+                        CancelRate = bookings.Count(b => b.Schedule.TourId == tour.Id && b.Status == BookingStatus.Cancelled) / (double)bookings.Count()
+                    }).OrderByDescending(t => t.BookingRate).ThenBy(t => t.CancelRate).ToList()
+                };
 
-        //        var bookings = await _unitOfWork.GetRepository<Booking>().Entities
-        //            .Where(b => !b.DeletedTime.HasValue && b.CreatedTime.Year == year)
-        //            .ToListAsync();
+                return tourStatistics;
+            }
 
-        //        var tourStatistics = new TourStatisticsModel
-        //        {
-        //            TimePeriod = year.ToString(),
-        //            TotalTours = tours.Count,
-        //            TotalByArea = tours.Count(t => t.PickupAddress.Area == "Khu vực cụ thể"),  // Giả sử khu vực được lưu trong Address
-        //            PopularTours = tours.Select(tour => new PopularTourModel
-        //            {
-        //                TourName = tour.Name,
-        //                BookingRate = bookings.Count(b => b.TourId == tour.Id) / (double)bookings.Count(),
-        //                CancelRate = bookings.Count(b => b.TourId == tour.Id && b.Status == BookingStatus.Cancelled) / (double)bookings.Count()
-        //            }).OrderByDescending(t => t.BookingRate).ThenBy(t => t.CancelRate).ToList()
-        //        };
+            // Lọc theo năm (format: yyyy)
+            if (year != null)
+            {
+                var tours = await _unitOfWork.GetRepository<Tour>().Entities
+                    .Where(t => !t.DeletedTime.HasValue)
+                    .ToListAsync();
 
-        //        return tourStatistics;
-        //    }
+                var bookings = await _unitOfWork.GetRepository<Booking>().Entities
+                    .Where(b => !b.DeletedTime.HasValue && b.CreatedTime.Year == year)
+                    .ToListAsync();
 
-        //    // Nếu không có tham số nào, lấy theo năm hiện tại
-        //    int currentYear = DateTime.Now.Year;
-        //    var toursDefault = await _unitOfWork.GetRepository<Tour>().Entities
-        //        .Where(t => !t.DeletedTime.HasValue)
-        //        .ToListAsync();
+                // Tạo thống kê tour theo thành phố
+                var cityStats = new List<CityTourStatisticsModel>();
+                foreach (var tour in tours)
+                {
+                    var cityName = await GetCityNameById(tour.PickupAddress.District.CityId);
+                    var cityStat = cityStats.FirstOrDefault(c => c.CityName == cityName);
+                    if (cityStat == null)
+                    {
+                        cityStats.Add(new CityTourStatisticsModel
+                        {
+                            CityName = cityName,
+                            TotalToursInCity = 1
+                        });
+                    }
+                    else
+                    {
+                        cityStat.TotalToursInCity++;
+                    }
+                }
 
-        //    var bookingsDefault = await _unitOfWork.GetRepository<Booking>().Entities
-        //        .Where(b => !b.DeletedTime.HasValue && b.CreatedTime.Year == currentYear)
-        //        .ToListAsync();
+                var tourStatistics = new TourStatisticsModel
+                {
+                    TimePeriod = year.ToString(),
+                    TotalTours = tours.Count,
+                    CityStatistics = cityStats,  // Thêm thống kê tour theo thành phố
+                    PopularTours = tours.Select(tour => new PopularTourModel
+                    {
+                        TourName = tour.Name,
+                        BookingRate = bookings.Count(b => b.Schedule.TourId == tour.Id) / (double)bookings.Count(),
+                        CancelRate = bookings.Count(b => b.Schedule.TourId == tour.Id && b.Status == BookingStatus.Cancelled) / (double)bookings.Count()
+                    }).OrderByDescending(t => t.BookingRate).ThenBy(t => t.CancelRate).ToList()
+                };
 
-        //    var defaultStatistics = new TourStatisticsModel
-        //    {
-        //        TimePeriod = currentYear.ToString(),
-        //        TotalTours = toursDefault.Count,
-        //        TotalByArea = toursDefault.Count(t => t.PickupAddress.Area == "Khu vực cụ thể"),  // Giả sử khu vực được lưu trong Address
-        //        PopularTours = toursDefault.Select(tour => new PopularTourModel
-        //        {
-        //            TourName = tour.Name,
-        //            BookingRate = bookingsDefault.Count(b => b.TourId == tour.Id) / (double)bookingsDefault.Count(),
-        //            CancelRate = bookingsDefault.Count(b => b.TourId == tour.Id && b.Status == BookingStatus.Cancelled) / (double)bookingsDefault.Count()
-        //        }).OrderByDescending(t => t.BookingRate).ThenBy(t => t.CancelRate).ToList()
-        //    };
+                return tourStatistics;
+            }
 
-        //    return defaultStatistics;
-        //}
+            // Nếu không có tham số nào, lấy theo năm hiện tại
+            int currentYear = DateTime.Now.Year;
+            var toursDefault = await _unitOfWork.GetRepository<Tour>().Entities
+                .Where(t => !t.DeletedTime.HasValue)
+                .ToListAsync();
 
+            var bookingsDefault = await _unitOfWork.GetRepository<Booking>().Entities
+                .Where(b => !b.DeletedTime.HasValue && b.CreatedTime.Year == currentYear)
+                .ToListAsync();
+
+            // Tạo thống kê tour theo thành phố
+            var cityStatsDefault = new List<CityTourStatisticsModel>();
+            foreach (var tour in toursDefault)
+            {
+                var cityName = await GetCityNameById(tour.PickupAddress.District.CityId);
+                var cityStat = cityStatsDefault.FirstOrDefault(c => c.CityName == cityName);
+                if (cityStat == null)
+                {
+                    cityStatsDefault.Add(new CityTourStatisticsModel
+                    {
+                        CityName = cityName,
+                        TotalToursInCity = 1
+                    });
+                }
+                else
+                {
+                    cityStat.TotalToursInCity++;
+                }
+            }
+
+            var defaultStatistics = new TourStatisticsModel
+            {
+                TimePeriod = currentYear.ToString(),
+                TotalTours = toursDefault.Count,
+                CityStatistics = cityStatsDefault,  // Thêm thống kê tour theo thành phố
+                PopularTours = toursDefault.Select(tour => new PopularTourModel
+                {
+                    TourName = tour.Name,
+                    BookingRate = bookingsDefault.Count(b => b.Schedule.TourId == tour.Id) / (double)bookingsDefault.Count(),
+                    CancelRate = bookingsDefault.Count(b => b.Schedule.TourId == tour.Id && b.Status == BookingStatus.Cancelled) / (double)bookingsDefault.Count()
+                }).OrderByDescending(t => t.BookingRate).ThenBy(t => t.CancelRate).ToList()
+            };
+
+            return defaultStatistics;
+        }
+
+        public async Task<string> GetCityNameById(string cityId)
+        {
+            var city = await _unitOfWork.GetRepository<City>().Entities
+                .Where(c => c.Id == cityId)
+                .FirstOrDefaultAsync();
+            return city?.Name ?? "Unknown City";
+        }
     }
 }

@@ -4,7 +4,7 @@
     {
         public string TimePeriod { get; set; }
         public int TotalTours { get; set; }
-        public int TotalByArea { get; set; }
+        public List<CityTourStatisticsModel> CityStatistics { get; set; }
         public List<PopularTourModel> PopularTours { get; set; }
     }
 }

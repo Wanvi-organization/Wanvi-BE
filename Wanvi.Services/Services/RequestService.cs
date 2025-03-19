@@ -26,13 +26,18 @@ namespace Wanvi.Services.Services
             _emailService = emailService;
         }
 
-        public async Task<IEnumerable<ResponseRequestModel>> GetAllAsync(RequestStatus? status = null)
+        public async Task<IEnumerable<ResponseRequestModel>> GetAllAsync(RequestStatus? status = null, RequestType? type = null)
         {
             var query = _unitOfWork.GetRepository<Request>().Entities.Where(r => !r.DeletedTime.HasValue);
 
             if (status.HasValue)
             {
                 query = query.Where(r => r.Status == status.Value);
+            }
+
+            if (type.HasValue)
+            {
+                query = query.Where(r => r.Type == type.Value);
             }
 
             var requests = await query.ToListAsync();
