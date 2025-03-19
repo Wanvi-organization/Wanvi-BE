@@ -71,5 +71,17 @@ namespace Wanvi.API.Controllers
                 code: ResponseCodeConstants.SUCCESS,
                 data: requests));
         }
+        /// <summary>
+        /// HDV/Khách hàng gửi yêu cầu: 0 là rút tiền(khi chọn 0 hiện đủ 3 trường để nhập), 1 là khiếu nại(hiện 2 trường:Type, Note), 2 là câu hỏi(hiện 2 trường Type, Note)
+        /// </summary>
+        [HttpPost("Create_Request")]
+        public async Task<IActionResult> CreateRequest(CreateRequestModel model)
+        {
+            var requests = await _requestService.CreateRequest(model);
+            return Ok(new BaseResponseModel<string>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: requests));
+        }
     }
 }

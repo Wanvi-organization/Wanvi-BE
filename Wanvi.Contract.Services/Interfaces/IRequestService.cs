@@ -9,5 +9,6 @@ namespace Wanvi.Contract.Services.Interfaces
         Task<ResponseRequestModel> GetByIdAsync(string id);
         Task<string> AccecptFromAdmin(AccecptRequestFromAdminModel model);
         Task<string> CancelFromAdmin(CancelRequestFromAdminModel model);
+        Task<string> CreateRequest(CreateRequestModel model);
     }
 }
