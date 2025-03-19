@@ -7,6 +7,7 @@ using Wanvi.Core.Constants;
 using Wanvi.ModelViews.BookingModelViews;
 using Wanvi.ModelViews.DashboardModelViews;
 using Wanvi.ModelViews.PaymentModelViews;
+using Wanvi.ModelViews.TourModelViews;
 using Wanvi.Services.Services;
 
 namespace Wanvi.API.Controllers
@@ -18,12 +19,14 @@ namespace Wanvi.API.Controllers
         private readonly IDashboardService _dashboardService;
         private readonly IPaymentService _paymentService;
         private readonly IBookingService _bookingService;
+        private readonly ITourService _tourService;
 
-        public DashboardController(IDashboardService dashboardService, IPaymentService paymentService, IBookingService bookingService)
+        public DashboardController(IDashboardService dashboardService, IPaymentService paymentService, IBookingService bookingService, ITourService tourService)
         {
             _dashboardService = dashboardService;
             _paymentService = paymentService;
             _bookingService = bookingService;
+            _tourService = tourService;
         }
 
         [HttpGet("Get_All_Dashboard_Data")]
@@ -76,6 +79,23 @@ namespace Wanvi.API.Controllers
         {
             var res = await _bookingService.TotalRevenue(day, month, year);
             return Ok(new BaseResponseModel<List<TotalRevenueModel>>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+
+        /// <summary>
+        /// Thống kê tour theo ngày, tháng, năm. Các tham số có thể được cung cấp để lọc theo thời gian cụ thể.
+        /// </summary>
+        /// <param name="day">Ngày cần thống kê (định dạng: dd/MM/yyyy).</param>
+        /// <param name="month">Tháng cần thống kê (định dạng: MM/yyyy).</param>
+        /// <param name="year">Năm cần thống kê (định dạng: yyyy).</param>
+        [HttpGet("Tour_Statistics")]
+        public async Task<IActionResult> GetTourStatistics(string? day, string? month, int? year)
+        {
+            var res = await _tourService.GetTourStatistics(day, month, year);
+            return Ok(new BaseResponseModel<TourStatisticsModel>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,
                  data: res
