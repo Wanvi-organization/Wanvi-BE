@@ -8,6 +8,12 @@ namespace Wanvi.Contract.Repositories.Entities
         Confirmed,
         Cancelled,
     }
+    public enum RequestType
+    {
+        Withdrawal = 0,
+        Complaint = 1,
+        Question = 2
+    }
 
     public class Request : BaseEntity
     {
@@ -19,6 +25,7 @@ namespace Wanvi.Contract.Repositories.Entities
         public long OrderCode { get; set; } = 0;
         public string? Reason { get; set; }
         public RequestStatus Status { get; set; }
+        public RequestType Type { get; set; }
         public Guid UserId { get; set; }
         public virtual ApplicationUser User { get; set; }
     }

@@ -7,6 +7,7 @@ using Wanvi.Contract.Services.Interfaces;
 using Wanvi.Core.Bases;
 using Wanvi.Core.Constants;
 using Wanvi.ModelViews.RequestModelViews;
+using Wanvi.Services.Services.Infrastructure;
 
 namespace Wanvi.Services.Services
 {
@@ -55,6 +56,82 @@ namespace Wanvi.Services.Services
             }
 
             return _mapper.Map<ResponseRequestModel>(request);
+        }
+        public async Task<string> CreateRequest(CreateRequestModel model)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            Guid.TryParse(userId, out Guid cb);
+            if (model.Type == RequestType.Withdrawal)
+            {
+                if (model.Balance < 0)
+                {
+                    throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Vui lòng nhập số tiền lớn hơn 0");
+                }
+                var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x=>x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "không tìm thấy tài khoản");
+                if (model.Balance > user.Balance)
+                {
+                    throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, $"Tài khoản của quý khách({user.Balance} đ) không đủ để yêu cầu rút {model.Balance} đ");
+                }
+                var request = new Request()
+                {
+                    Note = model.Note,
+                    Type = RequestType.Withdrawal,
+                    Balance = model.Balance,
+                    CreatedTime = DateTime.Now,
+                    LastUpdatedTime = DateTime.Now,
+                    CreatedBy = userId,
+                    UserId = cb,
+                    LastUpdatedBy = userId,
+                    Status = RequestStatus.Pending,                  
+                };
+                await _unitOfWork.GetRepository<Request>().InsertAsync(request);
+                await _unitOfWork.SaveAsync();
+                return "Gửi yêu cầu rút tiền thành công";
+            }
+            if (model.Type == RequestType.Complaint)
+            {
+                if (string.IsNullOrWhiteSpace(model.Note))
+                {
+                    throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Vui lòng nhập điều muốn khiếu nại");
+                }
+                var request = new Request()
+                {
+                    Note = model.Note,
+                    Type = RequestType.Complaint,
+                    Balance = model.Balance,
+                    CreatedTime = DateTime.Now,
+                    LastUpdatedTime = DateTime.Now,
+                    CreatedBy = userId,
+                    UserId = cb,
+                    LastUpdatedBy = userId,
+                    Status = RequestStatus.Pending,
+                };
+                await _unitOfWork.GetRepository<Request>().InsertAsync(request);
+                await _unitOfWork.SaveAsync();
+                return "Gửi yêu cầu khiếu nại thành công";
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(model.Note))
+                {
+                    throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Vui lòng nhập câu hỏi");
+                }
+                var request = new Request()
+                {
+                    Note = model.Note,
+                    Type = RequestType.Question,
+                    Balance = model.Balance,
+                    CreatedTime = DateTime.Now,
+                    LastUpdatedTime = DateTime.Now,
+                    CreatedBy = userId,
+                    UserId = cb,
+                    LastUpdatedBy = userId,
+                    Status = RequestStatus.Pending,
+                };
+                await _unitOfWork.GetRepository<Request>().InsertAsync(request);
+                await _unitOfWork.SaveAsync();
+                return "Gửi câu hỏi thành công";
+            }
         }
         public async Task<string> AccecptFromAdmin(AccecptRequestFromAdminModel model)
         {
@@ -124,11 +201,11 @@ namespace Wanvi.Services.Services
 
             await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
             await _unitOfWork.GetRepository<Request>().UpdateAsync(request);
-
-            await _unitOfWork.SaveAsync();
-
             // Gửi email thông báo hủy yêu cầu
             await SendRequestCancellationEmail(booking.User, request);
+            await _unitOfWork.SaveAsync();
+
+
             return "Hủy yêu cầu thành công";
         }
 

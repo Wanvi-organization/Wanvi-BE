@@ -10,6 +10,7 @@ namespace Wanvi.Services.MapperProfile
         {
             CreateMap<Request, ResponseRequestModel>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ConvertRequestStatusToVietnamese(src.Status)))
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => ConvertRequestTypeToVietnamese(src.Type)))
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName));
         }
 
@@ -20,6 +21,16 @@ namespace Wanvi.Services.MapperProfile
                 RequestStatus.Pending => "Đang chờ",
                 RequestStatus.Confirmed => "Đã xác nhận",
                 RequestStatus.Cancelled => "Đã hủy",
+                _ => "Không xác định"
+            };
+        }
+        private string ConvertRequestTypeToVietnamese(RequestType status)
+        {
+            return status switch
+            {
+                RequestType.Withdrawal => "Rút tiền",
+                RequestType.Complaint => "Khiếu nại",
+                RequestType.Question => "Câu hỏi",
                 _ => "Không xác định"
             };
         }

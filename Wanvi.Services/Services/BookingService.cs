@@ -656,6 +656,7 @@ namespace Wanvi.Services.Services
                 CreatedBy = tourGuide.Id.ToString(),
                 OrderCode = existingBookings.OrderCode,
                 Status = RequestStatus.Confirmed,
+                Type = RequestType.Withdrawal,
                 Note = $"Bạn nhận {existingBookings.TotalTravelers * 0.8:N0} đ là 80% tiền hóa đơn vì {existingBookings.TotalTravelers * 0.2:N0} đ là tiền khấu trừ hoa hồng!",
                 UserId = tourGuide.Id,
                 //Bank = tourGuide.Bank,
@@ -694,11 +695,13 @@ namespace Wanvi.Services.Services
                 CreatedBy = tourGuide.Id.ToString(),
                 OrderCode = existingBookings.OrderCode,
                 Status = RequestStatus.Pending,
-                Note = model.Note,
+                Note = "Rút tiền từ đơn hàng",
                 UserId = tourGuide.Id,
+                Type = RequestType.Withdrawal,
                 Bank = tourGuide.Bank,
                 BankAccount = tourGuide.BankAccount,
                 BankAccountName = tourGuide.BankAccountName,
+
             };
             //add request
             await _unitOfWork.GetRepository<Request>().InsertAsync(request);
@@ -874,46 +877,6 @@ namespace Wanvi.Services.Services
             await SendMailCancelToCustomer(customer, booking);
 
             return "Hủy đơn thành công!";
-        }
-
-        private async Task SendMailCancelToCustomer(ApplicationUser customer, Booking booking)
-        {
-            await _emailService.SendEmailAsync(
-                customer.Email,
-                "Thông Báo Hủy Tour",
-                $@"
-            <html>
-            <body>
-                <h2>THÔNG BÁO HỦY TOUR</h2>
-                <p>Xin chào {customer.FullName},</p>
-                <p>Chúng tôi xin thông báo rằng hướng dẫn viên đã hủy tour của bạn.</p>
-                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
-                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
-                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
-                <p><strong>Giờ:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
-                <p>Chúng tôi xin lỗi vì sự bất tiện này!</p>
-            </body>
-            </html>"
-            );
-        }
-
-        private async Task SendMailCancelToTourGuide(ApplicationUser guide, ApplicationUser customer, Booking booking)
-        {
-            await _emailService.SendEmailAsync(
-                guide.Email,
-                "Thông Báo Khách Hủy Tour",
-                $@"
-            <html>
-            <body>
-                <h2>THÔNG BÁO HỦY TOUR</h2>
-                <p>Khách hàng <strong>{customer.FullName}</strong> đã hủy tour của bạn.</p>
-                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
-                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
-                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
-                <p><strong>Giờ:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
-            </body>
-            </html>"
-            );
         }
 
         public async Task<string> CancelBookingForAdmin(CancelBookingForAdminModel model)
@@ -1199,6 +1162,45 @@ namespace Wanvi.Services.Services
                 }
                 return await Task.FromResult(totalRevenueModelList);
             }
+        }
+
+        private async Task SendMailCancelToCustomer(ApplicationUser customer, Booking booking)
+        {
+            await _emailService.SendEmailAsync(
+                customer.Email,
+                "Thông Báo Hủy Tour",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO HỦY TOUR</h2>
+                <p>Xin chào {customer.FullName},</p>
+                <p>Chúng tôi xin thông báo rằng hướng dẫn viên đã hủy tour của bạn.</p>
+                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
+                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
+                <p><strong>Giờ:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
+                <p>Chúng tôi xin lỗi vì sự bất tiện này!</p>
+            </body>
+            </html>"
+            );
+        }
+        private async Task SendMailCancelToTourGuide(ApplicationUser guide, ApplicationUser customer, Booking booking)
+        {
+            await _emailService.SendEmailAsync(
+                guide.Email,
+                "Thông Báo Khách Hủy Tour",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO HỦY TOUR</h2>
+                <p>Khách hàng <strong>{customer.FullName}</strong> đã hủy tour của bạn.</p>
+                <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
+                <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
+                <p><strong>Giờ:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
+            </body>
+            </html>"
+            );
         }
         private async Task SendTourCancellationEmailNoDeposit(ApplicationUser customer, Booking booking)
         {
