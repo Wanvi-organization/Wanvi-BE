@@ -292,6 +292,7 @@ namespace WanviBE.API
             services.AddScoped<IMediaService, MediaService>();
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<IReviewService, ReviewService>();
+            services.AddScoped<ICommentService, CommentService>();
         }
 
         public static void AddEmailConfig(this IServiceCollection services, IConfiguration configuration)

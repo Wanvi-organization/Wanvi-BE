@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Wanvi.Repositories.Context;
 
@@ -11,9 +12,11 @@ using Wanvi.Repositories.Context;
 namespace Wanvi.Repositories.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250319090439_addTypeEnumRequest")]
+    partial class addTypeEnumRequest
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -694,12 +697,14 @@ namespace Wanvi.Repositories.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("NewsId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("ParentCommentId")
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("PostId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<Guid>("UserId")
@@ -1711,7 +1716,8 @@ namespace Wanvi.Repositories.Migrations
                     b.HasOne("Wanvi.Contract.Repositories.Entities.News", "News")
                         .WithMany("Comments")
                         .HasForeignKey("NewsId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Wanvi.Contract.Repositories.Entities.Comment", "ParentComment")
                         .WithMany("Replies")
@@ -1721,7 +1727,8 @@ namespace Wanvi.Repositories.Migrations
                     b.HasOne("Wanvi.Contract.Repositories.Entities.Post", "Post")
                         .WithMany("Comments")
                         .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Wanvi.Contract.Repositories.Entities.ApplicationUser", "User")
                         .WithMany("Comments")

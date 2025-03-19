@@ -18,18 +18,24 @@ namespace Wanvi.API.Controllers
             _requestService = requestService;
         }
         /// <summary>
-        /// Lấy danh sách yêu cầu với tùy chọn lọc theo trạng thái.
+        /// Lấy danh sách yêu cầu theo trạng thái và loại yêu cầu.
         /// </summary>
         /// <param name="status">
         /// Trạng thái yêu cầu (tùy chọn):
-        /// 0 - Pending (Đang chờ xử lý),
-        /// 1 - Confirmed (Đã xác nhận),
-        /// 2 - Cancelled (Đã hủy).
+        /// 0 - Đang chờ (Pending),
+        /// 1 - Đã xác nhận (Confirmed),
+        /// 2 - Đã hủy (Cancelled).
+        /// </param>
+        /// <param name="type">
+        /// Loại yêu cầu (tùy chọn):
+        /// 0 - Rút tiền (Withdrawal),
+        /// 1 - Khiếu nại (Complaint),
+        /// 2 - Câu hỏi (Question).
         /// </param>
         [HttpGet("Get_All_Requests")]
-        public async Task<IActionResult> GetAllRequests(RequestStatus? status = null)
+        public async Task<IActionResult> GetAllRequests(RequestStatus? status = null, RequestType? type = null)
         {
-            var requests = await _requestService.GetAllAsync(status);
+            var requests = await _requestService.GetAllAsync(status, type);
             return Ok(new BaseResponseModel<IEnumerable<ResponseRequestModel>>(
                 statusCode: StatusCodes.Status200OK,
                 code: ResponseCodeConstants.SUCCESS,
@@ -66,6 +72,18 @@ namespace Wanvi.API.Controllers
         public async Task<IActionResult> CancelFromAdmin(CancelRequestFromAdminModel model)
         {
             var requests = await _requestService.CancelFromAdmin(model);
+            return Ok(new BaseResponseModel<string>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: requests));
+        }
+        /// <summary>
+        /// HDV/Khách hàng gửi yêu cầu: 0 là rút tiền(khi chọn 0 hiện đủ 3 trường để nhập), 1 là khiếu nại(hiện 2 trường:Type, Note), 2 là câu hỏi(hiện 2 trường Type, Note)
+        /// </summary>
+        [HttpPost("Create_Request")]
+        public async Task<IActionResult> CreateRequest(CreateRequestModel model)
+        {
+            var requests = await _requestService.CreateRequest(model);
             return Ok(new BaseResponseModel<string>(
                 statusCode: StatusCodes.Status200OK,
                 code: ResponseCodeConstants.SUCCESS,
