@@ -45,10 +45,13 @@ jobs:
             echo "Container $CONTAINER_NAME không tồn tại, bỏ qua..."
           fi
 
-          # Giữ nguyên volume wwwroot_data, không xóa volume
-          echo "Đảm bảo volume wwwroot_data tồn tại..."
-          if ! docker volume inspect wwwroot_data >/dev/null 2>&1; then
-            docker volume create wwwroot_data
+          # Giữ nguyên volume wanvi-be_wwwroot_data, không xóa volume
+          echo "Đảm bảo volume wanvi-be_wwwroot_data tồn tại..."
+          if ! docker volume ls | grep -q "^local[[:space:]]wanvi-be_wwwroot_data$"; then
+            echo "Creating volume wanvi-be_wwwroot_data..."
+            docker volume create wanvi-be_wwwroot_data
+          else
+            echo "Volume wanvi-be_wwwroot_data already exists, skipping..."
           fi
 
       - name: Build container

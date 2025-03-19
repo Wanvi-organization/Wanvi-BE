@@ -15,5 +15,6 @@ namespace Wanvi.Contract.Services.Interfaces
         Task<IEnumerable<AdminResponseUserModel>> GetAllAsync(Guid? roleId = null, string? cityId = null);
         Task UpdateTravelerProfileAsync(Guid userId, UpdateTravelerProfileModel model);
         Task UpdateLocalGuideProfileAsync(Guid userId, UpdateLocalGuideProfileModel model);
+        Task<string> BlockUserForAdmin(BlockUserForAdminModel model);
     }
 }

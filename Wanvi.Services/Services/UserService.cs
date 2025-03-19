@@ -490,6 +490,17 @@ namespace Wanvi.Services.Services
             await SendUnlockTourGuideEmail(user);
             return "Mở khóa tour của hướng dẫn viên thành công!";
         }
+
+        public async Task<string> BlockUserForAdmin(BlockUserForAdminModel model)
+        {
+            var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == model.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
+            user.Violate = true;
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
+            // Gửi email thông báo cho user
+            await SendBlockUserEmail(user);
+            return "Khóa người dùng thành công!";
+        }
         private async Task SendUnlockTourGuideEmail(ApplicationUser guide)
         {
             await _emailService.SendEmailAsync(
@@ -509,6 +520,23 @@ namespace Wanvi.Services.Services
             </html>"
             );
         }
-
+        private async Task SendBlockUserEmail(ApplicationUser guide)
+        {
+            await _emailService.SendEmailAsync(
+                guide.Email,
+                "Thông Báo khóa tài khoản",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO KHÓA TÀI KHOẢN</h2>
+                <p>Xin chào {guide.FullName},</p>
+                <p>Chúng tôi xin thông báo rằng tài khoản của bạn đã bị khóa do vi phạm vi định của app.</p>
+                <p><strong>Trạng thái tài khoản:</strong> Đã khóa</p>
+                <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
+                <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+            </body>
+            </html>"
+            );
+        }
     }
 }

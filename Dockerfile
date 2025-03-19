@@ -26,7 +26,13 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
 WORKDIR /app
 
 # Enable globalization and time zones
-RUN apk add --no-cache icu-libs tzdata
+RUN apk add --no-cache icu-libs tzdata \
+    && ln -s /usr/lib/libicudata.so.73 /usr/lib/libicudata.so.66 \
+    && ln -s /usr/lib/libicui18n.so.73 /usr/lib/libicui18n.so.66 \
+    && ln -s /usr/lib/libicuuc.so.73 /usr/lib/libicuuc.so.66
+
+# Bật hỗ trợ globalization
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
 # Tạo thư mục wwwroot và cấp quyền cho user `app`
 RUN mkdir -p /app/wwwroot \
