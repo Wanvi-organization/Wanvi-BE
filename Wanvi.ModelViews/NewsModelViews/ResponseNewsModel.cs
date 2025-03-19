@@ -1,4 +1,5 @@
 ﻿using Wanvi.Contract.Repositories.Entities;
+using Wanvi.ModelViews.CommentModelViews;
 using Wanvi.ModelViews.NewsDetailModelViews;
 
 namespace Wanvi.ModelViews.NewsModelViews
@@ -14,7 +15,7 @@ namespace Wanvi.ModelViews.NewsModelViews
         public string CategoryName { get; set; }
         public Guid UserId { get; set; }
         public string Author {  get; set; }
-        public IEnumerable<Comment> Comments { get; set; }
+        public IEnumerable<ResponseCommentModel> Comments { get; set; }
         public IEnumerable<ResponseNewsDetailModel> NewsDetails { get; set; }
     }
 }
