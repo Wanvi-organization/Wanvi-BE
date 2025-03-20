@@ -86,15 +86,19 @@ namespace Wanvi.API.Controllers
         }
 
         /// <summary>
-        /// Thống kê tour theo ngày, tháng, năm. Các tham số có thể được cung cấp để lọc theo thời gian cụ thể.
+        /// Thống kê các tour dựa trên ngày, tháng, năm hoặc khoảng thời gian.
+        /// Lưu ý: Người dùng chỉ được nhập một trong ba trường day, month, year. Nếu sử dụng startDate và endDate, cả hai phải được cung cấp.
         /// </summary>
-        /// <param name="day">Ngày cần thống kê (định dạng: dd/MM/yyyy).</param>
-        /// <param name="month">Tháng cần thống kê (định dạng: MM/yyyy).</param>
-        /// <param name="year">Năm cần thống kê (định dạng: yyyy).</param>
+        /// <param name="day">Ngày thống kê (định dạng: dd/MM/yyyy, tùy chọn).</param>
+        /// <param name="month">Tháng thống kê (định dạng: MM/yyyy, tùy chọn).</param>
+        /// <param name="year">Năm thống kê (định dạng: yyyy, tùy chọn).</param>
+        /// <param name="startDate">Ngày bắt đầu của khoảng thời gian thống kê (định dạng: dd/MM/yyyy, tùy chọn, yêu cầu khi có endDate).</param>
+        /// <param name="endDate">Ngày kết thúc của khoảng thời gian thống kê (định dạng: dd/MM/yyyy, tùy chọn, yêu cầu khi có startDate).</param>
+        /// <returns>Danh sách kết quả thống kê theo thời gian đã chọn.</returns>
         [HttpGet("Tour_Statistics")]
-        public async Task<IActionResult> GetTourStatistics(string? day, string? month, int? year)
+        public async Task<IActionResult> GetTourStatistics(string? day, string? month, int? year, string? startDate, string? endDate)
         {
-            var res = await _tourService.GetTourStatistics(day, month, year);
+            var res = await _tourService.GetTourStatistics(day, month, year, startDate, endDate);
             return Ok(new BaseResponseModel<TourStatisticsModel>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,

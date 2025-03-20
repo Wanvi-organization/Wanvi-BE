@@ -26,9 +26,12 @@ namespace Wanvi.Services.Services
             _emailService = emailService;
         }
 
-        public async Task<IEnumerable<ResponseRequestModel>> GetAllAsync(RequestStatus? status = null, RequestType? type = null)
+        public async Task<IEnumerable<ResponseRequestModel>> GetAllAsync(Guid roleId, RequestStatus? status = null, RequestType? type = null)
         {
-            var query = _unitOfWork.GetRepository<Request>().Entities.Where(r => !r.DeletedTime.HasValue);
+            var query = _unitOfWork.GetRepository<Request>().Entities
+                .Include(r => r.User)
+                .ThenInclude(u => u.UserRoles)
+                .Where(r => !r.DeletedTime.HasValue && r.User.UserRoles.Any(ur => ur.RoleId == roleId));
 
             if (status.HasValue)
             {

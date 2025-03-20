@@ -5,7 +5,7 @@ namespace Wanvi.Contract.Services.Interfaces
 {
     public interface IRequestService
     {
-        Task<IEnumerable<ResponseRequestModel>> GetAllAsync(RequestStatus? status = null, RequestType? type = null);
+        Task<IEnumerable<ResponseRequestModel>> GetAllAsync(Guid roleId, RequestStatus? status = null, RequestType? type = null);
         Task<ResponseRequestModel> GetByIdAsync(string id);
         Task<string> AccecptFromAdmin(AccecptRequestFromAdminModel model);
         Task<string> CancelFromAdmin(CancelRequestFromAdminModel model);
