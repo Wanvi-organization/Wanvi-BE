@@ -18,8 +18,9 @@ namespace Wanvi.API.Controllers
             _requestService = requestService;
         }
         /// <summary>
-        /// Lấy danh sách yêu cầu theo trạng thái và loại yêu cầu.
+        /// Lấy danh sách yêu cầu theo trạng thái, loại yêu cầu và vai trò.
         /// </summary>
+        /// <param name="roleId">Id của vai trò (Bắt buộc).</param>
         /// <param name="status">
         /// Trạng thái yêu cầu (tùy chọn):
         /// 0 - Đang chờ (Pending),
@@ -33,9 +34,9 @@ namespace Wanvi.API.Controllers
         /// 2 - Câu hỏi (Question).
         /// </param>
         [HttpGet("Get_All_Requests")]
-        public async Task<IActionResult> GetAllRequests(RequestStatus? status = null, RequestType? type = null)
+        public async Task<IActionResult> GetAllRequests(Guid roleId, RequestStatus? status = null, RequestType? type = null)
         {
-            var requests = await _requestService.GetAllAsync(status, type);
+            var requests = await _requestService.GetAllAsync(roleId, status, type);
             return Ok(new BaseResponseModel<IEnumerable<ResponseRequestModel>>(
                 statusCode: StatusCodes.Status200OK,
                 code: ResponseCodeConstants.SUCCESS,
