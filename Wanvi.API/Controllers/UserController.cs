@@ -136,6 +136,19 @@ namespace WanviBE.API.Controllers
                  data: res
              ));
         }
+        /// <summary>
+        /// Admin mở khóa tài khoản của người dùng
+        /// </summary>
+        [HttpPatch("UnBlock_User_For_Admin")]
+        public async Task<IActionResult> UnBlockUserForAdmin(UnBlockUserForAdminModel model)
+        {
+            var res = await _userService.UnBlockUserForAdmin(model);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
 
         [HttpPost("assign_role")]
         public async Task<IActionResult> AssignRole([FromBody] AssignUserRoleModel model)

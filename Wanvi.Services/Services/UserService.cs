@@ -501,6 +501,16 @@ namespace Wanvi.Services.Services
             await SendBlockUserEmail(user);
             return "Khóa người dùng thành công!";
         }
+        public async Task<string> UnBlockUserForAdmin(UnBlockUserForAdminModel model)
+        {
+            var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == model.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
+            user.Violate = false;
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
+            // Gửi email thông báo cho user
+            await SendUnBlockUserEmail(user);
+            return "Mở khóa người dùng thành công!";
+        }
         private async Task SendUnlockTourGuideEmail(ApplicationUser guide)
         {
             await _emailService.SendEmailAsync(
@@ -532,6 +542,24 @@ namespace Wanvi.Services.Services
                 <p>Xin chào {guide.FullName},</p>
                 <p>Chúng tôi xin thông báo rằng tài khoản của bạn đã bị khóa do vi phạm vi định của app.</p>
                 <p><strong>Trạng thái tài khoản:</strong> Đã khóa</p>
+                <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
+                <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+            </body>
+            </html>"
+            );
+        }
+        private async Task SendUnBlockUserEmail(ApplicationUser guide)
+        {
+            await _emailService.SendEmailAsync(
+                guide.Email,
+                "Thông Báo mở khóa tài khoản",
+                $@"
+            <html>
+            <body>
+                <h2>THÔNG BÁO MỞ KHÓA TÀI KHOẢN</h2>
+                <p>Xin chào {guide.FullName},</p>
+                <p>Chúng tôi xin thông báo rằng tài khoản của bạn đã được mở khóa.</p>
+                <p><strong>Trạng thái tài khoản:</strong> Mở khóa</p>
                 <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
                 <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
             </body>

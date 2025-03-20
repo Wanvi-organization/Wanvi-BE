@@ -16,5 +16,6 @@ namespace Wanvi.Contract.Services.Interfaces
         Task UpdateTravelerProfileAsync(Guid userId, UpdateTravelerProfileModel model);
         Task UpdateLocalGuideProfileAsync(Guid userId, UpdateLocalGuideProfileModel model);
         Task<string> BlockUserForAdmin(BlockUserForAdminModel model);
+        Task<string> UnBlockUserForAdmin(UnBlockUserForAdminModel model);
     }
 }
