@@ -73,11 +73,16 @@ namespace Wanvi.API.Middleware
                 return true;
             }
 
-
+            string authorizationHeader = context.Request.Headers["Authorization"];
+            if (string.IsNullOrEmpty(authorizationHeader) || !authorizationHeader.StartsWith("Bearer "))
+            {
+                throw new ErrorException(StatusCodes.Status401Unauthorized, ErrorCode.Unauthorized, "Bạn chưa được xác thực. Vui lòng đăng nhập!");
+            }
             try
             {
                 // Get user ID from the authenticated context
                 string idUser = Authentication.GetUserIdFromHttpContext(context);
+
                 if (Guid.TryParse(idUser, out Guid guidId))
                 {
                     ApplicationUser? user = unitOfWork.GetRepository<ApplicationUser>().Entities
