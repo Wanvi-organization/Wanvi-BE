@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Microsoft.Extensions.Logging;
+using System.Text.Json;
 using Wanvi.Contract.Repositories.IUOW;
 using Wanvi.Core.Bases;
 
@@ -24,27 +25,60 @@ namespace WanviBE.API.Middleware
             catch (CoreException ex)
             {
                 _logger.LogError(ex, ex.Message);
-                context.Response.StatusCode = ex.StatusCode;
-                var result = JsonSerializer.Serialize(new { ex.Code, ex.Message, ex.AdditionalData });
-                context.Response.ContentType = "application/json";
-                await context.Response.WriteAsync(result);
+
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.Clear();
+                    context.Response.StatusCode = ex.StatusCode;
+                    context.Response.ContentType = "application/json";
+
+                    var result = JsonSerializer.Serialize(new
+                    {
+                        errorCode = ex.Code ?? "Bad Request",
+                        errorMessage = ex.Message ?? "Lỗi không xác định"
+                    });
+
+                    await context.Response.WriteAsync(result);
+                }
             }
             catch (ErrorException ex)
             {
-                _logger.LogError(ex, ex.ErrorDetail.ErrorMessage.ToString());
-                context.Response.StatusCode = ex.StatusCode;
-                var result = JsonSerializer.Serialize(ex.ErrorDetail);
-                context.Response.ContentType = "application/json";
-                await context.Response.WriteAsync(result);
+
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.Clear();
+                    context.Response.StatusCode = ex.StatusCode;
+                    context.Response.ContentType = "application/json";
+
+                    var result = JsonSerializer.Serialize(new
+                    {
+                        errorCode = ex.ErrorDetail?.ErrorCode ?? "Bad Request",
+                        errorMessage = ex.ErrorDetail?.ErrorMessage ?? "Lỗi không xác định"
+                    });
+
+                    await context.Response.WriteAsync(result);
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected error occurred.");
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                var result = JsonSerializer.Serialize(new { error = $"An unexpected error occurred. Detail{ex.Message}" });
-                context.Response.ContentType = "application/json";
-                await context.Response.WriteAsync(result);
+
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.Clear();
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    context.Response.ContentType = "application/json";
+
+                    var result = JsonSerializer.Serialize(new
+                    {
+                        errorCode = "Internal Server Error",
+                        errorMessage = ex.Message
+                    });
+
+                    await context.Response.WriteAsync(result);
+                }
             }
         }
+
     }
 }

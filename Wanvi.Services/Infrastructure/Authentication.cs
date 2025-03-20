@@ -101,7 +101,7 @@ namespace Wanvi.Services.Services.Infrastructure
             {
                 if (!httpContext.Request.Headers.ContainsKey("Authorization"))
                 {
-                    throw new UnauthorizedException("Need Authorization");
+                    throw new ErrorException(StatusCodes.Status401Unauthorized, ErrorCode.Unauthorized, "Bạn chưa được xác thực. Vui lòng đăng nhập!");
                 }
 
                 string? authorizationHeader = httpContext.Request.Headers["Authorization"];

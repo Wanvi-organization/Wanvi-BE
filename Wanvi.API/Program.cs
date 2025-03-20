@@ -46,8 +46,8 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 
-app.UseAuthentication();  // ? Xác th?c ng??i dùng tr??c
-app.UseAuthorization();   // ? Ki?m tra quy?n truy c?p API tr??c
+app.UseAuthentication();  
+app.UseAuthorization();   
 
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseMiddleware<LoggingMiddleware>();
