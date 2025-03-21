@@ -440,7 +440,7 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Ngày bắt đầu không thể lớn hơn ngày kết thúc.");
             }
 
-            // Xử lý lọc theo day, month, hoặc year nếu được truyền vào
+            // Ưu tiên lọc theo day > month > year
             if (!string.IsNullOrEmpty(day) && DateTime.TryParseExact(day, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDay))
             {
                 start = parsedDay.Date;
@@ -456,6 +456,12 @@ namespace Wanvi.Services.Services
                 start = new DateTime(year.Value, 1, 1);
                 end = new DateTime(year.Value, 12, 31);
             }
+            else if (!start.HasValue && !end.HasValue)
+            {
+                var currentYear = DateTime.Now.Year;
+                start = new DateTime(currentYear, 1, 1);
+                end = new DateTime(currentYear, 12, 31);
+            }
 
             // Lọc tour theo CreatedDate
             var toursQuery = _unitOfWork.GetRepository<Tour>().Entities
@@ -468,8 +474,9 @@ namespace Wanvi.Services.Services
 
             var tours = await toursQuery.ToListAsync();
 
-            // Lọc booking theo CreatedTime
+            // Lọc booking theo CreatedTime (bao gồm Schedule)
             var bookingsQuery = _unitOfWork.GetRepository<Booking>().Entities
+                .Include(b => b.Schedule)
                 .Where(b => !b.DeletedTime.HasValue);
 
             if (start.HasValue && end.HasValue)
@@ -479,6 +486,7 @@ namespace Wanvi.Services.Services
 
             var bookings = await bookingsQuery.ToListAsync();
 
+            // Thống kê theo thành phố
             var cityStats = new List<CityTourStatisticsModel>();
             foreach (var tour in tours)
             {
@@ -499,23 +507,40 @@ namespace Wanvi.Services.Services
             }
 
             var totalBookings = bookings.Count();
+
+            var popularTours = tours.Select(tour =>
+            {
+                var tourBookings = bookings
+                    .Where(b => b.Schedule?.TourId == tour.Id && b.Status != BookingStatus.Cancelled)
+                    .ToList();
+
+                var totalTourBookings = tourBookings.Count;
+
+                var cancelledTourBookings = bookings
+                    .Where(b => b.Schedule?.TourId == tour.Id && b.Status == BookingStatus.Cancelled)
+                    .Count();
+
+                return new PopularTourModel
+                {
+                    TourName = tour.Name,
+                    BookingRate = totalBookings > 0
+                        ? (double)totalTourBookings / totalBookings
+                        : 0,
+                    CancelRate = (totalTourBookings + cancelledTourBookings) > 0
+                        ? (double)cancelledTourBookings / (totalTourBookings + cancelledTourBookings)
+                        : 0
+                };
+            })
+            .OrderByDescending(t => t.BookingRate)
+            .ThenBy(t => t.CancelRate)
+            .ToList();
+
             var tourStatistics = new TourStatisticsModel
             {
                 TimePeriod = start.HasValue && end.HasValue ? $"{start:dd/MM/yyyy} - {end:dd/MM/yyyy}" : "N/A",
                 TotalTours = tours.Count,
                 CityStatistics = cityStats,
-                PopularTours = tours.Select(tour => new PopularTourModel
-                {
-                    TourName = tour.Name,
-                    BookingRate = totalBookings > 0
-                        ? (double)bookings.Count(b => b.Schedule.TourId == tour.Id) / totalBookings
-                        : 0,
-                    CancelRate = totalBookings > 0
-                        ? (double)bookings.Count(b => b.Schedule.TourId == tour.Id && b.Status == BookingStatus.Cancelled) / totalBookings
-                        : 0
-                }).OrderByDescending(t => t.BookingRate)
-                  .ThenBy(t => t.CancelRate)
-                  .ToList()
+                PopularTours = popularTours
             };
 
             return tourStatistics;
