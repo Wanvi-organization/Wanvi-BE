@@ -86,24 +86,46 @@ namespace Wanvi.API.Controllers
         }
 
         /// <summary>
-        /// Thống kê các tour dựa trên ngày, tháng, năm hoặc khoảng thời gian.
-        /// Lưu ý: Người dùng chỉ được nhập một trong ba trường day, month, year. Nếu sử dụng startDate và endDate, cả hai phải được cung cấp.
+        /// Thống kê tổng số tour theo từng thành phố, dựa trên ngày, tháng, năm hoặc khoảng thời gian.
+        /// Chỉ được nhập một trong ba trường day, month, year. Nếu sử dụng startDate và endDate, cả hai phải được cung cấp.
         /// </summary>
-        /// <param name="day">Ngày thống kê (định dạng: dd/MM/yyyy, tùy chọn).</param>
-        /// <param name="month">Tháng thống kê (định dạng: MM/yyyy, tùy chọn).</param>
-        /// <param name="year">Năm thống kê (định dạng: yyyy, tùy chọn).</param>
-        /// <param name="startDate">Ngày bắt đầu của khoảng thời gian thống kê (định dạng: dd/MM/yyyy, tùy chọn, yêu cầu khi có endDate).</param>
-        /// <param name="endDate">Ngày kết thúc của khoảng thời gian thống kê (định dạng: dd/MM/yyyy, tùy chọn, yêu cầu khi có startDate).</param>
-        /// <returns>Danh sách kết quả thống kê theo thời gian đã chọn.</returns>
-        [HttpGet("Tour_Statistics")]
-        public async Task<IActionResult> GetTourStatistics(string? day, string? month, int? year, string? startDate, string? endDate)
+        /// <param name="day">Ngày thống kê (dd/MM/yyyy, tùy chọn).</param>
+        /// <param name="month">Tháng thống kê (MM/yyyy, tùy chọn).</param>
+        /// <param name="year">Năm thống kê (yyyy, tùy chọn).</param>
+        /// <param name="startDate">Ngày bắt đầu (dd/MM/yyyy, tùy chọn).</param>
+        /// <param name="endDate">Ngày kết thúc (dd/MM/yyyy, tùy chọn).</param>
+        /// <returns>Dữ liệu tổng số tour theo thành phố.</returns>
+        [HttpGet("City_Summary")]
+        public async Task<IActionResult> GetTourCitySummary(string? day, string? month, int? year, string? startDate, string? endDate)
         {
-            var res = await _tourService.GetTourStatistics(day, month, year, startDate, endDate);
-            return Ok(new BaseResponseModel<TourStatisticsModel>(
-                 statusCode: StatusCodes.Status200OK,
-                 code: ResponseCodeConstants.SUCCESS,
-                 data: res
-             ));
+            var res = await _tourService.GetTourCitySummary(day, month, year, startDate, endDate);
+            return Ok(new BaseResponseModel<TotalTourStatisticsModel>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: res
+            ));
+        }
+
+        /// <summary>
+        /// Lấy top 10 tour phổ biến nhất trong một thành phố theo ngày, tháng, năm hoặc khoảng thời gian.
+        /// Bắt buộc phải truyền cityId.
+        /// </summary>
+        /// <param name="cityId">ID của thành phố (bắt buộc).</param>
+        /// <param name="day">Ngày thống kê (dd/MM/yyyy, tùy chọn).</param>
+        /// <param name="month">Tháng thống kê (MM/yyyy, tùy chọn).</param>
+        /// <param name="year">Năm thống kê (yyyy, tùy chọn).</param>
+        /// <param name="startDate">Ngày bắt đầu (dd/MM/yyyy, tùy chọn).</param>
+        /// <param name="endDate">Ngày kết thúc (dd/MM/yyyy, tùy chọn).</param>
+        /// <returns>Danh sách 10 tour phổ biến nhất trong thành phố.</returns>
+        [HttpGet("Popular_Tours")]
+        public async Task<IActionResult> GetPopularToursByCity(string cityId, string? day, string? month, int? year, string? startDate, string? endDate)
+        {
+            var res = await _tourService.GetPopularToursByCity(cityId, day, month, year, startDate, endDate);
+            return Ok(new BaseResponseModel<List<PopularTourModel>>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: res
+            ));
         }
     }
 }

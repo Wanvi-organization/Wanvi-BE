@@ -421,49 +421,12 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
         }
 
-        public async Task<TourStatisticsModel> GetTourStatistics(string? day, string? month, int? year, string? startDate, string? endDate)
+        public async Task<TotalTourStatisticsModel> GetTourCitySummary(string? day, string? month, int? year, string? startDate, string? endDate)
         {
             DateTime? start = null, end = null;
 
-            if (!string.IsNullOrEmpty(startDate) && DateTime.TryParseExact(startDate, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedStart))
-            {
-                start = parsedStart;
-            }
+            ParseDateFilter(ref start, ref end, day, month, year, startDate, endDate);
 
-            if (!string.IsNullOrEmpty(endDate) && DateTime.TryParseExact(endDate, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedEnd))
-            {
-                end = parsedEnd;
-            }
-
-            if (start.HasValue && end.HasValue && start > end)
-            {
-                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Ngày bắt đầu không thể lớn hơn ngày kết thúc.");
-            }
-
-            // Ưu tiên lọc theo day > month > year
-            if (!string.IsNullOrEmpty(day) && DateTime.TryParseExact(day, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDay))
-            {
-                start = parsedDay.Date;
-                end = parsedDay.Date;
-            }
-            else if (!string.IsNullOrEmpty(month) && DateTime.TryParseExact(month, "MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedMonth))
-            {
-                start = new DateTime(parsedMonth.Year, parsedMonth.Month, 1);
-                end = start.Value.AddMonths(1).AddDays(-1);
-            }
-            else if (year.HasValue)
-            {
-                start = new DateTime(year.Value, 1, 1);
-                end = new DateTime(year.Value, 12, 31);
-            }
-            else if (!start.HasValue && !end.HasValue)
-            {
-                var currentYear = DateTime.Now.Year;
-                start = new DateTime(currentYear, 1, 1);
-                end = new DateTime(currentYear, 12, 31);
-            }
-
-            // Lọc tour theo CreatedDate
             var toursQuery = _unitOfWork.GetRepository<Tour>().Entities
                 .Where(t => !t.DeletedTime.HasValue);
 
@@ -474,7 +437,53 @@ namespace Wanvi.Services.Services
 
             var tours = await toursQuery.ToListAsync();
 
-            // Lọc booking theo CreatedTime (bao gồm Schedule)
+            var cityStats = new Dictionary<string, CityTourStatisticsModel>();
+
+            foreach (var tour in tours)
+            {
+                var cityName = await GetCityNameById(tour.PickupAddress.District.CityId);
+
+                if (!cityStats.ContainsKey(cityName))
+                {
+                    cityStats[cityName] = new CityTourStatisticsModel
+                    {
+                        CityName = cityName,
+                        TotalToursInCity = 0
+                    };
+                }
+
+                cityStats[cityName].TotalToursInCity++;
+            }
+
+            return new TotalTourStatisticsModel
+            {
+                TimePeriod = start.HasValue && end.HasValue ? $"{start:dd/MM/yyyy} - {end:dd/MM/yyyy}" : "N/A",
+                TotalTours = tours.Count,
+                CityStatistics = cityStats.Values.ToList()
+            };
+        }
+
+        public async Task<List<PopularTourModel>> GetPopularToursByCity(string cityId, string? day, string? month, int? year, string? startDate, string? endDate)
+        {
+            if (string.IsNullOrEmpty(cityId))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Thiếu cityId.");
+            }
+
+            DateTime? start = null, end = null;
+
+            ParseDateFilter(ref start, ref end, day, month, year, startDate, endDate);
+
+            var toursQuery = _unitOfWork.GetRepository<Tour>().Entities
+                .Where(t => !t.DeletedTime.HasValue && t.PickupAddress.District.CityId == cityId);
+
+            if (start.HasValue && end.HasValue)
+            {
+                toursQuery = toursQuery.Where(t => t.CreatedTime.Date >= start.Value.Date && t.CreatedTime.Date <= end.Value.Date);
+            }
+
+            var tours = await toursQuery.ToListAsync();
+
             var bookingsQuery = _unitOfWork.GetRepository<Booking>().Entities
                 .Include(b => b.Schedule)
                 .Where(b => !b.DeletedTime.HasValue);
@@ -486,27 +495,7 @@ namespace Wanvi.Services.Services
 
             var bookings = await bookingsQuery.ToListAsync();
 
-            // Thống kê theo thành phố
-            var cityStats = new List<CityTourStatisticsModel>();
-            foreach (var tour in tours)
-            {
-                var cityName = await GetCityNameById(tour.PickupAddress.District.CityId);
-                var cityStat = cityStats.FirstOrDefault(c => c.CityName == cityName);
-                if (cityStat == null)
-                {
-                    cityStats.Add(new CityTourStatisticsModel
-                    {
-                        CityName = cityName,
-                        TotalToursInCity = 1
-                    });
-                }
-                else
-                {
-                    cityStat.TotalToursInCity++;
-                }
-            }
-
-            var totalBookings = bookings.Count();
+            var totalBookings = bookings.Count;
 
             var popularTours = tours.Select(tour =>
             {
@@ -533,17 +522,50 @@ namespace Wanvi.Services.Services
             })
             .OrderByDescending(t => t.BookingRate)
             .ThenBy(t => t.CancelRate)
+            .Take(10)
             .ToList();
 
-            var tourStatistics = new TourStatisticsModel
-            {
-                TimePeriod = start.HasValue && end.HasValue ? $"{start:dd/MM/yyyy} - {end:dd/MM/yyyy}" : "N/A",
-                TotalTours = tours.Count,
-                CityStatistics = cityStats,
-                PopularTours = popularTours
-            };
+            return popularTours;
+        }
 
-            return tourStatistics;
+        private void ParseDateFilter(ref DateTime? start, ref DateTime? end, string? day, string? month, int? year, string? startDate, string? endDate)
+        {
+            if (!string.IsNullOrEmpty(startDate) && DateTime.TryParseExact(startDate, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedStart))
+            {
+                start = parsedStart;
+            }
+
+            if (!string.IsNullOrEmpty(endDate) && DateTime.TryParseExact(endDate, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedEnd))
+            {
+                end = parsedEnd;
+            }
+
+            if (start.HasValue && end.HasValue && start > end)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Ngày bắt đầu không thể lớn hơn ngày kết thúc.");
+            }
+
+            if (!string.IsNullOrEmpty(day) && DateTime.TryParseExact(day, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDay))
+            {
+                start = parsedDay.Date;
+                end = parsedDay.Date;
+            }
+            else if (!string.IsNullOrEmpty(month) && DateTime.TryParseExact(month, "MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedMonth))
+            {
+                start = new DateTime(parsedMonth.Year, parsedMonth.Month, 1);
+                end = start.Value.AddMonths(1).AddDays(-1);
+            }
+            else if (year.HasValue)
+            {
+                start = new DateTime(year.Value, 1, 1);
+                end = new DateTime(year.Value, 12, 31);
+            }
+            else if (!start.HasValue && !end.HasValue)
+            {
+                var currentYear = DateTime.Now.Year;
+                start = new DateTime(currentYear, 1, 1);
+                end = new DateTime(currentYear, 12, 31);
+            }
         }
 
         public async Task<string> GetCityNameById(string cityId)
