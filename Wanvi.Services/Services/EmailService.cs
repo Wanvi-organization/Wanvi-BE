@@ -78,10 +78,10 @@ namespace Wanvi.Services.Services
             {
                 usersToSend = await userRepo.FindAllAsync(u => model.UserIds.Contains(u.Id));
             }
-            else if (model.RoleId.HasValue)
+            else if (model.RoleIds != null && model.RoleIds.Any())
             {
                 usersToSend = await userRepo.Entities
-                    .Where(u => u.UserRoles.Any(ur => ur.RoleId == model.RoleId))
+                    .Where(u => u.UserRoles.Any(ur => model.RoleIds.Contains(ur.RoleId)))
                     .ToListAsync();
             }
 
