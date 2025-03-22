@@ -54,6 +54,18 @@ namespace Wanvi.API.Controllers
                 data: await _tourService.GetByIdAsync(id)));
         }
         /// <summary>
+        /// Lấy tour bằng id (với các id chi tiết).
+        /// </summary>
+        /// <param name="id">ID của tour cần lấy</param>
+        [HttpGet("Get_Tour_By_Id_With_Ids/{id}")]
+        public async Task<IActionResult> GetTourByIdWithIds(string id)
+        {
+            return Ok(new BaseResponseModel<ResponseTourWithIdModel>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: await _tourService.GetByIdWithIdsAsync(id)));
+        }
+        /// <summary>
         /// Tạo một tour mới.
         /// </summary>
         /// <param name="model">Thông tin tour cần tạo</param>

@@ -1,4 +1,5 @@
 ﻿using Wanvi.ModelViews.MediaModelViews;
+using Wanvi.ModelViews.ReviewModelViews;
 using Wanvi.ModelViews.ScheduleModelViews;
 
 namespace Wanvi.ModelViews.TourModelViews
@@ -18,6 +19,6 @@ namespace Wanvi.ModelViews.TourModelViews
         public List<ResponseScheduleModel> Schedules { get; set; }
         public List<ResponseMediaModel> Medias { get; set; }
         public List<string> TourActivities { get; set; }
-        //public List<Review> Reviews { get; set; }
+        public List<ResponseTourReviewModel> Reviews { get; set; }
     }
 }
