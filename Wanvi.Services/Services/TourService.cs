@@ -128,6 +128,19 @@ namespace Wanvi.Services.Services
             return _mapper.Map<ResponseTourModel>(tour); ;
         }
 
+        public async Task<ResponseTourWithIdModel> GetByIdWithIdsAsync(string id)
+        {
+            var tour = await _unitOfWork.GetRepository<Tour>().GetByIdAsync(id.Trim())
+                ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tour không tồn tại.");
+
+            if (tour.DeletedTime.HasValue)
+            {
+                throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tour đã bị xóa.");
+            }
+
+            return _mapper.Map<ResponseTourWithIdModel>(tour);
+        }
+
         public async Task CreateAsync(CreateTourModel model)
         {
             string strUserId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
