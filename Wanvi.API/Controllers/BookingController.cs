@@ -167,6 +167,19 @@ namespace Wanvi.API.Controllers
              ));
         }
         /// <summary>
+        /// Hướng dẫn viên hoàn thành tour
+        /// </summary>
+        [HttpPatch("Complete_Booking_For_TourGuide")]
+        public async Task<IActionResult> CompleteBookingForTourGuide(CompleteBookingForTourGuideModel request)
+        {
+            string res = await _bookingService.CompleteBookingForTourGuide(request);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        /// <summary>
         /// Hủy đơn dành cho khách hàng
         /// </summary>
         [HttpPatch("Cancel_Booking_For_Customer")]
