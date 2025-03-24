@@ -943,6 +943,24 @@ namespace Wanvi.Services.Services
             return "Hủy đơn thành công!";
         }
 
+        public async Task<string> CompleteBookingForTourGuide(CompleteBookingForTourGuideModel model)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            Guid.TryParse(userId, out Guid cb);
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == model.BookingId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
+            //Lấy thời gian chính xác hoàn thành tour để so sánh
+            DateTime endDateTime = booking.RentalDate.Date + booking.Schedule.EndTime;
+
+            if (endDateTime > DateTime.Now)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chưa qua thời gian kết thúc tour, không thể hoàn thành!");
+            }
+            booking.Status = BookingStatus.Completed;
+            await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+            await _unitOfWork.SaveAsync();
+            return "Hoàn thành đơn hàng thành công!";
+
+        }
         public async Task<List<BookingStatisticsModel>> BookingStatistics(string? day, string? month, int? year)
         {
             if (day != null)
