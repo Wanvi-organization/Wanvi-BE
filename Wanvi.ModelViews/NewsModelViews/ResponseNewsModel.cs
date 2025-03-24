@@ -7,8 +7,11 @@ namespace Wanvi.ModelViews.NewsModelViews
     public class ResponseNewsModel
     {
         public string Id { get; set; }
+        public DateTimeOffset CreatedTime { get; set; }
         public string Title { get; set; }
         public string Summary { get; set; }
+        public string MediaId { get; set; }
+        public string CoverPhotoUrl { get; set; }
         public int LikeCount { get; set; }
         public bool IsLikedByUser { get; set; }
         public string CategoryId { get; set; }

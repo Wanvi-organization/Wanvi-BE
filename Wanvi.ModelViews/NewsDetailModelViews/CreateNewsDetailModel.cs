@@ -4,9 +4,7 @@ namespace Wanvi.ModelViews.NewsDetailModelViews
 {
     public class CreateNewsDetailModel
     {
-        [Url(ErrorMessage = "Đường dẫn không hợp lệ.")]
-        public string? Url { get; set; }
-
+        public string? MediaId { get; set; }
         [Required(ErrorMessage = "Vui lòng nhập nội dung chi tiết tin tức.")]
         public string Content { get; set; }
 
