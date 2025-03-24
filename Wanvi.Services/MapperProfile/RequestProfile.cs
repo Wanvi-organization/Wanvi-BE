@@ -9,6 +9,7 @@ namespace Wanvi.Services.MapperProfile
         public RequestProfile()
         {
             CreateMap<Request, ResponseRequestModel>()
+                .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => src.CreatedTime))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ConvertRequestStatusToVietnamese(src.Status)))
                 .ForMember(dest => dest.Type, opt => opt.MapFrom(src => ConvertRequestTypeToVietnamese(src.Type)))
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName));

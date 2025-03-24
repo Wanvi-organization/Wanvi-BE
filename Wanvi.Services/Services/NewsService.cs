@@ -35,6 +35,8 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Tin tức không tồn tại.");
             }
 
+            newsList = newsList.OrderByDescending(n => n.CreatedTime).ToList();
+
             foreach (var news in newsList)
             {
                 news.NewsDetails = news.NewsDetails.OrderBy(nd => nd.SortOrder).ToList();
@@ -51,6 +53,8 @@ namespace Wanvi.Services.Services
             {
                 throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không có tin tức nào thuộc danh mục này.");
             }
+
+            newsList = newsList.OrderByDescending(n => n.CreatedTime).ToList();
 
             foreach (var news in newsList)
             {
@@ -98,7 +102,8 @@ namespace Wanvi.Services.Services
                 Summary = model.Summary,
                 CategoryId = model.CategoryId,
                 UserId = Guid.Parse(userId),
-                NewsDetails = new List<NewsDetail>()
+                NewsDetails = new List<NewsDetail>(),
+                MediaId = model.MediaId
             };
 
             newNews.CreatedBy = userId.ToString();
@@ -109,9 +114,9 @@ namespace Wanvi.Services.Services
                 newNews.NewsDetails.Add(new NewsDetail
                 {
                     NewsId = newNews.Id.ToString(),
-                    Url = newsDetail.Url,
                     Content = newsDetail.Content,
-                    SortOrder = newsDetail.SortOrder
+                    SortOrder = newsDetail.SortOrder,
+                    MediaId = newsDetail.MediaId
                 });
             }
 
@@ -153,6 +158,12 @@ namespace Wanvi.Services.Services
                 }
             }
 
+            // Kiểm tra và cập nhật MediaId cho News (Ảnh bìa của tin tức)
+            if (!string.IsNullOrEmpty(model.MediaId) && model.MediaId != news.MediaId)
+            {
+                news.MediaId = model.MediaId; // Cập nhật MediaId cho News
+            }
+
             if (model.NewsDetails != null && model.NewsDetails.Count > 0)
             {
                 var existingDetails = news.NewsDetails.ToList();
@@ -160,10 +171,6 @@ namespace Wanvi.Services.Services
                 var newSortOrders = model.NewsDetails
                     .Where(d => d.SortOrder.HasValue)
                     .Select(d => d.SortOrder.Value)
-                    .ToList();
-
-                var existingSortOrders = existingDetails
-                    .Select(nd => nd.SortOrder)
                     .ToList();
 
                 // Kiểm tra trùng lặp `SortOrder` trong request
@@ -200,8 +207,8 @@ namespace Wanvi.Services.Services
                             existingDetail.SortOrder = newsDetailModel.SortOrder.Value;
                         }
 
-                        // Cập nhật nội dung
-                        existingDetail.Url = newsDetailModel.Url;
+                        // Cập nhật MediaId và Content
+                        existingDetail.MediaId = newsDetailModel.MediaId;
                         existingDetail.Content = newsDetailModel.Content;
 
                         // Đánh dấu ID này đã được xử lý
@@ -224,9 +231,9 @@ namespace Wanvi.Services.Services
                         var newDetail = new NewsDetail
                         {
                             NewsId = news.Id.ToString(),
-                            Url = newsDetailModel.Url,
                             Content = newsDetailModel.Content,
-                            SortOrder = newsDetailModel.SortOrder.Value
+                            SortOrder = newsDetailModel.SortOrder.Value,
+                            MediaId = newsDetailModel.MediaId
                         };
 
                         _unitOfWork.GetRepository<NewsDetail>().Insert(newDetail);
