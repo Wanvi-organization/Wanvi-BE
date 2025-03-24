@@ -29,9 +29,10 @@ namespace Wanvi.API.Controllers
         /// </param>
         /// <param name="type">
         /// Loại yêu cầu (tùy chọn):
-        /// 0 - Rút tiền (Withdrawal),
-        /// 1 - Khiếu nại (Complaint),
-        /// 2 - Câu hỏi (Question).
+        /// 0 - Rút tiền từ booking (BookingWithdrawal),
+        /// 1 - Rút tiền từ ví (BalanceWithdrawal),
+        /// 2 - Khiếu nại (Complaint),
+        /// 3 - Câu hỏi (Question).
         /// </param>
         [HttpGet("Get_All_Requests")]
         public async Task<IActionResult> GetAllRequests(Guid roleId, RequestStatus? status = null, RequestType? type = null)
@@ -55,10 +56,10 @@ namespace Wanvi.API.Controllers
                 data: await _requestService.GetByIdAsync(id)));
         }
         /// <summary>
-        /// Admin đồng ý yêu cầu rút tiền
+        /// Admin xác nhận yêu cầu
         /// </summary>
-        [HttpPatch("Accecpt_From_Admin")]
-        public async Task<IActionResult> AccecptFromAdmin(AccecptRequestFromAdminModel model)
+        [HttpPatch("Confirm_From_Admin")]
+        public async Task<IActionResult> ConfirmFromAdmin(AccecptRequestFromAdminModel model)
         {
             var requests = await _requestService.AccecptFromAdmin(model);
             return Ok(new BaseResponseModel<string>(
@@ -67,7 +68,7 @@ namespace Wanvi.API.Controllers
                 data: requests));
         }
         /// <summary>
-        /// Admin hủy yêu cầu rút tiền
+        /// Admin hủy yêu cầu
         /// </summary>
         [HttpPatch("Cancel_From_Admin")]
         public async Task<IActionResult> CancelFromAdmin(CancelRequestFromAdminModel model)

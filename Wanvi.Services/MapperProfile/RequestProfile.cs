@@ -28,7 +28,8 @@ namespace Wanvi.Services.MapperProfile
         {
             return status switch
             {
-                RequestType.Withdrawal => "Rút tiền",
+                RequestType.BookingWithdrawal => "Rút tiền từ booking",
+                RequestType.BalanceWithdrawal => "Rút tiền từ ví",
                 RequestType.Complaint => "Khiếu nại",
                 RequestType.Question => "Câu hỏi",
                 _ => "Không xác định"
