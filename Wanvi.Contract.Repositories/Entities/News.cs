@@ -8,7 +8,8 @@ namespace Wanvi.Contract.Repositories.Entities
         public string Summary { get; set; }
         public int LikeCount { get; set; } = 0;
         public bool IsLikedByUser { get; set; } = false;
-
+        public string? MediaId { get; set; }
+        public virtual Media Media { get; set; }
         public string CategoryId { get; set; }
         public virtual Category Category { get; set; }
         public Guid UserId { get; set; }

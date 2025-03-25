@@ -11,6 +11,7 @@ namespace Wanvi.ModelViews.NewsModelViews
         public string Summary { get; set; }
         [Required(ErrorMessage = "Vui lòng chọn danh mục.")]
         public string CategoryId { get; set; }
+        public string? MediaId { get; set; }
         [Required(ErrorMessage = "Vui lòng thêm ít nhất một chi tiết tin tức.")]
         [MinLength(1, ErrorMessage = "Vui lòng thêm ít nhất một chi tiết tin tức.")]
         public List<CreateNewsDetailModel> NewsDetails { get; set; } =  new();

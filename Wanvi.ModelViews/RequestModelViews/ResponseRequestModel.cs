@@ -3,6 +3,7 @@
     public class ResponseRequestModel
     {
         public string Id { get; set; }
+        public DateTimeOffset CreatedTime { get; set; }
         public string? BankAccount { get; set; }
         public string? BankAccountName { get; set; }
         public string? Bank { get; set; }

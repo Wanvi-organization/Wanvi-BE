@@ -65,17 +65,18 @@ namespace Wanvi.Services.Services
 
             return _mapper.Map<ResponseRequestModel>(request);
         }
+
         public async Task<string> CreateRequest(CreateRequestModel model)
         {
             string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
             Guid.TryParse(userId, out Guid cb);
-            if (model.Type == RequestType.Withdrawal)
+            if (model.Type == RequestType.BalanceWithdrawal)
             {
                 if (model.Balance < 0)
                 {
                     throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Vui lòng nhập số tiền lớn hơn 0");
                 }
-                var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x=>x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "không tìm thấy tài khoản");
+                var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "không tìm thấy tài khoản");
                 if (model.Balance > user.Balance)
                 {
                     throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, $"Tài khoản của quý khách({user.Balance} đ) không đủ để yêu cầu rút {model.Balance} đ");
@@ -83,18 +84,18 @@ namespace Wanvi.Services.Services
                 var request = new Request()
                 {
                     Note = model.Note,
-                    Type = RequestType.Withdrawal,
+                    Type = RequestType.BalanceWithdrawal,
                     Balance = model.Balance,
                     CreatedTime = DateTime.Now,
                     LastUpdatedTime = DateTime.Now,
                     CreatedBy = userId,
                     UserId = cb,
                     LastUpdatedBy = userId,
-                    Status = RequestStatus.Pending,                  
+                    Status = RequestStatus.Pending,
                 };
                 await _unitOfWork.GetRepository<Request>().InsertAsync(request);
                 await _unitOfWork.SaveAsync();
-                return "Gửi yêu cầu rút tiền thành công";
+                return "Gửi yêu cầu rút tiền từ ví thành công";
             }
             if (model.Type == RequestType.Complaint)
             {
@@ -141,30 +142,49 @@ namespace Wanvi.Services.Services
                 return "Gửi câu hỏi thành công";
             }
         }
+
         public async Task<string> AccecptFromAdmin(AccecptRequestFromAdminModel model)
         {
-            var request = await _unitOfWork.GetRepository<Request>().Entities.FirstOrDefaultAsync(x => x.Id == model.Id && !x.DeletedTime.HasValue)
+            var request = await _unitOfWork.GetRepository<Request>().Entities
+                .FirstOrDefaultAsync(x => x.Id == model.Id && !x.DeletedTime.HasValue)
                 ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Yêu cầu không tồn tại.");
 
-            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.OrderCode == model.OrderCode && !x.DeletedTime.HasValue)
-                ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Hóa đơn không tồn tại.");
+            var resultMessage = "Chấp nhận yêu cầu thành công";
 
-            //if (!string.IsNullOrWhiteSpace(model.Reason))
-            //{
-            //    request.Reason = model.Reason;
-            //}
+            switch (request.Type)
+            {
+                case RequestType.BookingWithdrawal:
+                case RequestType.BalanceWithdrawal:
+                    request.Status = RequestStatus.Confirmed;
 
-            request.Status = RequestStatus.Confirmed;
+                    if (request.Type == RequestType.BookingWithdrawal)
+                    {
+                        var booking = await _unitOfWork.GetRepository<Booking>().Entities
+                            .FirstOrDefaultAsync(x => x.OrderCode == model.OrderCode && !x.DeletedTime.HasValue)
+                            ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Hóa đơn không tồn tại.");
 
-            booking.Status = BookingStatus.Refunded;
+                        booking.Status = BookingStatus.Refunded;
+                        await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+                    }
 
-            await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
-            await _unitOfWork.GetRepository<Request>().UpdateAsync(request);
+                    await _unitOfWork.GetRepository<Request>().UpdateAsync(request);
+                    await _unitOfWork.SaveAsync();
 
-            await _unitOfWork.SaveAsync();
+                    await SendWithdrawalSuccessEmail(request.User, request);
+                    break;
 
-            await SendWithdrawalSuccessEmail(booking.User, request);
-            return "Chấp nhận yêu cầu thành công";
+                case RequestType.Complaint:
+                case RequestType.Question:
+                    request.Status = RequestStatus.Confirmed;
+                    await _unitOfWork.GetRepository<Request>().UpdateAsync(request);
+                    await _unitOfWork.SaveAsync();
+                    break;
+
+                default:
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Loại yêu cầu không hợp lệ.");
+            }
+
+            return resultMessage;
         }
 
         private async Task SendWithdrawalSuccessEmail(ApplicationUser user, Request request)
@@ -191,52 +211,75 @@ namespace Wanvi.Services.Services
 
         public async Task<string> CancelFromAdmin(CancelRequestFromAdminModel model)
         {
-            var request = await _unitOfWork.GetRepository<Request>().Entities.FirstOrDefaultAsync(x => x.Id == model.Id && !x.DeletedTime.HasValue)
+            var request = await _unitOfWork.GetRepository<Request>().Entities
+                .FirstOrDefaultAsync(x => x.Id == model.Id && !x.DeletedTime.HasValue)
                 ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Yêu cầu không tồn tại.");
 
-            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.OrderCode == model.OrderCode && !x.DeletedTime.HasValue)
-                ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Hóa đơn không tồn tại.");
+            var resultMessage = "Hủy yêu cầu thành công";
 
-            if (!string.IsNullOrWhiteSpace(model.Reason))
+            switch (request.Type)
             {
-                request.Reason = model.Reason;
+                case RequestType.BookingWithdrawal:
+                    var booking = await _unitOfWork.GetRepository<Booking>().Entities
+                        .FirstOrDefaultAsync(x => x.OrderCode == model.OrderCode && !x.DeletedTime.HasValue)
+                        ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Hóa đơn không tồn tại.");
+
+                    request.Status = RequestStatus.Cancelled;
+                    booking.Request = false;
+
+                    await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+                    await _unitOfWork.GetRepository<Request>().UpdateAsync(request);
+
+                    await _unitOfWork.SaveAsync();
+                    await SendRequestCancellationEmail(booking.User, request, "Yêu cầu rút tiền từ booking");
+                    break;
+
+                case RequestType.BalanceWithdrawal:
+                    request.Status = RequestStatus.Cancelled;
+                    await _unitOfWork.GetRepository<Request>().UpdateAsync(request);
+                    await _unitOfWork.SaveAsync();
+                    await SendRequestCancellationEmail(request.User, request, "Yêu cầu rút tiền từ ví");
+                    break;
+
+                case RequestType.Complaint:
+                    request.Status = RequestStatus.Cancelled;
+                    await _unitOfWork.GetRepository<Request>().UpdateAsync(request);
+                    await _unitOfWork.SaveAsync();
+                    await SendRequestCancellationEmail(request.User, request, "Yêu cầu khiếu nại");
+                    break;
+
+                case RequestType.Question:
+                    request.Status = RequestStatus.Cancelled;
+                    await _unitOfWork.GetRepository<Request>().UpdateAsync(request);
+                    await _unitOfWork.SaveAsync();
+                    await SendRequestCancellationEmail(request.User, request, "Yêu cầu thắc mắc");
+                    break;
+
+                default:
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Loại yêu cầu không hợp lệ.");
             }
 
-            request.Status = RequestStatus.Cancelled;
-
-            //booking.Status = BookingStatus.Refunded;
-            booking.Request = false;
-
-            await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
-            await _unitOfWork.GetRepository<Request>().UpdateAsync(request);
-            // Gửi email thông báo hủy yêu cầu
-            await SendRequestCancellationEmail(booking.User, request);
-            await _unitOfWork.SaveAsync();
-
-
-            return "Hủy yêu cầu thành công";
+            return resultMessage;
         }
 
-        private async Task SendRequestCancellationEmail(ApplicationUser user, Request request)
+        private async Task SendRequestCancellationEmail(ApplicationUser user, Request request, string requestType)
         {
             await _emailService.SendEmailAsync(
                 user.Email,
                 "Thông Báo Yêu Cầu Bị Hủy",
                 $@"
-                <html>
-                <body>
-                    <h2>THÔNG BÁO HỦY YÊU CẦU</h2>
-                    <p>Xin chào {user.FullName},</p>
-                    <p>Chúng tôi xin thông báo rằng yêu cầu của bạn đã bị hủy bởi quản trị viên.</p>
-                    <p><strong>Mã yêu cầu:</strong> {request.Id}</p>
-                    <p><strong>Mã hóa đơn:</strong> {request.OrderCode}</p>
-                    <p><strong>Lý do hủy:</strong> {request.Reason ?? "Không có lý do cụ thể."}</p>
-                    <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi để được hỗ trợ.</p>
-                    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
-                </body>
-                </html>"
+<html>
+<body>
+    <h2>THÔNG BÁO HỦY {requestType.ToUpper()}</h2>
+    <p>Xin chào {user.FullName},</p>
+    <p>Chúng tôi xin thông báo rằng {requestType.ToLower()} của bạn đã bị hủy bởi quản trị viên.</p>
+    <p><strong>Mã yêu cầu:</strong> {request.Id}</p>
+    <p><strong>Lý do hủy:</strong> {request.Reason ?? "Không có lý do cụ thể."}</p>
+    <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi để được hỗ trợ.</p>
+    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+</body>
+</html>"
             );
         }
-
     }
 }

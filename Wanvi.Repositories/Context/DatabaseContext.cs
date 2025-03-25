@@ -329,6 +329,17 @@ namespace Wanvi.Repositories.Context
                 .WithOne(m => m.Review)
                 .HasForeignKey(m => m.ReviewId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<News>()
+            .HasOne(n => n.Media)
+            .WithOne()
+            .HasForeignKey<News>(n => n.MediaId);
+
+            modelBuilder.Entity<NewsDetail>()
+                .HasOne(nd => nd.Media)
+                .WithMany()
+                .HasForeignKey(nd => nd.MediaId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

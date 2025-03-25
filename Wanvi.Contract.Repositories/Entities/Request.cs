@@ -8,11 +8,13 @@ namespace Wanvi.Contract.Repositories.Entities
         Confirmed,
         Cancelled,
     }
+
     public enum RequestType
     {
-        Withdrawal = 0,
-        Complaint = 1,
-        Question = 2
+        BookingWithdrawal = 0,
+        BalanceWithdrawal = 1,
+        Complaint = 2,
+        Question = 3
     }
 
     public class Request : BaseEntity

@@ -12,6 +12,5 @@ namespace Wanvi.ModelViews.RequestModelViews
         public string? Note { get; set; }
         public RequestType Type { get; set; }
         public int Balance { get; set; } = 0;
-
     }
 }
