@@ -235,6 +235,71 @@ namespace Wanvi.Services.Services
 
         }
 
+        public async Task RegisterByEmail(RegisterByEmailModel model)
+        {
+            // Kiểm tra user co tồn tại
+            var applicationUser = await _unitOfWork.GetRepository<ApplicationUser>().Entities
+                .FirstOrDefaultAsync(x => x.Id == model.Id && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản không tồn tại!");
+
+            // Kiểm tra xác nhận mật khẩu
+            if (model.Password != model.ConfirmPassword)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Xác nhận mật khẩu không đúng!");
+            }
+            if (!Regex.IsMatch(model.PhoneNumber, @"^\d{10,11}$"))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Định dạng số điện thoại không hợp lệ. Số điện thoại phải có 10-11 chữ số.");
+            }
+            if (!Regex.IsMatch(model.Password, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,16}$"))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
+                    "Mật khẩu phải có ít nhất 8 ký tự, 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.");
+            }
+            if (string.IsNullOrWhiteSpace(model.Name))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tên không được để trống.");
+            }
+
+            // Xác định vai trò
+            var roleName = model.RoleName ? "Traveler" : "LocalGuide";
+            var applicationRole = await _unitOfWork.GetRepository<ApplicationRole>().Entities
+                .FirstOrDefaultAsync(x => x.Name == roleName);
+
+            if (applicationRole == null)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vai trò không tồn tại!");
+            }
+
+            // Sử dụng PasswordHasher để băm mật khẩu
+            var passwordHasher = new FixedSaltPasswordHasher<ApplicationUser>(Options.Create(new PasswordHasherOptions()));
+
+            applicationUser.FullName = model.Name;
+            applicationUser.PhoneNumber = model.PhoneNumber;
+            applicationUser.UserName = applicationUser.Email;
+            applicationUser.Address = model.PlaceOfBirth;
+            applicationUser.DateOfBirth = model.DateOfBirth;
+            applicationUser.Gender = model.Gender;
+            applicationUser.NormalizedEmail = applicationUser.Email.ToUpper();
+            applicationUser.NormalizedUserName = applicationUser.Email.ToUpper();
+            applicationUser.SecurityStamp = Guid.NewGuid().ToString();
+            applicationUser.PasswordHash = passwordHasher.HashPassword(null, model.Password); // Băm mật khẩu tại đây
+
+
+            // Cập nhậtk người dùng  vào cơ sở dữ liệu
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(applicationUser);
+
+            ApplicationUserRole applicationUserRole = new ApplicationUserRole()
+            {
+                UserId = applicationUser.Id,
+                RoleId = applicationRole.Id,
+            };
+
+            await _unitOfWork.GetRepository<ApplicationUserRole>().InsertAsync(applicationUserRole);
+
+            await _unitOfWork.SaveAsync();
+
+        }
+
         public async Task<ResponsePhoneModel> CreateUserByPhone(CreateUseByPhoneModel model)
         {
             //... (Your existing code for phone number validation and user creation)
@@ -407,6 +472,10 @@ namespace Wanvi.Services.Services
 
         public async Task ResendConfirmationEmail(EmailModelView emailModelView)
         {
+            if (string.IsNullOrWhiteSpace(emailModelView.Email))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Email không được để trống!");
+            }
             var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Email == emailModelView.Email && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy Email");
 
             int OTP = Int32.Parse(GenerateOtp());
@@ -442,11 +511,12 @@ namespace Wanvi.Services.Services
             // Thực hiện logic tạo user
             var user = new ApplicationUser
             {
-                PhoneNumber = model.Email,
+                Email = model.Email,
                 CreatedTime = DateTime.Now,
-                EmailConfirmed = true,
-                PhoneNumberConfirmed = false,
+                EmailConfirmed = false,
+                PhoneNumberConfirmed = true,
                 CodeGeneratedTime = DateTime.Now,
+                NormalizedEmail = model.Email.ToUpper(),
                 EmailCode = OTP,
             };
             await _emailService.SendEmailAsync(model.Email, "Xác nhận tài khoản",

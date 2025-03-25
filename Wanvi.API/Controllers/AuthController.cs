@@ -34,6 +34,12 @@ namespace WanviBE.API.Controllers
             await _authService.Register(model);
             return Ok(BaseResponse<string>.OkResponse("Đăng kí thành công!"));
         }
+        [HttpPost("Register_By_Email")]
+        public async Task<IActionResult> RegisterByEmail(RegisterByEmailModel model)
+        {
+            await _authService.RegisterByEmail(model);
+            return Ok(BaseResponse<string>.OkResponse("Đăng kí thành công!"));
+        }
 
         [HttpPatch("Confirm_OTP_Email_Verification")]
         public async Task<IActionResult> ConfirmOTPEmailVerification(ConfirmOTPModelView model)

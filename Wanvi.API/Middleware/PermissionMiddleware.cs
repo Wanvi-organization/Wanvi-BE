@@ -43,7 +43,11 @@ namespace Wanvi.API.Middleware
                 "/api/user/get_local_guides",
                 "/api/payment/payos_callback",
                 "/api/booking/cancel_booking_for_admin",
-                "/api/user/unlock_booking_of_tourguide"
+                "/api/user/unlock_booking_of_tourguide",
+                "/api/auth/create_user_by_email",
+                "/api/auth/check_email",
+                "/api/auth/resend_confirmation_email",
+                "/api/auth/register_by_email"
             };
             _rolePermissions = new Dictionary<string, List<string>>()
             {

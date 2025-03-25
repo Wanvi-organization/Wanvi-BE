@@ -21,5 +21,6 @@ namespace Wanvi.Contract.Services.Interfaces
         Task<Guid> CheckEmail(CheckEmailModel model);
         Task<ResponseEmailModel> CreateUserByEmail(CreateUserByEmailModel model);
         Task ResendConfirmationEmail(EmailModelView emailModelView);
+        Task RegisterByEmail(RegisterByEmailModel model);
     }
 }
