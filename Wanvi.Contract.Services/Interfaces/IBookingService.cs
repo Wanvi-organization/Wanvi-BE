@@ -1,4 +1,5 @@
-﻿using Wanvi.ModelViews.BookingModelViews;
+﻿using Wanvi.Contract.Repositories.Entities;
+using Wanvi.ModelViews.BookingModelViews;
 
 namespace Wanvi.Contract.Services.Interfaces
 {
@@ -30,6 +31,7 @@ namespace Wanvi.Contract.Services.Interfaces
     int? maxPrice = null,
     string sortBy = "CustomerName",
     bool ascending = true);
+        Task<GetBookingDetailUserModel> GetBookingDetailUser(string bookingId);
         Task<GetBookingGuideScreen3Model> GetBookingDetailsById(string bookingId);
         Task<string> WithdrawMoneyFromBooking(WithdrawMoneyFromBookingModel model);
         Task<string> ChangeBookingToUser(ChangeBookingToUserModel model);

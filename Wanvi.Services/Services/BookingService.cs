@@ -88,11 +88,12 @@ namespace Wanvi.Services.Services
                 TotalTravelers = b.TotalTravelers,
                 TotalPrice = b.TotalPrice,
                 Note = b.Note,
-                RentalDate = b.RentalDate.ToString("dd/MM/yyyy"), // Chỉ lấy ngày/tháng/năm
+                RentalDate = b.RentalDate.ToString("dddd, dd/MM/yyyy"), // Chỉ lấy ngày/tháng/năm
                 Status = ConvertStatusToString(b.Status),
                 StartTime = b.Schedule?.StartTime.ToString(@"hh\:mm") ?? "00:00", // Chỉ lấy giờ:phút
                 EndTime = b.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00",
-                TourName = b.Schedule.Tour.Name
+                TourName = b.Schedule.Tour.Name,
+                
             }).ToList();
 
             return bookingModels;
@@ -172,6 +173,45 @@ namespace Wanvi.Services.Services
                 _ => "Không xác định"
             };
         }
+
+        public async Task<GetBookingDetailUserModel> GetBookingDetailUser(string bookingId)
+        {
+            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
+            Guid.TryParse(userId, out Guid cb);
+
+            var query =await _unitOfWork.GetRepository<Booking>()
+                .Entities
+                .FirstOrDefaultAsync(x => x.Id == bookingId && !x.DeletedTime.HasValue);
+
+
+            var bookingModels = new GetBookingDetailUserModel
+            {
+                Id = query.Id.ToString(),
+                TotalTravelers = query.TotalTravelers,
+                TotalPrice = query.TotalPrice,
+                Note = query.Note,
+                RentalDate = query.RentalDate.ToString("dddd, dd/MM/yyyy"), // Chỉ lấy ngày/tháng/năm
+                Status = ConvertStatusToString(query.Status),
+                StartTime = query.Schedule?.StartTime.ToString(@"hh\:mm") ?? "00:00", // Chỉ lấy giờ:phút
+                EndTime = query.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00",
+                TourName = query.Schedule.Tour.Name,
+                Email = query.Schedule.Tour.ApplicationUser.Email,
+                Gender = ConvertGenderToString(query.Schedule.Tour.ApplicationUser.Gender),
+                PhoneNumber= query.Schedule.Tour.ApplicationUser.PhoneNumber,
+                TourGuideName = query.Schedule.Tour.ApplicationUser.FullName,
+                
+            };
+            return bookingModels;
+        }
+        private string ConvertGenderToString(bool gender)
+        {
+            return gender switch
+            {
+                true => "Nam",
+                false => "Nữ",
+            };
+        }
+
 
         public async Task<List<GetBookingUserDetailModel>> GetBookingsByTourGuide(
     string? rentalDate = null,
