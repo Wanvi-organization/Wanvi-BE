@@ -8,7 +8,7 @@ namespace Wanvi.ModelViews.PaymentModelViews
 {
     public class PayOSPaymentRequest
     {
-        public long orderCode { get; set; }
+        public int orderCode { get; set; }
         public long amount { get; set; } // Lưu ý: amount cần là kiểu long
         public string description { get; set; }
         public string buyerName { get; set; }
