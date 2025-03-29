@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
 using Google.Apis.Auth;
+using MailKit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
@@ -20,14 +22,7 @@ using Wanvi.Core.Constants;
 using Wanvi.Core.Utils;
 using Wanvi.ModelViews.AuthModelViews;
 using Wanvi.ModelViews.UserModelViews;
-using Wanvi.Services.Services.Infrastructure;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging;
-using Twilio.Types;
-using Twilio;
-using Twilio.Rest.Api.V2010.Account;
+using Wanvi.Repositories.UOW;
 namespace Wanvi.Services.Services
 {
     public class AuthService : IAuthService
@@ -240,88 +235,70 @@ namespace Wanvi.Services.Services
 
         }
 
-        //public async Task<ResponsePhoneModel> CreateUserByPhone(CreateUseByPhoneModel model)
-        //{
-        //    if (string.IsNullOrWhiteSpace(model.PhoneNumber))
-        //    {
-        //        throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số điên thoại không được để trống!");
-        //    }
+        public async Task RegisterByEmail(RegisterByEmailModel model)
+        {
+            // Kiểm tra user co tồn tại
+            var applicationUser = await _unitOfWork.GetRepository<ApplicationUser>().Entities
+                .FirstOrDefaultAsync(x => x.Id == model.Id && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tài khoản không tồn tại!");
 
-        //    if (!Regex.IsMatch(model.PhoneNumber, @"^\d{10,11}$"))
-        //    {
+            // Kiểm tra xác nhận mật khẩu
+            if (model.Password != model.ConfirmPassword)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Xác nhận mật khẩu không đúng!");
+            }
+            if (!Regex.IsMatch(model.PhoneNumber, @"^\d{10,11}$"))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Định dạng số điện thoại không hợp lệ. Số điện thoại phải có 10-11 chữ số.");
+            }
+            if (!Regex.IsMatch(model.Password, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,16}$"))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest,
+                    "Mật khẩu phải có ít nhất 8 ký tự, 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.");
+            }
+            if (string.IsNullOrWhiteSpace(model.Name))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Tên không được để trống.");
+            }
 
-        //        throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Định dạng số điện thoại không hợp lệ. Số điện thoại phải có 10-11 chữ số.");
+            // Xác định vai trò
+            var roleName = model.RoleName ? "Traveler" : "LocalGuide";
+            var applicationRole = await _unitOfWork.GetRepository<ApplicationRole>().Entities
+                .FirstOrDefaultAsync(x => x.Name == roleName);
 
-        //    }
+            if (applicationRole == null)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Vai trò không tồn tại!");
+            }
 
-        //    // Kiểm tra số điện thoại đã tồn tại
-        //    var userExists = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.PhoneNumber == model.PhoneNumber && !x.DeletedTime.HasValue);
-        //    if (userExists != null)
-        //    {
-        //        throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Số điện thoại đã được đăng kí.");
-        //    }
+            // Sử dụng PasswordHasher để băm mật khẩu
+            var passwordHasher = new FixedSaltPasswordHasher<ApplicationUser>(Options.Create(new PasswordHasherOptions()));
 
-        //    // Thực hiện logic tạo user
-        //    var user = new ApplicationUser
-        //    {
-        //        PhoneNumber = model.PhoneNumber,
-        //        CreatedTime = DateTime.Now,
-        //        EmailConfirmed = true,
-        //        PhoneNumberConfirmed = false,
-        //        EmailCode = Int32.Parse(GenerateOtp()),
-        //    };
+            applicationUser.FullName = model.Name;
+            applicationUser.PhoneNumber = model.PhoneNumber;
+            applicationUser.UserName = applicationUser.Email;
+            applicationUser.Address = model.PlaceOfBirth;
+            applicationUser.DateOfBirth = model.DateOfBirth;
+            applicationUser.Gender = model.Gender;
+            applicationUser.NormalizedEmail = applicationUser.Email.ToUpper();
+            applicationUser.NormalizedUserName = applicationUser.Email.ToUpper();
+            applicationUser.SecurityStamp = Guid.NewGuid().ToString();
+            applicationUser.PasswordHash = passwordHasher.HashPassword(null, model.Password); // Băm mật khẩu tại đây
 
 
+            // Cập nhậtk người dùng  vào cơ sở dữ liệu
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(applicationUser);
 
-        //    try
-        //    {
-        //        string accountSid = _configuration["Twilio:AccountSid"];
-        //        string authToken = _configuration["Twilio:AuthToken"];
-        //        string fromPhoneNumber = _configuration["Twilio:FromPhoneNumber"]; // Your Twilio number (purchased)
+            ApplicationUserRole applicationUserRole = new ApplicationUserRole()
+            {
+                UserId = applicationUser.Id,
+                RoleId = applicationRole.Id,
+            };
 
-        //        TwilioClient.Init(accountSid, authToken);
+            await _unitOfWork.GetRepository<ApplicationUserRole>().InsertAsync(applicationUserRole);
 
-        //        string toPhoneNumber = model.PhoneNumber; // Get the phone number from your model
+            await _unitOfWork.SaveAsync();
 
-        //        // 1. Remove leading zero (if present)
-        //        if (toPhoneNumber.StartsWith("0"))
-        //        {
-        //            toPhoneNumber = toPhoneNumber.Substring(1);
-        //        }
-
-        //        // 2. Add the country code (+84 for Vietnam)
-        //        toPhoneNumber = "+84" + toPhoneNumber;
-
-        //        // Now toPhoneNumber is in E.164 format
-
-        //        string message = $"Mã OTP của bạn là: {user.EmailCode}";
-
-        //        var messageResource = await MessageResource.CreateAsync(
-        //            body: message,
-        //            from: new PhoneNumber(fromPhoneNumber), // Your Twilio number
-        //            to: new PhoneNumber(toPhoneNumber) // Correctly formatted recipient number
-        //        );
-
-        //        _logger.LogInformation($"SMS sent successfully. SID: {messageResource.Sid}");
-
-        //        return new ResponsePhoneModel // Or whatever your success response is
-        //        {
-        //            PhoneNumber = model.PhoneNumber,
-        //            Otp = user.EmailCode.ToString()
-        //        };
-
-        //    }
-        //    catch (Twilio.Exceptions.ApiException ex) // Catch Twilio specific exceptions
-        //    {
-        //        _logger.LogError(ex, $"Twilio API Error: {ex.Message}");
-        //        throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, $"Lỗi gửi OTP: {ex.Message}"); // More specific error message
-        //    }
-        //    catch (Exception ex)  // Catch other exceptions
-        //    {
-        //        _logger.LogError(ex, "General Error sending SMS with Twilio.");
-        //        throw new ErrorException(StatusCodes.Status500InternalServerError, ErrorCode.ServerError, "Lỗi gửi OTP: " + ex.Message);
-        //    }
-        //}
+        }
 
         public async Task<ResponsePhoneModel> CreateUserByPhone(CreateUseByPhoneModel model)
         {
@@ -445,7 +422,6 @@ namespace Wanvi.Services.Services
             }
         }
 
-
         // Class to represent the eSMS response (important for deserialization)
         public class EsmsResponse
         {
@@ -493,6 +469,88 @@ namespace Wanvi.Services.Services
             await _unitOfWork.SaveAsync();
             return user.Id;
         }
+
+        public async Task ResendConfirmationEmail(EmailModelView emailModelView)
+        {
+            if (string.IsNullOrWhiteSpace(emailModelView.Email))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Email không được để trống!");
+            }
+            var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Email == emailModelView.Email && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy Email");
+
+            int OTP = Int32.Parse(GenerateOtp());
+            user.EmailCode = OTP;
+            user.CodeGeneratedTime = DateTime.Now;
+            await _emailService.SendEmailAsync(emailModelView.Email, "Xác nhận tài khoản",
+           $"Vui lòng xác nhận tài khoản của bạn, OTP của bạn là:  <div class='otp'>{OTP}</div>");
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
+
+        }
+        public async Task<ResponseEmailModel> CreateUserByEmail(CreateUserByEmailModel model)
+        {
+            //... (Your existing code for phone number validation and user creation)
+            if (string.IsNullOrWhiteSpace(model.Email))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Email không được để trống!");
+            }
+
+            if (!Regex.IsMatch(model.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Định dạng email không hợp lệ.");
+            }
+
+            // Kiểm tra số điện thoại đã tồn tại
+            var userExists = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Email == model.Email && !x.DeletedTime.HasValue);
+            if (userExists != null)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Email đã được đăng kí.");
+            }
+            int OTP = Int32.Parse(GenerateOtp());
+
+            // Thực hiện logic tạo user
+            var user = new ApplicationUser
+            {
+                Email = model.Email,
+                CreatedTime = DateTime.Now,
+                EmailConfirmed = false,
+                PhoneNumberConfirmed = true,
+                CodeGeneratedTime = DateTime.Now,
+                NormalizedEmail = model.Email.ToUpper(),
+                EmailCode = OTP,
+            };
+            await _emailService.SendEmailAsync(model.Email, "Xác nhận tài khoản",
+                       $"Vui lòng xác nhận tài khoản của bạn, OTP của bạn là:  <div class='otp'>{OTP}</div>");
+            await _unitOfWork.GetRepository<ApplicationUser>().InsertAsync(user);
+            await _unitOfWork.SaveAsync();
+            return new ResponseEmailModel() 
+            {
+                Email = model.Email,
+                Otp = OTP
+            };
+        }
+        public async Task<Guid> CheckEmail(CheckEmailModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model.Email))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Email không được để trống!");
+            }
+            if (string.IsNullOrWhiteSpace(model.Otp.ToString()))
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Otp không được để trống!");
+            }
+            ApplicationUser user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Email == model.Email && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Email không tồn tại!");
+            if (user.EmailCode.ToString() != model.Otp.ToString())
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Otp sai, vui lòng nhập lại!");
+            }
+            user.PhoneNumberConfirmed = true;
+            user.EmailConfirmed = true;
+            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(user);
+            await _unitOfWork.SaveAsync();
+            return user.Id;
+        }
+
         public async Task CreateRole(RoleModel model)
         {
             ApplicationRole applicationRole = await _unitOfWork.GetRepository<ApplicationRole>().Entities.FirstOrDefaultAsync(x => x.Name == model.RoleName);

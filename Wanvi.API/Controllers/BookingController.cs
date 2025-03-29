@@ -33,6 +33,19 @@ namespace Wanvi.API.Controllers
                  data: res
              ));
         }
+        /// <summary>
+        /// lấy booking detail của user
+        /// </summary>
+        [HttpGet("get_booking_detail_user")]
+        public async Task<IActionResult> GetBookingUser(string bookingId)
+        {
+            var res = await _bookingService.GetBookingDetailUser(bookingId);
+            return Ok(new BaseResponseModel<GetBookingDetailUserModel>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
 
         /// <summary>
         /// lấy danh sách booking của admnin

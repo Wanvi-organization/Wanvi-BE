@@ -18,5 +18,9 @@ namespace Wanvi.Contract.Services.Interfaces
         Task<ResponsePhoneModel> CreateUserByPhone(CreateUseByPhoneModel model);
         Task<Guid> CheckPhone(CheckPhoneModel model);
         Task LogoutAsync(RefreshTokenModel model);
+        Task<Guid> CheckEmail(CheckEmailModel model);
+        Task<ResponseEmailModel> CreateUserByEmail(CreateUserByEmailModel model);
+        Task ResendConfirmationEmail(EmailModelView emailModelView);
+        Task RegisterByEmail(RegisterByEmailModel model);
     }
 }

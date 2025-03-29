@@ -34,6 +34,12 @@ namespace WanviBE.API.Controllers
             await _authService.Register(model);
             return Ok(BaseResponse<string>.OkResponse("Đăng kí thành công!"));
         }
+        [HttpPost("Register_By_Email")]
+        public async Task<IActionResult> RegisterByEmail(RegisterByEmailModel model)
+        {
+            await _authService.RegisterByEmail(model);
+            return Ok(BaseResponse<string>.OkResponse("Đăng kí thành công!"));
+        }
 
         [HttpPatch("Confirm_OTP_Email_Verification")]
         public async Task<IActionResult> ConfirmOTPEmailVerification(ConfirmOTPModelView model)
@@ -42,7 +48,14 @@ namespace WanviBE.API.Controllers
             return Ok(BaseResponse<string>.OkResponse("Xác nhận email thành công!"));
         }
 
-        
+        [HttpPatch("Resend_Confirmation_Email")]
+        public async Task<IActionResult> ResendConfirmationEmail(EmailModelView model)
+        {
+            await _authService.ResendConfirmationEmail(model);
+            return Ok(BaseResponse<string>.OkResponse("Gửi lại email thành công!"));
+        }
+
+
         [HttpPost("Login")]
         public async Task<IActionResult> Login(LoginRequestModel request)
         {
@@ -64,10 +77,30 @@ namespace WanviBE.API.Controllers
                  data: res
              ));
         }
+        [HttpPost("Create_User_By_Email")]
+        public async Task<IActionResult> CreateUserByEmail(CreateUserByEmailModel model)
+        {
+            var res = await _authService.CreateUserByEmail(model);
+            return Ok(new BaseResponseModel<ResponseEmailModel>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
         [HttpPost("Check_Phone")]
         public async Task<IActionResult> CheckPhone(CheckPhoneModel model)
         {
             var res = await _authService.CheckPhone(model);
+            return Ok(new BaseResponseModel<Guid>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        [HttpPost("Check_Email")]
+        public async Task<IActionResult> CheckEmail(CheckEmailModel model)
+        {
+            var res = await _authService.CheckEmail(model);
             return Ok(new BaseResponseModel<Guid>(
                  statusCode: StatusCodes.Status200OK,
                  code: ResponseCodeConstants.SUCCESS,

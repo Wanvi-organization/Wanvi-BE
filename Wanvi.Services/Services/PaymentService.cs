@@ -310,17 +310,13 @@ namespace Wanvi.Services.Services
         }
         public async Task<string> CreateBookingHaftEnd(CreateBookingEndModel model)
         {
-            string userId = Authentication.GetUserIdFromHttpContextAccessor(_contextAccessor);
-            Guid.TryParse(userId, out Guid cb);
-
             // Lấy danh sách booking hợp lệ (cùng Schedule, cùng ngày, trạng thái hợp lệ)
             var existingBookings = await _unitOfWork.GetRepository<Booking>().Entities
                 .Include(bp => bp.Payments)
                 .FirstOrDefaultAsync(x => x.Id == model.BookingId
                                     && !x.DeletedTime.HasValue
                                     && (x.Status == BookingStatus.DepositedHaft /*|| x.Status == BookingStatus.DepositHaftEnd*/));
-            //Tìm người dùng đặt và kt số tiền có đủ để thanh toán không
-            var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == cb && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy người dùng!");
+            var buyer = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == existingBookings.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy người mua!");
 
             // 2. Tạo PayOSPaymentRequest từ thông tin booking
             var payOSRequest = new PayOSPaymentRequest
@@ -328,10 +324,10 @@ namespace Wanvi.Services.Services
                 orderCode = await GenerateUniqueOrderCodeAsync(),
                 amount = (long)(existingBookings.TotalPrice * 0.5), // Chuyển đổi TotalPrice sang long
                 description = $"50% tiền cọc còn lại!",
-                buyerName = user.FullName, // Lấy tên người dùng từ booking.User
-                buyerEmail = user.Email,   // Lấy email người dùng từ booking.User
-                buyerPhone = user.PhoneNumber, // Lấy số điện thoại từ booking.User
-                buyerAddress = user.Address,  // Lấy địa chỉ từ booking.User
+                buyerName = buyer.FullName, // Lấy tên người dùng từ booking.User
+                buyerEmail = buyer.Email,   // Lấy email người dùng từ booking.User
+                buyerPhone = buyer.PhoneNumber, // Lấy số điện thoại từ booking.User
+                buyerAddress = buyer.Address,  // Lấy địa chỉ từ booking.User
                 /*items = GetBookingItems(booking.Id), */// Hàm này sẽ lấy danh sách sản phẩm từ booking (xem bên dưới)
                 cancelUrl = "https://wanvi-landing-page.vercel.app/", // Thay thế bằng URL của bạn
                 returnUrl = "https://wanvi-landing-page.vercel.app/",  // Thay thế bằng URL của bạn
@@ -357,8 +353,8 @@ namespace Wanvi.Services.Services
                 BuyerEmail = payOSRequest.buyerEmail,
                 BuyerPhone = payOSRequest.buyerPhone,
                 BuyerName = payOSRequest.buyerName,
-                CreatedBy = user.Id.ToString(),
-                LastUpdatedBy = user.Id.ToString(),
+                CreatedBy = buyer.Id.ToString(),
+                LastUpdatedBy = buyer.Id.ToString(),
                 CreatedTime = DateTime.Now,
                 LastUpdatedTime = DateTime.Now,
                 BookingId = existingBookings.Id,
@@ -374,10 +370,10 @@ namespace Wanvi.Services.Services
             // 5. Trả về checkout URL
             return checkoutUrl;
         }
-        private async Task<long> GenerateUniqueOrderCodeAsync()
+        private async Task<int> GenerateUniqueOrderCodeAsync()
         {
             Random random = new Random();
-            long orderCode;
+            int orderCode;
             bool exists;
 
             do
@@ -527,13 +523,13 @@ namespace Wanvi.Services.Services
                     {
                         // Xử lý thanh toán booking như trước
                         var booking = await _unitOfWork.GetRepository<Booking>().Entities
-                            .FirstOrDefaultAsync(x => x.Id == payment.BookingId && !x.DeletedTime.HasValue);
+                             .FirstOrDefaultAsync(x => x.Id == payment.BookingId && !x.DeletedTime.HasValue);
 
                         if (booking != null)
                         {
                             double totalPaid = booking.Payments
                                 .Where(x => x.Status == PaymentStatus.Paid && !x.DeletedTime.HasValue)
-                                .Sum(x => x.Amount);
+                                .Sum(x => x.Amount) + payment.Amount;
 
                             if (totalPaid >= booking.TotalPrice)
                             {
@@ -553,21 +549,36 @@ namespace Wanvi.Services.Services
                             if (tourGuide != null)
                             {
                                 tourGuide.Deposit += (int)payment.Amount;
-                                await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
                             }
-
+                            var user = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.UserId && !x.DeletedTime.HasValue);
                             if (booking.Status == BookingStatus.DepositedHaft)
                             {
-                                await SendMailHaft(booking.User, booking, payment);
+                                try
+                                {
+                                    await SendMailHaft(booking.OrderCode, schedule.StartTime, schedule.EndTime, user.FullName, user.Email, user.PhoneNumber, schedule.Tour.Name, booking.RentalDate, booking.TotalTravelers, schedule.Tour.HourlyRate, booking.TotalPrice, payment.Amount);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Gửi email thất bại trong SendMailHaft");
+                                }
                             }
                             else
                             {
-                                await SendMailAll(booking.User, booking, payment);
+                                try
+                                {
+                                    await SendMailAll(booking.OrderCode, booking.Schedule.StartTime, booking.Schedule.EndTime, user.FullName, user.Email, user.PhoneNumber, schedule.Tour.Name, booking.RentalDate, booking.TotalTravelers, schedule.Tour.HourlyRate, booking.TotalPrice, payment.Amount);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Gửi email thất bại trong SendMailHaft");
+                                }
                             }
                             payment.Status = PaymentStatus.Paid;
 
+                            await _unitOfWork.GetRepository<ApplicationUser>().UpdateAsync(tourGuide);
                             await _unitOfWork.GetRepository<Payment>().UpdateAsync(payment);
                             await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+                            await _unitOfWork.SaveAsync();
                         }
                         else
                         {
@@ -601,7 +612,7 @@ namespace Wanvi.Services.Services
                 ?? throw new ErrorException(StatusCodes.Status404NotFound, ErrorCode.NotFound, "Không tìm thấy người dùng!");
 
             // Tạo mã giao dịch
-            long orderCode = await GenerateUniqueOrderCodeAsync();
+            int orderCode = await GenerateUniqueOrderCodeAsync();
 
             // Tạo yêu cầu thanh toán PayOS
             var payOSRequest = new PayOSPaymentRequest
@@ -667,12 +678,12 @@ namespace Wanvi.Services.Services
             </html>"
             );
         }
-        private async Task SendMailHaft(ApplicationUser user, Booking booking, Payment payment)
+        private async Task SendMailHaft(long OrderCode, TimeSpan StartTime, TimeSpan EndTime, string FullName, string Email, string PhoneNumber, string TourName, DateTime RentalDate, int TotalTravelers, double HourlyRate, double TotalPrice, double Amount)
         {
-            int countHour = (booking.Schedule.EndTime.Hours - booking.Schedule.StartTime.Hours);
+            int countHour = (EndTime.Hours - StartTime.Hours);
 
             await _emailService.SendEmailAsync(
-                user.Email,
+                Email,
                 "Hóa Đơn Thanh Toán Thành Công",
                 $@"
         <html>
@@ -739,16 +750,16 @@ namespace Wanvi.Services.Services
 
                 <div class='section'>
                     <h3>THÔNG TIN HÓA ĐƠN</h3>
-                    <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                    <p><strong>Mã đơn hàng:</strong> {OrderCode}</p>
                     <p><strong>Ngày giao dịch:</strong> {DateTime.Now.Date:dd/MM/yyyy}</p>
                     <p><strong>Hình thức thanh toán:</strong> Banking</p>
                 </div>
 
                 <div class='section'>
                     <h3>THÔNG TIN KHÁCH HÀNG</h3>
-                    <p><strong>Họ và tên:</strong> {user.FullName}</p>
-                    <p><strong>Email:</strong> {user.Email}</p>
-                    <p><strong>Số điện thoại:</strong> {user.PhoneNumber}</p>
+                    <p><strong>Họ và tên:</strong> {FullName}</p>
+                    <p><strong>Email:</strong> {Email}</p>
+                    <p><strong>Số điện thoại:</strong> {PhoneNumber}</p>
                 </div>
 
                 <div class='section'>
@@ -766,18 +777,18 @@ namespace Wanvi.Services.Services
                         </thead>
                         <tbody>
                             <tr>
-                                <td>{booking.Schedule.Tour.Name}</td>
-                                <td>{booking.RentalDate:dd/MM/yyyy}</td>
-                                <td>{booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</td>
-                                <td>{booking.TotalTravelers}</td>
-                                <td>{booking.Schedule.Tour.HourlyRate * countHour:N0} đ</td>
-                                <td>{booking.TotalPrice:N0} đ</td>
+                                <td>{TourName}</td>
+                                <td>{RentalDate:dd/MM/yyyy}</td>
+                                <td>{StartTime.ToString(@"hh\:mm")} - {EndTime.ToString(@"hh\:mm")}</td>
+                                <td>{TotalTravelers}</td>
+                                <td>{HourlyRate * countHour:N0} đ</td>
+                                <td>{TotalPrice:N0} đ</td>
                             </tr>
                         </tbody>
                     </table>
-                    <p><strong>Tổng tiền tour:</strong> {booking.TotalPrice:C}</p>
-                    <p><strong>Đã thanh toán (đầu tiên):</strong> 50% ({payment.Amount:N0} đ)</p>
-                    <p><strong>Còn lại thanh toán sau khi hoàn tất tour:</strong> {booking.TotalPrice - payment.Amount:N0} đ</p>
+                    <p><strong>Tổng tiền tour:</strong> {TotalPrice:N0} đ</p>
+                    <p><strong>Đã thanh toán  (đầu tiên):</strong> 50% ({Amount:N0} đ)</p>
+                    <p><strong>Còn lại thanh toán sau khi hoàn tất tour:</strong> {TotalPrice - Amount:N0} đ</p>
                 </div>
                 <div class='footer'>
                     <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
@@ -786,14 +797,13 @@ namespace Wanvi.Services.Services
         </body>
         </html>"
             );
-
         }
-        private async Task SendMailAll(ApplicationUser user, Booking booking, Payment payment)
+        private async Task SendMailAll(long OrderCode, TimeSpan StartTime, TimeSpan EndTime, string FullName, string Email, string PhoneNumber, string TourName, DateTime RentalDate, int TotalTravelers, double HourlyRate, double TotalPrice, double Amount)
         {
-            int countHour = (booking.Schedule.EndTime.Hours - booking.Schedule.StartTime.Hours);
+            int countHour = (EndTime.Hours - StartTime.Hours);
 
             await _emailService.SendEmailAsync(
-      user.Email,
+      Email,
       "Hóa Đơn Thanh Toán Thành Công",
       $@"
         <html>
@@ -860,16 +870,16 @@ namespace Wanvi.Services.Services
 
                 <div class='section'>
                     <h3>THÔNG TIN HÓA ĐƠN</h3>
-                    <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
+                    <p><strong>Mã đơn hàng:</strong> {OrderCode}</p>
                     <p><strong>Ngày giao dịch:</strong> {DateTime.Now.Date:dd/MM/yyyy}</p>
                     <p><strong>Hình thức thanh toán:</strong> Banking</p>
                 </div>
 
                 <div class='section'>
                     <h3>THÔNG TIN KHÁCH HÀNG</h3>
-                    <p><strong>Họ và tên:</strong> {user.FullName}</p>
-                    <p><strong>Email:</strong> {user.Email}</p>
-                    <p><strong>Số điện thoại:</strong> {user.PhoneNumber}</p>
+                    <p><strong>Họ và tên:</strong> {FullName}</p>
+                    <p><strong>Email:</strong> {Email}</p>
+                    <p><strong>Số điện thoại:</strong> {PhoneNumber}</p>
                 </div>
 
                 <div class='section'>
@@ -887,17 +897,17 @@ namespace Wanvi.Services.Services
                         </thead>
                         <tbody>
                             <tr>
-                                <td>{booking.Schedule.Tour.Name}</td>
-                                <td>{booking.RentalDate:dd/MM/yyyy}</td>
-                                <td>{booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</td>
-                                <td>{booking.TotalTravelers}</td>
-                                <td>{booking.Schedule.Tour.HourlyRate * countHour:N0} đ</td>
-                                <td>{booking.TotalPrice:N0} đ</td>
+                                <td>{TourName}</td>
+                                <td>{RentalDate:dd/MM/yyyy}</td>
+                                <td>{StartTime.ToString(@"hh\:mm")} - {EndTime.ToString(@"hh\:mm")}</td>
+                                <td>{TotalTravelers}</td>
+                                <td>{HourlyRate * countHour:N0} đ</td>
+                                <td>{TotalPrice:N0} đ</td>
                             </tr>
                         </tbody>
                     </table>
-                    <p><strong>Tổng tiền tour:</strong> {booking.TotalPrice:đ}</p>
-                    <p><strong>Đã thanh toán (đầu tiên):</strong> 50% ({booking.TotalPrice:N0} đ)</p>
+                    <p><strong>Tổng tiền tour:</strong> {TotalPrice:N0} đ</p>
+                    <p><strong>Đã thanh toán:</strong> {TotalPrice:N0} đ</p>
                     <p><strong>Còn lại thanh toán sau khi hoàn tất tour:</strong> {0:N0} đ</p>
                 </div>
                 <div class='footer'>
@@ -913,8 +923,8 @@ namespace Wanvi.Services.Services
             // Lọc theo ngày (format: dd/MM/yyyy)
             if (day != null)
             {
-                
-                if(!DateTime.TryParseExact(day, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+
+                if (!DateTime.TryParseExact(day, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
                 {
                     throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'ngày/tháng/năm' (vd: '26/01/2023').");
 
@@ -922,7 +932,7 @@ namespace Wanvi.Services.Services
                 // Lọc danh sách payment theo ngày/tháng/năm đã chọn
                 var responsePaymentModel = await _unitOfWork.GetRepository<Payment>().Entities
                     .Where(p => (!status.HasValue || p.Status == status) && !p.DeletedTime.HasValue)
-                    .Where(p=>p.CreatedTime.Date == parsedDate.Date)
+                    .Where(p => p.CreatedTime.Date == parsedDate.Date)
                     .Select(p => new ResponsePaymentModel
                     {
                         Method = ConvertPaymentMethodToString(p.Method),
@@ -939,7 +949,7 @@ namespace Wanvi.Services.Services
                     })
                     .ToListAsync();
                 // Tính toán tổng số giao dịch theo từng trạng thái
-                var totalPayment = responsePaymentModel.Count(x=>x.Status != "Chưa thanh toán" && x.Status != "Đã hoàn tiền");
+                var totalPayment = responsePaymentModel.Count(x => x.Status != "Chưa thanh toán" && x.Status != "Đã hoàn tiền");
                 var totalPaid = responsePaymentModel.Count(p => p.Status == "Đã thanh toán");
                 var totalCanceled = responsePaymentModel.Count(p => p.Status == "Đã hủy");
                 var totalUnpaidRecharge = responsePaymentModel.Count(p => p.Status == "Chưa nạp tiền");
@@ -959,7 +969,7 @@ namespace Wanvi.Services.Services
             // Lọc theo tháng (format: MM/yyyy)
             if (!string.IsNullOrWhiteSpace(month))
             {
-                 if(!DateTime.TryParseExact(month, "MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+                if (!DateTime.TryParseExact(month, "MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
                 {
                     throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Chuỗi nhập vào không hợp lệ. Định dạng đúng là 'tháng/năm' (vd: '01/2023').");
                 }
@@ -1006,7 +1016,7 @@ namespace Wanvi.Services.Services
             {
                 var responsePaymentModel = await _unitOfWork.GetRepository<Payment>().Entities
                     .Where(p => !status.HasValue || p.Status == status && !p.DeletedTime.HasValue)
-                    .Where(p => p.CreatedTime.Year == year )
+                    .Where(p => p.CreatedTime.Year == year)
                     .Select(p => new ResponsePaymentModel
                     {
                         Method = ConvertPaymentMethodToString(p.Method),

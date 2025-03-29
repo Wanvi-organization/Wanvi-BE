@@ -22,7 +22,7 @@ namespace Wanvi.Contract.Repositories.Entities
     {
         public PaymentMethod Method { get; set; }
         public PaymentStatus Status { get; set; }
-        public long OrderCode { get; set; }
+        public int OrderCode { get; set; }
         public double Amount { get; set; }
         public string? Description { get; set; }
         public string? BuyerName { get; set; }
