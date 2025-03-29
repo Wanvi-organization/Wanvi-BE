@@ -264,6 +264,20 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status404NotFound, ResponseCodeConstants.NOT_FOUND, "Tour đã bị xóa.");
             }
 
+            bool hasBookings = await _unitOfWork.GetRepository<Booking>()
+                .Entities
+                .AnyAsync(b => b.Schedule.TourId == id &&
+                    (b.Status == BookingStatus.DepositHaft ||
+                    b.Status == BookingStatus.DepositAll ||
+                    b.Status == BookingStatus.DepositedHaft ||
+                    b.Status == BookingStatus.Paid));
+
+            if (hasBookings)
+            {
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.BADREQUEST, "Không thể cập nhật tour do đã có booking.");
+            }
+
+
             if (model.Name != null && string.IsNullOrWhiteSpace(model.Name))
             {
                 throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Tên tour không hợp lệ.");
@@ -279,28 +293,25 @@ namespace Wanvi.Services.Services
                 throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Giá theo giờ phải lớn hơn 0.");
             }
 
-            if (model.PickupAddress != null)
+            if (model.PickupAddressId != null && string.IsNullOrWhiteSpace(model.PickupAddressId))
             {
-                var pickupAddress = await _addressService.GetOrCreateAddressAsync(model.PickupAddress.Latitude, model.PickupAddress.Longitude);
-                tour.PickupAddressId = pickupAddress.Id;
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Địa điểm đón khách không hợp lệ.");
             }
 
-            if (model.DropoffAddress != null)
+            if (model.DropoffAddressId != null && string.IsNullOrWhiteSpace(model.PickupAddressId))
             {
-                var dropoffAddress = await _addressService.GetOrCreateAddressAsync(model.DropoffAddress.Latitude, model.DropoffAddress.Longitude);
-                tour.DropoffAddressId = dropoffAddress.Id;
+                throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Địa điểm trả khách không hợp lệ.");
             }
 
-            if (model.TourAddresses != null)
+            if (model.TourAddressIds != null)
             {
                 tour.TourAddresses.Clear();
-                foreach (var addressModel in model.TourAddresses)
+                foreach (var addressId in model.TourAddressIds)
                 {
-                    var address = await _addressService.GetOrCreateAddressAsync(addressModel.Latitude, addressModel.Longitude);
                     tour.TourAddresses.Add(new TourAddress
                     {
                         TourId = tour.Id.ToString(),
-                        AddressId = address.Id
+                        AddressId = addressId
                     });
                 }
             }
@@ -308,6 +319,8 @@ namespace Wanvi.Services.Services
             if (model.Schedules != null)
             {
                 tour.Schedules.Clear();
+                var daysInTour = new HashSet<int>();
+
                 foreach (var schedule in model.Schedules)
                 {
                     if (!TimeSpan.TryParse(schedule.StartTime, out TimeSpan startTime))
@@ -330,12 +343,17 @@ namespace Wanvi.Services.Services
                         throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Thời gian bắt đầu và kết thúc phải cách nhau ít nhất 30 phút.");
                     }
 
+                    if (!daysInTour.Add((int)schedule.Day))
+                    {
+                        throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, $"Tour không thể có nhiều lịch trình vào cùng một ngày ({(DayOfWeek)schedule.Day}).");
+                    }
+
                     tour.Schedules.Add(new Schedule
                     {
-                        Day = (Contract.Repositories.Entities.DayOfWeek)schedule.Day,
+                        Day = (DayOfWeek)schedule.Day,
                         StartTime = startTime,
                         EndTime = endTime,
-                        MaxTraveler = schedule.MaxTraveler,
+                        MaxTraveler = (int)schedule.MaxTraveler,
                         BookedTraveler = 0,
                         MinDeposit = (double)((endTime - startTime).TotalHours * model.HourlyRate * 0.2),
                         TourId = tour.Id.ToString()
@@ -343,18 +361,19 @@ namespace Wanvi.Services.Services
                 }
             }
 
-            if (model.Medias != null)
+            if (model.MediaIds != null)
             {
-                tour.Medias.Clear();
-                foreach (var media in model.Medias)
+                if (model.MediaIds.Count > 10)
                 {
-                    tour.Medias.Add(new Media
-                    {
-                        Url = media.Url,
-                        Type = (MediaType)media.Type,
-                        AltText = media.AltText,
-                        TourId = tour.Id.ToString()
-                    });
+                    throw new ErrorException(StatusCodes.Status400BadRequest, ResponseCodeConstants.INVALID_INPUT, "Không thể tải lên quá 10 ảnh.");
+                }
+
+                var medias = await _unitOfWork.GetRepository<Media>().FindAllAsync(m => model.MediaIds.Contains(m.Id));
+                tour.Medias.Clear();
+                foreach (var media in medias)
+                {
+                    media.TourId = tour.Id;
+                    tour.Medias.Add(media);
                 }
             }
 
