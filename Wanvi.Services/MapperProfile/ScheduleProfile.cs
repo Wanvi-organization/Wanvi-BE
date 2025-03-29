@@ -15,6 +15,7 @@ namespace Wanvi.Services.MapperProfile
                 .ForMember(dest => dest.MaxTraveler, opt => opt.MapFrom(src => src.MaxTraveler))
                 .ForMember(dest => dest.BookedTraveler, opt => opt.MapFrom(src => src.BookedTraveler))
                 .ForMember(dest => dest.MinDeposit, opt => opt.MapFrom(src => src.MinDeposit));
+            CreateMap<Schedule, UpdateScheduleModel>().ReverseMap();
         }
 
         private string ConvertDayToVietnameseString(ResponseScheduleModel.DayOfWeek day)
