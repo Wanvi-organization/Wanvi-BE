@@ -228,7 +228,7 @@ namespace Wanvi.Services.Services
 
             var excludedStatuses = new[]
             {
-        BookingStatus.Completed, BookingStatus.Cancelled, BookingStatus.Refunded,
+        
         BookingStatus.DepositAll, BookingStatus.DepositHaft
     };
 
@@ -302,7 +302,7 @@ namespace Wanvi.Services.Services
         {
             var excludedStatuses = new[]
             {
-        BookingStatus.Completed, BookingStatus.Cancelled, BookingStatus.Refunded,
+        
         BookingStatus.DepositAll, BookingStatus.DepositHaft
             };
 
