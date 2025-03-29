@@ -821,7 +821,9 @@ namespace Wanvi.Services.Services
 
         public async Task<string> CancelBookingForCustomer(CancelBookingForCustomerModel model)
         {
-            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == model.bookingId && !x.DeletedTime.HasValue) ??
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == model.bookingId
+            && (x.Status == BookingStatus.DepositedHaft || x.Status == BookingStatus.Paid)
+            && !x.DeletedTime.HasValue) ??
             throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
 
             var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.Schedule.Tour.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
@@ -869,7 +871,9 @@ namespace Wanvi.Services.Services
 
         public async Task<string> CancelBookingForGuide(CancelBookingForGuideModel model)
         {
-            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == model.bookingId && !x.DeletedTime.HasValue) ??
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == model.bookingId
+            && (x.Status == BookingStatus.DepositedHaft || x.Status == BookingStatus.Paid)
+            && !x.DeletedTime.HasValue) ??
                 throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
 
             var tourGuide = await _unitOfWork.GetRepository<ApplicationUser>().Entities.FirstOrDefaultAsync(x => x.Id == booking.Schedule.Tour.UserId && !x.DeletedTime.HasValue) ?? throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy hướng dẫn viên!");
@@ -1236,7 +1240,7 @@ namespace Wanvi.Services.Services
                 <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
                 <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
                 <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
-                <p><strong>Giờ:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
+                <p><strong>Giờ:</strong> {booking.Schedule.StartTime.ToString(@"hh\:mm")} - {booking.Schedule.EndTime.ToString(@"hh\:mm")}</p>
                 <p>Chúng tôi xin lỗi vì sự bất tiện này!</p>
             </body>
             </html>"
@@ -1255,7 +1259,7 @@ namespace Wanvi.Services.Services
                 <p><strong>Mã đơn hàng:</strong> {booking.OrderCode}</p>
                 <p><strong>Tên tour:</strong> {booking.Schedule.Tour.Name}</p>
                 <p><strong>Ngày khởi hành:</strong> {booking.RentalDate:dd/MM/yyyy}</p>
-                <p><strong>Giờ:</strong> {booking.Schedule.StartTime:HH:mm} - {booking.Schedule.EndTime:HH:mm}</p>
+                <p><strong>Giờ:</strong> {booking.Schedule.StartTime.ToString(@"hh\:mm")} - {booking.Schedule.EndTime.ToString(@"hh\:mm")}</p>
             </body>
             </html>"
             );
