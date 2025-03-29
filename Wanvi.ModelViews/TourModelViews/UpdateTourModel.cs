@@ -9,11 +9,12 @@ namespace Wanvi.ModelViews.TourModelViews
         public string? Name { get; set; }
         public string? Description { get; set; }
         public double? HourlyRate { get; set; }
-        public CreateAddressModel? PickupAddress { get; set; }
-        public CreateAddressModel? DropoffAddress { get; set; }
-        public List<CreateAddressModel>? TourAddresses { get; set; }
-        public List<CreateScheduleModel>? Schedules { get; set; }
-        public List<CreateMediaModel>? Medias { get; set; }
+        public string? PickupAddressId { get; set; }
+        public string? DropoffAddressId { get; set; }
+        public List<string>? TourAddressIds { get; set; }
+        public List<UpdateScheduleModel>? Schedules { get; set; }
+        public List<string>? MediaIds { get; set; }
         public List<string>? TourActivityIds { get; set; }
+        public string? Note { get; set; }
     }
 }
