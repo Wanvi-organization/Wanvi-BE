@@ -869,6 +869,23 @@ namespace Wanvi.Services.Services
             return "Hủy đơn thành công!";
         }
 
+        public async Task<string> CancelBookingNoDepositForCustomer(CancelBookingForCustomerModel model)
+        {
+            var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == model.bookingId
+            && (x.Status == BookingStatus.DepositHaft || x.Status == BookingStatus.DepositAll)
+            && !x.DeletedTime.HasValue) ??
+            throw new ErrorException(StatusCodes.Status400BadRequest, ErrorCode.BadRequest, "Không tìm thấy đơn hàng!");
+
+            
+            //Đổi trạng thái của đơn
+            booking.Status = BookingStatus.Cancelled;
+            await _unitOfWork.GetRepository<Booking>().UpdateAsync(booking);
+
+            await _unitOfWork.SaveAsync();
+
+            return "Hủy đơn thành công!";
+        }
+
         public async Task<string> CancelBookingForGuide(CancelBookingForGuideModel model)
         {
             var booking = await _unitOfWork.GetRepository<Booking>().Entities.FirstOrDefaultAsync(x => x.Id == model.bookingId

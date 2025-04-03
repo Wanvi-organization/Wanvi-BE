@@ -206,6 +206,19 @@ namespace Wanvi.API.Controllers
              ));
         }
         /// <summary>
+        /// Hủy đơn chưa trả tiền cọc dành cho khách hàng
+        /// </summary>
+        [HttpPatch("Cancel_Booking_No_Deposit_For_Customer")]
+        public async Task<IActionResult> CancelBookingNoDepositForCustomer(CancelBookingForCustomerModel request)
+        {
+            string res = await _bookingService.CancelBookingNoDepositForCustomer(request);
+            return Ok(new BaseResponseModel<string>(
+                 statusCode: StatusCodes.Status200OK,
+                 code: ResponseCodeConstants.SUCCESS,
+                 data: res
+             ));
+        }
+        /// <summary>
         /// Admin hủy tât các các tour của HDV vi phạm quy định của app
         /// </summary>
         [HttpPatch("Cancel_Booking_For_Admin")]
