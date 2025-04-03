@@ -16,6 +16,11 @@ builder.Configuration
 
 builder.Services.Configure<UploadSettings>(builder.Configuration.GetSection("UploadSettings"));
 
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = 104857600; // 100 MB
+});
+
 // C?u hình JSON Serializer
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
