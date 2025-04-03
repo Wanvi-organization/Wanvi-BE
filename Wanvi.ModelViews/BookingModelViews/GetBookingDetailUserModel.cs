@@ -17,6 +17,7 @@ namespace Wanvi.ModelViews.BookingModelViews
         public string StartTime { get; set; }
         public string EndTime { get; set; }
         public string TourName { get; set; }
+        public string TourGuideId { get; set; }
         public string TourGuideName { get; set; }
         public string PhoneNumber { get; set; }
         public string Email { get; set; }
