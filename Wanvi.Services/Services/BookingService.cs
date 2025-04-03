@@ -194,6 +194,7 @@ namespace Wanvi.Services.Services
                 Status = ConvertStatusToString(query.Status),
                 StartTime = query.Schedule?.StartTime.ToString(@"hh\:mm") ?? "00:00", // Chỉ lấy giờ:phút
                 EndTime = query.Schedule?.EndTime.ToString(@"hh\:mm") ?? "00:00",
+                TourGuideId = query.Schedule.Tour.UserId.ToString(),
                 TourName = query.Schedule.Tour.Name,
                 Email = query.Schedule.Tour.ApplicationUser.Email,
                 Gender = ConvertGenderToString(query.Schedule.Tour.ApplicationUser.Gender),

@@ -17,7 +17,7 @@ namespace Wanvi.API.Controllers
             _postService = postService;
         }
         /// <summary>
-        /// Lấy toàn bộ bài đăng với bộ lọc.
+        /// Lấy toàn bộ bài đăng.
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetAllPosts()
@@ -26,6 +26,17 @@ namespace Wanvi.API.Controllers
                 statusCode: StatusCodes.Status200OK,
                 code: ResponseCodeConstants.SUCCESS,
                 data: await _postService.GetAllPostsAsync()));
+        }
+        /// <summary>
+        /// Lấy toàn bộ bài đăng của người dùng.
+        /// </summary>
+        [HttpGet("get_posts_by_userId/{userId}")]
+        public async Task<IActionResult> GetPostsByUserId(Guid userId)
+        {
+            return Ok(new BaseResponseModel<IEnumerable<ResponsePostModel>>(
+                statusCode: StatusCodes.Status200OK,
+                code: ResponseCodeConstants.SUCCESS,
+                data: await _postService.GetPostsByUserIdAsync(userId)));
         }
         /// <summary>
         /// Lấy bài đăng bằng ID.

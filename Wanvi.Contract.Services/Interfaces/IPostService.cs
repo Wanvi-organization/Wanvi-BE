@@ -5,6 +5,7 @@ namespace Wanvi.Contract.Services.Interfaces
     public interface IPostService
     {
         Task<IEnumerable<ResponsePostModel>> GetAllPostsAsync();
+        Task<IEnumerable<ResponsePostModel>> GetPostsByUserIdAsync(Guid userId);
         Task<ResponsePostModel> GetPostByIdAsync(string id);
         Task CreatePostAsync(CreatePostModel model);
         Task UpdatePostAsync(string id, UpdatePostModel model);
